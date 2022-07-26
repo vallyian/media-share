@@ -1,4 +1,4 @@
-FROM node:gallium AS build-server
+FROM node:gallium AS build
 RUN npm i -g npm@8
 WORKDIR /app
 COPY server/package*.json ./
@@ -15,14 +15,14 @@ ARG SEMVER
 RUN [ "${SEMVER}" != "" ] || SEMVER="0.0.0"; \
     echo "SEMVER: \"${SEMVER}\""; \
     npm run build
-# COPY server/test.ts .
-# RUN npm test
+COPY server/test.ts .
+RUN npm test
 
 
 
 FROM node:gallium-alpine3.15
 WORKDIR /app
-COPY --from=build-server /app/bin/index.cjs index.cjs
+COPY --from=build /app/bin/index.cjs index.cjs
 ARG SEMVER
 ENV SEMVER=${SEMVER}
 HEALTHCHECK --interval=60s --timeout=1s --start-period=5s --retries=3 \

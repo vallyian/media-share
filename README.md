@@ -13,8 +13,8 @@ docker buildx build -t vallyian/media-share:local .
 
 ## Run
 
-**Security warning**: Only expose shared volumes that don't contain sensitive data !!!
-**Security warning**: Only expose this outside `127.0.0.1` if you understand the risks !!!
+**Security warning**: Only expose shared volumes that don't contain sensitive data !!!  
+**Security warning**: Only expose this outside `127.0.0.1` if you understand the risks !!!  
 
 * local folders
   * linux: `export MEDIA_DIR=/some/path` or Windows: `set MEDIA_DIR=C:\some\path`
