@@ -42,8 +42,10 @@ jobs:
                 SEMVER: ${{ steps.tag_version.outputs.new_version }}
               run: |
                 if [ "${GITHUB_MAIN}" = "true" ]; then
+                    echo "SEMVER: ${SEMVER}"
                     echo "::set-output name=SEMVER::${SEMVER}"
                 else
+                    echo "SEMVER: ${SEMVER}-${GITHUB_SHA}"
                     echo "::set-output name=SEMVER::${SEMVER}-${GITHUB_SHA}"
                 fi
 
@@ -73,7 +75,7 @@ jobs:
                 username: ${{ secrets.DOCKER_USERNAME }}
                 password: ${{ secrets.DOCKER_PASSWORD }}
 
-            - name: Publish images to Docker Hub
+            - name: Publish image to Docker Hub
               if: ${{ needs.semver.outputs.GITHUB_MAIN == 'true' }}
               env:
                 DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
