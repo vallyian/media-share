@@ -28,11 +28,26 @@ function dirList(dirPath: string): Promise<ItemStat[]> {
         .then(() => fs.promises.readdir(dirPath))
         .then(i => items = i.map(item => path.normalize(path.join(dirPath, item))))
         .then(() => Promise.all(items.map(item => fs.promises.stat(item))))
-        .then(stats => stats.map((stat, statIndex) => (<ItemStat>{
-            name: path.basename(items[statIndex]),
-            size: stat.size,
-            isDir: stat.isDirectory() || undefined
-        })));
+        .then(stats => stats.map((stat, statIndex) => {
+            const isDir = stat.isDirectory();
+            return (<ItemStat>{
+                name: path.basename(items[statIndex]),
+                size: isDir ? 0 : size(stat.size),
+                isDir: isDir || undefined
+            });
+        }));
+}
+
+function size(value: number): string {
+    switch (true) {
+        case value < 1000: return `${value} bytes`;
+        case value < 1000000: return `${Math.round(value / 100) / 10} kb`;
+        case value < 1000000000: return `${Math.round(value / 100000) / 10} mb`;
+        case value < 1000000000000: return `${Math.round(value / 100000000) / 10} gb`;
+        case value < 1000000000000000: return `${Math.round(value / 100000000) / 10} tb`;
+
+        default: return String(value);
+    }
 }
 
 // export function dirExists(dirPath: string) {
