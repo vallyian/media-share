@@ -13,7 +13,8 @@ export function dirIndex(dirPath: string): Promise<Error | ItemStat[]> {
             ? assert.fail(`path "${dirPath}" not found`)
             : assert.fail(`path "${dirPath}" not accessible`)))
         .then(stat => !stat.isDirectory() && assert.fail(`dir "${dirPath}" not found`))
-        .then(() => dirList(dirAbsolutePath));
+        .then(() => dirList(dirAbsolutePath))
+        .then(items => sort(items));
 }
 
 function dirList(dirPath: string): Promise<ItemStat[]> {
@@ -26,7 +27,7 @@ function dirList(dirPath: string): Promise<ItemStat[]> {
             const isDir = stat.isDirectory();
             return (<ItemStat>{
                 name: path.basename(items[statIndex]),
-                size: isDir ? 0 : size(stat.size),
+                size: isDir ? "" : size(stat.size),
                 isDir: isDir || undefined
             });
         }));
@@ -42,4 +43,17 @@ function size(value: number): string {
 
         default: return String(value);
     }
+}
+
+function sort(items: ItemStat[], asc = true): ItemStat[] {
+    const order = asc ? -1 : 1;
+    return items.sort((a: ItemStat, b: ItemStat) => {
+        if (a.isDir && !b.isDir) return order;
+        if (!a.isDir && b.isDir) return -order;
+        const aName = a.name.toUpperCase();
+        const bName = b.name.toUpperCase();
+        if (aName < bName) return order;
+        if (aName > bName) return -order;
+        return 0;
+    });
 }
