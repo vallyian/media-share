@@ -4,12 +4,6 @@ import path from "node:path";
 
 import { env } from "../env";
 
-export type ItemStat = {
-    name: string,
-    size: number,
-    isDir?: boolean
-}
-
 export function dirIndex(dirPath: string): Promise<Error | ItemStat[]> {
     let dirAbsolutePath: string;
     return Promise.resolve()
@@ -49,12 +43,3 @@ function size(value: number): string {
         default: return String(value);
     }
 }
-
-// export function dirExists(dirPath: string) {
-//     return (
-//         typeof dirPath === "string" &&
-//         dirPath &&
-//         fs.existsSync(dirPath) &&
-//         fs.statSync(dirPath).isDirectory()
-//     );
-// }

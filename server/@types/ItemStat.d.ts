@@ -1,5 +1,5 @@
 type ItemStat = {
     name: string,
-    size: number,
+    size?: number | string,
     isDir?: boolean
 }
