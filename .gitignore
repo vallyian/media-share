@@ -1,0 +1,17 @@
+# also check .dockerignore
+
+**/.angular
+# **/.github
+**/.vscode/**
+**/bin
+**/dist
+**/node_modules
+**/test-results
+
+# **/.dockerignore
+# **/.editorconfig
+# **/.gitattributes
+# **/.gitignore
+# **/dockerfile
+# **/docker-compose*
+# **/*.md
