@@ -65,6 +65,10 @@ jobs:
         steps:
             - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
 
+            - uses: docker/setup-qemu-action@v1
+
+            - uses: docker/setup-buildx-action@v1
+
             - name: Log in to Docker Hub
               uses: docker/login-action@dd4fa0671be5250ee6f50aedf4cb05514abda2c7 # 1.14.1
               if: ${{ needs.semver.outputs.GITHUB_MAIN == 'true' }}
