@@ -4,7 +4,7 @@
 # **/.github
 **/.vscode
 **/artifacts
-# !**/artifacts/index.cjs
+# !**/artifacts/runtime/index.cjs
 **/bin
 **/dist
 **/node_modules
