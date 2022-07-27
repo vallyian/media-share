@@ -29,7 +29,7 @@ runner.addReporter(
     })
 );
 
-runner.execute().catch(() => {
-    console.error("test run failed");
+runner.execute().catch((e: Error) => {
+    console.error("test run failed:", e);
     process.exit(1);
 });

@@ -78,5 +78,4 @@ describe("env", () => {
             expect(env.CERTS_DIR).toEqual(process.env.CERTS_DIR);
         });
     });
-
 });

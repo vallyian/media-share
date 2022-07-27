@@ -32,8 +32,8 @@ COPY --chown=node:node artifacts/runtime/index.cjs index.cjs
 USER node
 ARG SEMVER
 ENV SEMVER=${SEMVER}
-HEALTHCHECK --interval=60s --timeout=1s --start-period=5s --retries=1 \
-    CMD [ $(wget --server-response https://localhost:58082/health 2>&1 | awk '/^  HTTP/{print $2}') = 200 ] || exit 1
+HEALTHCHECK --interval=30s --timeout=1s --start-period=5s --retries=1 \
+    CMD if [ $(wget --no-check-certificate --server-response https://localhost:55557/health 2>&1 | awk '/^  HTTP/{print $2}') -ne 200 ]; then exit 1; fi
 EXPOSE "58082/tcp"
 ENV MEDIA_DIR=${MEDIA_DIR:-/media}
 ENV CERTS_DIR=${CERTS_DIR:-/certs}

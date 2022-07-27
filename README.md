@@ -18,6 +18,7 @@ docker buildx build --pull -t vallyian/media-share:local .
 **Security warning**: Only expose shared volumes that don't contain sensitive data !!!  
 **Security warning**: Only expose this outside `127.0.0.1` if you understand the risks !!!  
 **Info** generate self-signed certs with `openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -out cert.pem -keyout key.pem`  
+**Info** running containers without certs will have an "unhealthy" status  
 
 * local folders
 
