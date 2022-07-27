@@ -36,6 +36,7 @@ HEALTHCHECK --interval=60s --timeout=1s --start-period=5s --retries=1 \
     CMD [ $(wget --server-response https://localhost:58082/health 2>&1 | awk '/^  HTTP/{print $2}') = 200 ] || exit 1
 EXPOSE "58082/tcp"
 ENV MEDIA_DIR=${MEDIA_DIR:-/media}
+ENV CERTS_DIR=${CERTS_DIR:-/certs}
 # VOLUME [ "/media", "/certs" ]
 ENTRYPOINT [ "node" ]
 CMD [ "index.cjs" ]

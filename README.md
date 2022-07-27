@@ -37,7 +37,6 @@ npm --prefix server start
 docker run --name media-share-local --rm \
     -v "/some/path:/media" \
     -v "/optional/certs/dir:/certs" \
-    -e "CERTS_DIR=/certs" \
     -p "127.0.0.1:58081:58082" \
     vallyian/media-share:local
 ```
@@ -51,7 +50,6 @@ docker run --name media-share-local --rm \
 docker run --name media-share --pull always --restart=always -d \
     -v "/some/path:/media" \
     -v "/optional/certs/dir:/certs" \
-    -e "CERTS_DIR=/certs" \
     -p "127.0.0.1:58080:58082" \
     vallyian/media-share:latest
 ```
