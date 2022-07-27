@@ -18,11 +18,14 @@ RUN [ "${SEMVER}" != "" ] || SEMVER="0.0.0"; \
 COPY server/test.ts .
 RUN npm test
 
+FROM scratch AS export
+COPY --from=build /app/bin /
 
-
-FROM node:gallium-alpine3.15
-WORKDIR /app
-COPY --from=build /app/bin/index.cjs index.cjs
+FROM node:gallium-alpine3.16
+RUN mkdir -p /home/node/app && chown node:node /home/node/app
+WORKDIR /home/node/app
+COPY --chown=node:node artifacts/index.cjs .
+USER node
 ARG SEMVER
 ENV SEMVER=${SEMVER}
 HEALTHCHECK --interval=60s --timeout=1s --start-period=5s --retries=3 \

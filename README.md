@@ -8,7 +8,9 @@
 ## Build
 
 ```sh
-docker buildx build -t vallyian/media-share:local .
+rm -rf artifacts && \
+docker buildx build --pull --target export -o artifacts . && \
+docker buildx build --pull -t vallyian/media-share:local .
 ```
 
 ## Run

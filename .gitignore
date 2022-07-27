@@ -2,7 +2,9 @@
 
 **/.angular
 # **/.github
-**/.vscode/**
+**/.vscode
+**/artifacts
+# !**/artifacts/index.cjs
 **/bin
 **/dist
 **/node_modules
