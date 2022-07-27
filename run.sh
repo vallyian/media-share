@@ -1,5 +1,6 @@
 #!/bin/sh -e
 
+DOCKER_USERNAME=${DOCKER_USERNAME:-vallyian}
 DOCKER_REPO=${DOCKER_REPO:-media-share}
 PLATFORMS=linux/amd64,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/s390x
 
@@ -18,25 +19,29 @@ calc_semver() {
 }
 
 build() {
+    rm -rf artifacts \
+    || exit 1
+
     docker buildx build \
         --pull \
         --target export \
-        -o artifacts . \
-    || exit 1
-}
-
-scan() {
-    docker buildx build \
-        -t ${DOCKER_REPO}:scan \
-        --build-arg SEMVER \
-        --pull \
-        --load \
+        --output=type=local,dest=artifacts \
         . \
     || exit 1
 
-    docker image inspect ${DOCKER_REPO}:scan > /dev/null \
+    docker buildx build \
+        -t ${DOCKER_USERNAME}/${DOCKER_REPO}:local \
+        --build-arg SEMVER \
+        --pull \
+        --output=type=docker \
+        . \
     || exit 2
 
+    docker image inspect ${DOCKER_USERNAME}/${DOCKER_REPO}:local > /dev/null \
+    || exit 3
+}
+
+scan() {
     docker run \
         --rm \
         --pull always \
@@ -46,11 +51,8 @@ scan() {
         aquasec/trivy \
             image \
                 --exit-code=1 \
-                ${DOCKER_REPO}:scan \
-    || exit 3
-
-    docker image rm ${DOCKER_REPO}:scan \
-    || exit 4
+                ${DOCKER_USERNAME}/${DOCKER_REPO}:local \
+    || exit 1
 }
 
 push() {
@@ -60,7 +62,7 @@ push() {
         --build-arg SEMVER \
         --platform ${PLATFORMS} \
         --pull \
-        --push \
+        --output=type=registry \
         . \
     || exit 1
 }

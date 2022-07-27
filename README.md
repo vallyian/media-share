@@ -8,9 +8,13 @@
 ## Build
 
 ```sh
-rm -rf artifacts && \
-docker buildx build --pull --target export -o artifacts . && \
-docker buildx build --pull -t vallyian/media-share:local .
+./run.sh build
+```
+
+## Scan for vulnerabilities
+
+```sh
+./run.sh scan
 ```
 
 ## Run
