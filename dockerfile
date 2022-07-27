@@ -18,13 +18,17 @@ RUN [ "${SEMVER}" != "" ] || SEMVER="0.0.0"; \
 COPY server/test.ts .
 RUN npm test
 
+
+
 FROM scratch AS export
 COPY --from=build /app/bin /runtime
+
+
 
 FROM node:gallium-alpine3.16
 RUN mkdir -p /home/node/app && chown node:node /home/node/app
 WORKDIR /home/node/app
-COPY --chown=node:node artifacts/runtime/index.cjs ./index.cjs
+COPY --chown=node:node artifacts/runtime/index.cjs index.cjs
 USER node
 ARG SEMVER
 ENV SEMVER=${SEMVER}
