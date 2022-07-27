@@ -11,6 +11,12 @@ on:
         paths-ignore:
             - ".vscode/**"
             - "**/*.md"
+    workflow_dispatch:
+        inputs:
+            publish_image:
+                description: "Push runtime image to Docker Hub"
+                default: "false"
+                required: false
 
 jobs:
     semver:
@@ -80,13 +86,13 @@ jobs:
 
             - name: Log in to Docker Hub
               uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b # v2.0.0
-              if: ${{ needs.semver.outputs.GITHUB_MAIN == 'true' }}
+              if: ${{ needs.semver.outputs.GITHUB_MAIN == 'true' || github.event.inputs.publish_image == 'true' }}
               with:
                   username: ${{secrets.DOCKER_USERNAME}}
                   password: ${{secrets.DOCKER_PASSWORD}}
 
             - name: Build multiplatform runtime and push
-              if: ${{ needs.semver.outputs.GITHUB_MAIN == 'true' }}
+              if: ${{ needs.semver.outputs.GITHUB_MAIN == 'true' || github.event.inputs.publish_image == 'true' }}
               run: |
                   docker buildx build \
                     -t ${{secrets.DOCKER_USERNAME}}/${DOCKER_REPO}:${SEMVER} \
