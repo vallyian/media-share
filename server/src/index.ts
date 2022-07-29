@@ -95,14 +95,14 @@ function getCerts(): { cert?: Buffer, key?: Buffer, warns: string[] } {
     }
 
     const certPath = path.normalize(path.join(env.CERTS_DIR, "cert.pem"));
-    if (!fs.existsSync(certPath) || !fs.statSync(certPath).isFile())
-        warns.push(`cert file "${certPath}" not found`);
-    cert = fs.readFileSync(certPath);
+    fs.existsSync(certPath) && fs.statSync(certPath).isFile()
+        ? cert = fs.readFileSync(certPath)
+        : warns.push(`cert file "${certPath}" not found`);
 
     const keyPath = path.normalize(path.join(env.CERTS_DIR, "key.pem"));
-    if (!fs.existsSync(keyPath) || !fs.statSync(keyPath).isFile())
-        warns.push(`cert key file "${certPath}" not found`);
-    key = fs.readFileSync(keyPath);
+    fs.existsSync(keyPath) && fs.statSync(keyPath).isFile()
+        ? key = fs.readFileSync(keyPath)
+        : warns.push(`cert key file "${certPath}" not found`);
 
     return { cert, key, warns };
 }
