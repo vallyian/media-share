@@ -9,7 +9,7 @@ RUN [ "${NPM_AUDIT_LEVEL}" != "" ] || NPM_AUDIT_LEVEL="low"; \
     npm ci
 COPY server/@types ./@types
 COPY server/src ./src
-COPY server/.eslintrc.json server/globals.ts server/tsconfig.json ./
+COPY server/.eslintrc.json server/tsconfig.json ./
 RUN npm run lint
 ARG SEMVER
 RUN [ "${SEMVER}" != "" ] || SEMVER="0.0.0"; \
