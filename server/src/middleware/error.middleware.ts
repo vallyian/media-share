@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 
-import { globals } from "../../globals";
+import { globals } from "../globals";
 import { env } from "../env";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- required by express to correctly interpret as error middleware

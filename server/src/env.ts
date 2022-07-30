@@ -1,7 +1,7 @@
 import os from "node:os";
 import assert from "node:assert";
 
-import { globals } from "../globals";
+import { globals } from "./globals";
 
 export const env = Object.freeze({
     /* from process.env - required => throw if missing */

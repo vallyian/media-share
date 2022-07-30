@@ -1,13 +1,19 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
 
+import { Request } from "../../@types/Request";
 import { responder } from "../responder";
 import * as dirService from "../services/dir.service";
 import * as htmlService from "../services/html.service";
 
-export function dirIndexMiddleware(req: Request, res: Response, next: NextFunction) {
-    const requestPath = req.path;
+export async function dirIndexMiddleware(req: Request, res: Response, next: NextFunction) {
+    const dirStat = await dirService.statDir(req.absolutePath);
+
+    if (!dirStat)
+        return next();
+
     const html = Promise.resolve()
-        .then(() => dirService.dirIndex(requestPath))
+        .then(() => dirService.dirIndex(req.relativePath, req.absolutePath))
         .then(items => htmlService.html(items));
+
     return responder(res, next, html);
 }

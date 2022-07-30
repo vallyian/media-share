@@ -1,38 +1,31 @@
-import assert from "node:assert";
-import * as fs from "fs";
+import fs from "node:fs";
 import path from "node:path";
 
-import { env } from "../env";
-
-export function dirIndex(dirPath: string): Promise<Error | ItemStat[]> {
-    let dirAbsolutePath: string;
+export function statDir(absolutePath: string): Promise<boolean> {
     return Promise.resolve()
-        .then(() => typeof dirPath === "string"
-            ? dirPath = decodeURIComponent(dirPath)
-            : assert.fail("dirPath arg invalid"))
-        .then(() => dirAbsolutePath = path.normalize(path.join(env.MEDIA_DIR, dirPath)))
-        .then(() => fs.promises.stat(dirAbsolutePath).catch(err => err.code === "ENOENT"
-            ? assert.fail(`path "${dirPath}" not found`)
-            : assert.fail(`path "${dirPath}" not accessible`)))
-        .then(stat => !stat.isDirectory() && assert.fail(`dir "${dirPath}" not found`))
-        .then(() => dirList(dirAbsolutePath))
-        .then(items => sort(items));
+        .then(() => fs.promises.stat(absolutePath))
+        .then(stat => stat.isDirectory())
+        .catch(() => false);
 }
 
-function dirList(dirPath: string): Promise<ItemStat[]> {
+export function dirIndex(relativePath: string, absolutePath: string): Promise<Error | ItemStat[]> {
     let items: string[];
     return Promise.resolve()
-        .then(() => fs.promises.readdir(dirPath))
-        .then(i => items = i.map(item => path.normalize(path.join(dirPath, item))))
-        .then(() => Promise.all(items.map(item => fs.promises.stat(item))))
+        .then(() => fs.promises.readdir(absolutePath))
+        .then(i => {
+            items = i;
+            return Promise.all(items.map(item => fs.promises.stat(path.join(absolutePath, item))));
+        })
         .then(stats => stats.map((stat, statIndex) => {
             const isDir = stat.isDirectory();
             return (<ItemStat>{
-                name: path.basename(items[statIndex]),
+                parent: relativePath,
+                name: items[statIndex],
                 size: isDir ? "" : size(stat.size),
                 isDir: isDir || undefined
             });
-        }));
+        }))
+        .then(items => sort(items));
 }
 
 function size(value: number): string {
