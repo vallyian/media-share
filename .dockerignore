@@ -1,19 +1,19 @@
 # also check .gitignore
 
-**/.angular
-**/.github
-**/.vscode
-**/artifacts
-!**/artifacts/runtime/index.cjs
-**/bin
-**/dist
-**/node_modules
-**/test-results
+.angular
+.github
+.vscode
+artifacts
+!artifacts/runtime/index.cjs
+bin
+dist
+node_modules
+test-results
 
-**/.dockerignore
-**/.editorconfig
-**/.gitattributes
-**/.gitignore
-**/dockerfile
-**/docker-compose*
-**/*.md
+.dockerignore
+.editorconfig
+.gitattributes
+.gitignore
+[Dd]ocker*
+run.sh
+*.md

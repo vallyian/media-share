@@ -32,11 +32,13 @@ COPY --chown=node:node artifacts/runtime/index.cjs index.cjs
 USER node
 ARG SEMVER
 ENV SEMVER=${SEMVER}
+# VOLUME [ "/media", "/run/secrets/cert.crt", "/run/secrets/cert.key" ]
 HEALTHCHECK --interval=30s --timeout=1s --start-period=5s --retries=1 \
-    CMD if [ $(wget --no-check-certificate --server-response https://localhost:55557/health 2>&1 | awk '/^  HTTP/{print $2}') -ne 200 ]; then exit 1; fi
+    CMD if [ -f "/run/secrets/cert.crt" ] && [ -f "/run/secrets/cert.key" ]; then \
+            if [ ! "$(wget --no-check-certificate --server-response https://localhost:58082/health 2>&1 | awk '/^  HTTP/{print $2}')" = "200" ]; then exit 1; fi \
+        else \
+            if [ ! "$(wget --server-response http://localhost:58082/health 2>&1 | awk '/^  HTTP/{print $2}')" = "200" ]; then exit 1; fi \
+        fi
 EXPOSE "58082/tcp"
-ENV MEDIA_DIR=${MEDIA_DIR:-/media}
-ENV CERTS_DIR=${CERTS_DIR:-/certs}
-# VOLUME [ "/media", "/certs" ]
 ENTRYPOINT [ "node" ]
 CMD [ "index.cjs" ]

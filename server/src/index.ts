@@ -31,16 +31,15 @@ function serve(expressAppFactory: () => Application | Promise<Application>): Pro
     globals.process.on("uncaughtException", (err: Error) => assert.fail({ ...err, status: ExitCode.UncaughtException }));
     globals.process.on("unhandledRejection", (err: Error) => assert.fail({ ...err, status: ExitCode.UnhandledRejection }));
 
-    return (cluster.isPrimary
+    return cluster.isPrimary
         ? clusterPrimary()
-        : clusterWorker(expressAppFactory)
-    ).then(() => {/* void */ });
+        : clusterWorker(expressAppFactory);
 }
 
 function clusterPrimary(): Promise<void> {
     return Promise.resolve()
         .then(() => validateMasterEnv())
-        .then(() => getCerts())
+        .then(() => getCert())
         .then(({ cert, key, warns }) => {
             warns.forEach(warn => globals.console.warn("Warning", warn));
             globals.console.info(`${cert && key ? "[secure]" : "[insecure]"} ${env.NODE_ENV} server (main process ${globals.process.pid}) starting on port ${env.PORT}`);
@@ -76,30 +75,25 @@ function clusterWorker(expressAppFactory: () => Application | Promise<Applicatio
 }
 
 function starListen(app: Application) {
-    const { cert, key } = getCerts();
+    const { cert, key } = getCert();
 
     const server = cert && key
-        ? https.createServer({ key, cert }, app)
+        ? https.createServer({ cert, key }, app)
         : app;
 
     server.listen(env.PORT, () => globals.console.info(`service (worker process ${globals.process.pid}) is online`));
 }
 
-function getCerts(): { cert?: Buffer, key?: Buffer, warns: string[] } {
+function getCert(): { cert?: Buffer, key?: Buffer, warns: string[] } {
     let [cert, key,] = [undefined, undefined];
     const warns = [];
 
-    if (!env.CERTS_DIR || !fs.existsSync(env.CERTS_DIR) || !fs.statSync(env.CERTS_DIR).isDirectory()) {
-        warns.push(`certs dir "${env.CERTS_DIR}" not found`);
-        return { cert, key, warns };
-    }
+    const crtPath = path.normalize(env.CERT_CRT);
+    fs.existsSync(crtPath) && fs.statSync(crtPath).isFile()
+        ? cert = fs.readFileSync(crtPath)
+        : warns.push(`cert file "${crtPath}" not found`);
 
-    const certPath = path.normalize(path.join(env.CERTS_DIR, "cert.pem"));
-    fs.existsSync(certPath) && fs.statSync(certPath).isFile()
-        ? cert = fs.readFileSync(certPath)
-        : warns.push(`cert file "${certPath}" not found`);
-
-    const keyPath = path.normalize(path.join(env.CERTS_DIR, "key.pem"));
+    const keyPath = path.normalize(env.CERT_KEY);
     fs.existsSync(keyPath) && fs.statSync(keyPath).isFile()
         ? key = fs.readFileSync(keyPath)
         : warns.push(`cert key file "${keyPath}" not found`);

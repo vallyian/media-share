@@ -5,13 +5,14 @@ import { globals } from "../globals";
 
 export const env = Object.freeze({
     /* from process.env - required => throw if missing */
-    MEDIA_DIR: e("MEDIA_DIR", Error),
 
     /* from process.env - defaults implied */
     NODE_ENV: e("NODE_ENV", "production"),
     CLUSTERS: e("NODE_ENV", "") === "development" ? 1 : os.cpus().length,
     PORT: +e("PORT", "58082"),
-    CERTS_DIR: e("CERTS_DIR", ""),
+    MEDIA_DIR: e("MEDIA_DIR", "/media"),
+    CERT_CRT: e("CERT_CRT", "/run/secrets/cert.crt"),
+    CERT_KEY: e("CERT_KEY", "/run/secrets/cert.key"),
 
     /* other */
 });
