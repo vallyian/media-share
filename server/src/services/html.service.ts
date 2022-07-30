@@ -14,4 +14,4 @@ export function html(items: Error | ItemStat[]): Error | string {
 function table(value: string) { return `<table>${value}</table>`; }
 function tr(value: string) { return `<tr>${value}</tr>`; }
 function td(value: string | number) { return `<td>${value}</td>`; }
-function a(value: string | number, link: string) { return `<a href="${link}">${value}</a>`; }
+function a(value: string | number, link: string) { return `<a href="${encodeURIComponent(link)}">${value}</a>`; }

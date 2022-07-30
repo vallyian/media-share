@@ -7,7 +7,9 @@ import { env } from "../env";
 export function dirIndex(dirPath: string): Promise<Error | ItemStat[]> {
     let dirAbsolutePath: string;
     return Promise.resolve()
-        .then(() => typeof dirPath !== "string" && assert.fail("dirPath arg invalid"))
+        .then(() => typeof dirPath === "string"
+            ? dirPath = decodeURIComponent(dirPath)
+            : assert.fail("dirPath arg invalid"))
         .then(() => dirAbsolutePath = path.normalize(path.join(env.MEDIA_DIR, dirPath)))
         .then(() => fs.promises.stat(dirAbsolutePath).catch(err => err.code === "ENOENT"
             ? assert.fail(`path "${dirPath}" not found`)
