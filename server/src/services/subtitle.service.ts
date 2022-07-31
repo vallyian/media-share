@@ -1,4 +1,7 @@
 import fs from "node:fs";
+import { TextDecoder } from "node:util";
+
+import jschardet from "jschardet";
 
 export async function subtitle(absolutePath: string, fileExtension: string): Promise<string | undefined> {
     if (fs.existsSync(absolutePath))
@@ -44,22 +47,22 @@ async function srt(absolutePath: string): Promise<string | undefined> {
 
     let content = "";
 
-    const rx = /(\d{2}:\d{2}:\d{2}\.\d{2}),(\d{2}:\d{2}:\d{2}\.\d{2})/;
+    const rx = /^(\d{2}:\d{2}:\d{2}[.,]\d{2,3})(?:,|\s-->\s)(\d{2}:\d{2}:\d{2}[.,]\d{2,3})$/;
     const lines = file.split(/(\r|\n|\r\n)+/gmi).reduce((sum, l) => {
         l = l.trim();
         if (l) sum.push(l);
         return sum;
     }, <string[]>[]);
-    
+
     while (lines.length > 0) {
         const line = lines.shift();
         if (line) {
             const parts = line.match(rx);
             if (parts?.length === 3) {
-                const from = `${parts[1]}0`;
-                const to = `${parts[2]}0`;
+                const from = parts[1].replace(",", ".") + (/[.,]\d{2}$/.test(parts[1]) ? "0" : "");
+                const to = parts[2].replace(",", ".") + (/[.,]\d{2}$/.test(parts[2]) ? "0" : "");
                 let text = (lines.shift() || "").trim().replaceAll("[br]", "\n");
-                while (lines[0] && !(rx.test(lines[0])))
+                while (lines[0] && !(rx.test(lines[0])) && !(/^\d+$/.test(lines[0])))
                     text += `\n${lines.shift()}`;
                 content += `\n${from} --> ${to}\n${text}\n`;
             }
@@ -71,9 +74,15 @@ async function srt(absolutePath: string): Promise<string | undefined> {
         : undefined;
 }
 
-function getFile(absolutePath: string, fileExtension: string): Promise<string | undefined> {
+async function getFile(absolutePath: string, fileExtension: string): Promise<string | undefined> {
     const filePath = absolutePath + fileExtension;
-    return fs.existsSync(filePath)
-        ? fs.promises.readFile(filePath, "utf-8").catch(() => undefined)
-        : undefined;
+    if (!fs.existsSync(filePath)) return;
+
+    const rawFile = await fs.promises.readFile(filePath).catch(() => undefined);
+    if (!rawFile) return;
+
+    const encoding = jschardet.detect(rawFile).encoding;
+    const decodedFile = new TextDecoder(encoding).decode(rawFile);
+
+    return decodedFile;
 }
