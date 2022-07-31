@@ -17,7 +17,7 @@ export async function fileHandlerMiddleware(req: Request, res: Response, next: N
             case ".vtt": return { mime: "text/vtt; charset=UTF-8", data: await subtitle(req.absolutePath, String(req.query.video || "")) };
             default: return { mime: "", data: "" };
         }
-    })();
+    })().catch(() => ({ mime: undefined, data: undefined }));
 
     return mime && data
         ? res.setHeader("Content-type", mime).end(data)

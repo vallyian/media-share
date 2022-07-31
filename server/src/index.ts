@@ -28,8 +28,8 @@ enum ExitCode {
 }
 
 function serve(expressAppFactory: () => Application | Promise<Application>): Promise<void> {
-    globals.process.on("uncaughtException", (err: Error) => assert.fail({ ...err, status: ExitCode.UncaughtException }));
-    globals.process.on("unhandledRejection", (err: Error) => assert.fail({ ...err, status: ExitCode.UnhandledRejection }));
+    globals.process.on("uncaughtException", err => assert.fail({ ...err, status: ExitCode.UncaughtException }));
+    globals.process.on("unhandledRejection", (reason, promise) => assert.fail({ ...Error(String(reason)), promise, status: ExitCode.UnhandledRejection }));
 
     return cluster.isPrimary
         ? clusterPrimary()

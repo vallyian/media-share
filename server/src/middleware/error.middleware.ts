@@ -3,8 +3,8 @@ import { Request, Response, NextFunction } from "express";
 import { globals } from "../globals";
 import { env } from "../env";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- required by express to correctly interpret as error middleware
-export function errorMiddleware (err: Error, req: Request, res: Response, _next: NextFunction) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- last arg required by express to correctly interpret as error middleware
+export function errorMiddleware(err: Error, req: Request, res: Response, _next: NextFunction) {
     const body = req.body;
     if (body instanceof Object) {
         if (body.password) body.password = "...omitted...";
@@ -14,7 +14,7 @@ export function errorMiddleware (err: Error, req: Request, res: Response, _next:
     const errJson = {
         status: err.status || 500,
         message: err.message || "internal server error",
-        ...(env.NODE_ENV === "development" ? { stack: (err.stack || "").split(/\n/g).filter(l => !!l.trim()) } : {}),
+        stack: (err.stack || "").split(/\n/g).filter(l => !!l.trim()),
         hostname: req.hostname,
         method: req.method,
         url: req.url,
@@ -30,5 +30,7 @@ export function errorMiddleware (err: Error, req: Request, res: Response, _next:
 
     return res
         .status(errJson.status)
-        .send(err.stack || err.message);
+        .send(env.NODE_ENV === "development"
+            ? err.stack || err.message
+            : err.message);
 }

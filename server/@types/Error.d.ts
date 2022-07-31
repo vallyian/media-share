@@ -1,3 +1,4 @@
 interface Error {
-    status: number | undefined;
+    status?: number | undefined;
+    promise?: Promise<unknown>;
 }
