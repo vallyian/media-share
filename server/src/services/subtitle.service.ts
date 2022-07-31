@@ -58,8 +58,9 @@ async function srt(absolutePath: string): Promise<string | undefined> {
             if (parts?.length === 3) {
                 const from = `${parts[1]}0`;
                 const to = `${parts[2]}0`;
-                const text = (lines.shift() || "").trim().replaceAll("[br]", "\n");
-
+                let text = (lines.shift() || "").trim().replaceAll("[br]", "\n");
+                while (lines[0] && !(rx.test(lines[0])))
+                    text += `\n${lines.shift()}`;
                 content += `\n${from} --> ${to}\n${text}\n`;
             }
         }
