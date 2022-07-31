@@ -76,19 +76,21 @@ async function srt(absolutePath: string): Promise<string | undefined> {
 }
 
 async function getFile(absolutePath: string): Promise<string | undefined> {
-    if (!fs.existsSync(absolutePath)) return;
-
-    const rawFile = await fs.promises.readFile(absolutePath).catch(() => undefined);
-    if (!rawFile) return;
-
-    const encoding = jschardet.detect(rawFile).encoding;
-    const decodedFile = new TextDecoder(encoding).decode(rawFile);
-
-    return decodedFile;
+    return Promise.resolve()
+        .then(() => fs.existsSync(absolutePath) || Promise.reject(`file ${absolutePath} not found`))
+        .then(() => fs.promises.readFile(absolutePath))
+        .then(rawFile => {
+            const encoding = jschardet.detect(rawFile).encoding;
+            const decodedFile = new TextDecoder(encoding).decode(rawFile);
+            return decodedFile;
+        })
+        .catch(() => undefined);
 }
 
 function getFps(absolutePath: string, def = 25): Promise<number> {
-    return ffprobe(absolutePath, { path: ffprobe_static.path })
+    return Promise.resolve()
+        .then(() => fs.existsSync(absolutePath) || Promise.reject(`file ${absolutePath} not found`))
+        .then(() => ffprobe(absolutePath, { path: ffprobe_static.path }))
         .then(info => {
             const [fps, frac] = (info.streams.filter(s => s.codec_type === "video")[0] || { avg_frame_rate: "" }).avg_frame_rate.split("/");
             return (+fps / +frac) || def;

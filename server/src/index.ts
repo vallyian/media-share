@@ -1,4 +1,3 @@
-import assert from "node:assert";
 import cluster from "node:cluster";
 import os from "node:os";
 import https from "node:https";
@@ -7,7 +6,7 @@ import path from "node:path";
 
 import { Application } from "express";
 
-import { globals } from "./globals";
+import { globals, processExit } from "./globals";
 import { env } from "./env";
 import { makeApp } from "./app";
 
@@ -28,8 +27,8 @@ enum ExitCode {
 }
 
 function serve(expressAppFactory: () => Application | Promise<Application>): Promise<void> {
-    globals.process.on("uncaughtException", err => assert.fail({ ...err, status: ExitCode.UncaughtException }));
-    globals.process.on("unhandledRejection", (reason, promise) => assert.fail({ ...Error(String(reason)), promise, status: ExitCode.UnhandledRejection }));
+    globals.process.on("uncaughtException", err => processExit(ExitCode.UncaughtException, err));
+    globals.process.on("unhandledRejection", (reason, promise) => processExit(ExitCode.UnhandledRejection, reason, promise));
 
     return cluster.isPrimary
         ? clusterPrimary()
@@ -49,11 +48,11 @@ function clusterPrimary(): Promise<void> {
 
 function validateMasterEnv(): void {
     env.NODE_ENV
-        || assert.fail({ ...Error("env NODE_ENV invalid"), status: ExitCode.Environment });
+        || processExit(ExitCode.Environment, "env NODE_ENV invalid");
     env.PORT > 0 && env.PORT <= 65536
-        || assert.fail({ ...Error("env PORT invalid"), status: ExitCode.Environment });
+        || processExit(ExitCode.Environment, "env PORT invalid");
     env.CLUSTERS > 0 && env.CLUSTERS <= os.cpus().length
-        || assert.fail({ ...Error("env CLUSTERS invalid"), status: ExitCode.Environment });
+        || processExit(ExitCode.Environment, "env CLUSTERS invalid");
 }
 
 function startWorkers(): void {

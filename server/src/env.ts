@@ -1,7 +1,6 @@
 import os from "node:os";
-import assert from "node:assert";
 
-import { globals } from "./globals";
+import { globals, processExit } from "./globals";
 
 export const env = Object.freeze({
     /* from process.env - required => throw if missing */
@@ -22,6 +21,6 @@ function e(env: string, required: ErrorConstructor | string): string {
     return typeof val !== "undefined"
         ? String(val).trim()
         : (<ErrorConstructor>required).name === "Error"
-            ? assert.fail(`env var ${env} not set`)
+            ? processExit(1, `env var ${env} not set`)
             : <string>required;
 }
