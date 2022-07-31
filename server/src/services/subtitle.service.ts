@@ -5,6 +5,8 @@ import jschardet from "jschardet";
 import ffprobe from "ffprobe";
 import ffprobe_static from "ffprobe-static";
 
+import { env } from "../env";
+
 export async function subtitle(absolutePath: string, videoExtension: string): Promise<string | undefined> {
     if (fs.existsSync(absolutePath))
         return;
@@ -89,8 +91,13 @@ async function getFile(absolutePath: string): Promise<string | undefined> {
 
 function getFps(absolutePath: string, def = 25): Promise<number> {
     return Promise.resolve()
-        .then(() => fs.existsSync(absolutePath) || Promise.reject(`file ${absolutePath} not found`))
-        .then(() => ffprobe(absolutePath, { path: ffprobe_static.path }))
+        .then(() => fs.existsSync(absolutePath) || Promise.reject(`file "${absolutePath}" not found`))
+        .then(() => fs.existsSync(env.FFPROBE_PATH)
+            ? env.FFPROBE_PATH
+            : fs.existsSync(ffprobe_static.path)
+                ? ffprobe_static.path
+                : Promise.reject("ffprob binary not found"))
+        .then(ffprobePath => ffprobe(absolutePath, { path: ffprobePath }))
         .then(info => {
             const [fps, frac] = (info.streams.filter(s => s.codec_type === "video")[0] || { avg_frame_rate: "" }).avg_frame_rate.split("/");
             return (+fps / +frac) || def;

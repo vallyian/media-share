@@ -14,6 +14,7 @@ export const env = Object.freeze({
     CERT_KEY: e("CERT_KEY", "/run/secrets/cert.key"),
 
     /* other */
+    FFPROBE_PATH: e("FFPROBE_PATH", "")
 });
 
 function e(env: string, required: ErrorConstructor | string): string {
