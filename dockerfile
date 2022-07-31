@@ -32,13 +32,9 @@ RUN NODE_ENV=production npm ci --omit=dev
 
 
 
-ARG FFPROBE_PATH=/usr/bin/ffprobe
 FROM node:gallium-alpine3.16
 RUN mkdir -p /home/node/app && \
-    chown node:node /home/node/app && \
-    apk add ffmpeg && \
-    [ -f ${FFPROBE_PATH} ] || exit 1
-ENV FFPROBE_PATH=${FFPROBE_PATH}
+    chown node:node /home/node/app
 WORKDIR /home/node/app
 COPY --chown=node:node --from=prod-deps /home/node/app/node_modules node_modules
 COPY --chown=node:node artifacts/runtime/index.cjs index.cjs

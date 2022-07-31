@@ -1,11 +1,9 @@
 import fs from "node:fs";
 import { TextDecoder } from "node:util";
+import child_process from "node:child_process";
 
 import jschardet from "jschardet";
-import ffprobe from "ffprobe";
-import ffprobe_static from "ffprobe-static";
-
-import { env } from "../env";
+import ffmpegPath from "ffmpeg-static";
 
 export async function subtitle(absolutePath: string, videoExtension: string): Promise<string | undefined> {
     if (fs.existsSync(absolutePath))
@@ -89,18 +87,16 @@ async function getFile(absolutePath: string): Promise<string | undefined> {
         .catch(() => undefined);
 }
 
-function getFps(absolutePath: string, def = 25): Promise<number> {
+function getFps(videoPath: string, def = 25): Promise<number> {
     return Promise.resolve()
-        .then(() => fs.existsSync(absolutePath) || Promise.reject(`file "${absolutePath}" not found`))
-        .then(() => fs.existsSync(env.FFPROBE_PATH)
-            ? env.FFPROBE_PATH
-            : fs.existsSync(ffprobe_static.path)
-                ? ffprobe_static.path
-                : Promise.reject("ffprob binary not found"))
-        .then(ffprobePath => ffprobe(absolutePath, { path: ffprobePath }))
-        .then(info => {
-            const [fps, frac] = (info.streams.filter(s => s.codec_type === "video")[0] || { avg_frame_rate: "" }).avg_frame_rate.split("/");
-            return (+fps / +frac) || def;
-        })
-        .catch(() => def);
+        .then(() => fs.existsSync(videoPath) || Promise.reject(`video file "${videoPath}" not found`))
+        .then(() => fs.existsSync(ffmpegPath) || Promise.reject(`ffmpeg binary "${ffmpegPath}" not found`))
+        .then(() => new Promise<number>(ok => child_process.exec(`"${ffmpegPath}" -i "${videoPath}"`, (err, stdout, stderr) => {
+            const fps = (`${stdout}${stderr}`.match(/Stream #.*: Video: .*, (\d+\.?\d{0,}) fps,/gmi)[0] || "").match(/, (\d+\.?\d{0,}) fps,/)[1];
+            ok(isFinite(+fps) && +fps > 0 ? +fps : def);
+        })))
+        .catch(err => {
+            global.console.error(err);
+            return def;
+        });
 }
