@@ -21,13 +21,21 @@ RUN npm test
 
 
 FROM scratch AS export
-COPY --from=build /app/bin /runtime
+COPY --from=build /app/bin.cjs /runtime/index.cjs
+
+
+
+FROM node:gallium-alpine3.16 AS prod-deps
+WORKDIR /home/node/app
+COPY server/package*.json ./
+RUN NODE_ENV=production npm ci --omit=dev
 
 
 
 FROM node:gallium-alpine3.16
 RUN mkdir -p /home/node/app && chown node:node /home/node/app
 WORKDIR /home/node/app
+COPY --chown=node:node --from=prod-deps /home/node/app/node_modules node_modules
 COPY --chown=node:node artifacts/runtime/index.cjs index.cjs
 USER node
 ARG SEMVER

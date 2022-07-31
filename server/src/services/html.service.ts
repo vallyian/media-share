@@ -19,8 +19,10 @@ function a(value: string | number, href: string) { return `<a href="${href}">${v
 export function videoPlayer(relativePath: string, fileExtension: string, mimeType: string): string {
     return `
         <video controls autoplay preload="metadata">
-            <source src="${relativePath}?static=true" type="${mimeType}">
-            <track label="English" kind="subtitles" srclang="en" src="${relativePath.replace(new RegExp(`\\${fileExtension}$`, "i"), ".vtt")}" default>
+            <source type="${mimeType}"
+                src="${relativePath}?static=true">
+            <track kind="subtitles" default label="English" srclang="en"
+                src="${relativePath.replace(new RegExp(`\\${fileExtension}$`, "i"), ".vtt")}?video=${fileExtension}">
         </video>
     `;
 }

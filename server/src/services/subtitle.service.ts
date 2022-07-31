@@ -2,26 +2,27 @@ import fs from "node:fs";
 import { TextDecoder } from "node:util";
 
 import jschardet from "jschardet";
+import ffprobe from "ffprobe";
+import ffprobe_static from "ffprobe-static";
 
-export async function subtitle(absolutePath: string, fileExtension: string): Promise<string | undefined> {
+export async function subtitle(absolutePath: string, videoExtension: string): Promise<string | undefined> {
     if (fs.existsSync(absolutePath))
         return;
 
     let file = "";
-    absolutePath = absolutePath.replace(new RegExp(`\\${fileExtension}$`, "i"), "");
-
-    file = await sub(absolutePath); if (file) return file;
+    file = await sub(absolutePath, videoExtension || ".mp4"); if (file) return file;
     file = await srt(absolutePath); if (file) return file;
 
     return;
 }
 
-async function sub(absolutePath: string): Promise<string | undefined> {
-    const file = await getFile(absolutePath, ".sub");
+async function sub(absolutePath: string, videoExtension: string): Promise<string | undefined> {
+    const file = await getFile(absolutePath.replace(/\.vtt$/i, ".sub"));
     if (!file) return;
 
     const rx = /^(\{\d+\})(\{\d+\})(.+)/;
-    const fpsToTime = (fps: number): string => new Date(fps / 23.97 * 1000).toISOString().substring(11, 23);
+    const fps = await getFps(absolutePath.replace(/\.vtt$/i, videoExtension));
+    const fpsToTime = (frameId: number): string => new Date(frameId / fps * 1000).toISOString().substring(11, 23);
     const newContent = file.split(/\n/gmi).reduce((content, line) => {
         const cleanLine = line.trim();
         if (!cleanLine) return content;
@@ -42,7 +43,7 @@ async function sub(absolutePath: string): Promise<string | undefined> {
 }
 
 async function srt(absolutePath: string): Promise<string | undefined> {
-    const file = await getFile(absolutePath, ".srt");
+    const file = await getFile(absolutePath.replace(/\.vtt$/i, ".srt"));
     if (!file) return;
 
     let content = "";
@@ -74,15 +75,23 @@ async function srt(absolutePath: string): Promise<string | undefined> {
         : undefined;
 }
 
-async function getFile(absolutePath: string, fileExtension: string): Promise<string | undefined> {
-    const filePath = absolutePath + fileExtension;
-    if (!fs.existsSync(filePath)) return;
+async function getFile(absolutePath: string): Promise<string | undefined> {
+    if (!fs.existsSync(absolutePath)) return;
 
-    const rawFile = await fs.promises.readFile(filePath).catch(() => undefined);
+    const rawFile = await fs.promises.readFile(absolutePath).catch(() => undefined);
     if (!rawFile) return;
 
     const encoding = jschardet.detect(rawFile).encoding;
     const decodedFile = new TextDecoder(encoding).decode(rawFile);
 
     return decodedFile;
+}
+
+function getFps(absolutePath: string, def = 25): Promise<number> {
+    return ffprobe(absolutePath, { path: ffprobe_static.path })
+        .then(info => {
+            const [fps, frac] = (info.streams.filter(s => s.codec_type === "video")[0] || { avg_frame_rate: "" }).avg_frame_rate.split("/");
+            return (+fps / +frac) || def;
+        })
+        .catch(() => def);
 }

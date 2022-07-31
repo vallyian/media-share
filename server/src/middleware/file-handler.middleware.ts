@@ -14,7 +14,7 @@ export async function fileHandlerMiddleware(req: Request, res: Response, next: N
         const fileExtension = path.extname(req.relativePath).toLowerCase();
         switch (fileExtension) {
             case ".mp4": return { mime: "text/html; charset=UTF-8", data: videoPlayer(req.relativePath, fileExtension, "video/mp4") };
-            case ".vtt": return { mime: "text/vtt; charset=UTF-8", data: await subtitle(req.absolutePath, fileExtension) };
+            case ".vtt": return { mime: "text/vtt; charset=UTF-8", data: await subtitle(req.absolutePath, String(req.query.video || "")) };
             default: return { mime: "", data: "" };
         }
     })();

@@ -14,6 +14,7 @@ test-results
 # .editorconfig
 # .gitattributes
 # .gitignore
+bin.*
 # [Dd]ocker*
 # run.sh
 # *.md
