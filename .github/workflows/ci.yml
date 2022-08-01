@@ -89,9 +89,8 @@ jobs:
               uses: EnricoMi/publish-unit-test-result-action@2a60c5d47eb29cd5cc922f51bbea18e148f56203 # v2.0.0
               if: always()
               with:
-                github_token: ${{ secrets.GITHUB_TOKEN }}
-                files: artifacts/test-results/*.xml
-                check_name: "Test Results"
+                github_token: ${{secrets.GITHUB_TOKEN}}
+                junit_files: artifacts/test-results/*.xml
 
             - name: Scan runtime image
               env:
