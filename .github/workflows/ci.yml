@@ -86,7 +86,7 @@ jobs:
                   path: artifacts/test-results
 
             - name: Publish Test Results
-              uses: EnricoMi/publish-unit-test-result-action@0c8c54b3a1700e3d97e2efc1ccd68316af0eb6f6 # 1.32
+              uses: EnricoMi/publish-unit-test-result-action@2a60c5d47eb29cd5cc922f51bbea18e148f56203 # v2.0.0
               if: always()
               with:
                 github_token: ${{ secrets.GITHUB_TOKEN }}
