@@ -4,7 +4,7 @@
 # .github
 .vscode
 artifacts
-# !artifacts/runtime/index.cjs
+# !artifacts/runtime
 bin
 dist
 node_modules
@@ -14,7 +14,6 @@ test-results
 # .editorconfig
 # .gitattributes
 # .gitignore
-bin.*
 # [Dd]ocker*
 # run.sh
 # *.md

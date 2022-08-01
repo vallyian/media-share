@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 
+import { AppError } from "../@types/AppError";
 import { globals } from "../globals";
 import { env } from "../env";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- last arg required by express to correctly interpret as error middleware
-export function errorMiddleware(err: Error, req: Request, res: Response, _next: NextFunction) {
+export function errorMiddleware(err: AppError, req: Request, res: Response, _next: NextFunction) {
     const body = req.body;
     if (body instanceof Object) {
         if (body.password) body.password = "...omitted...";

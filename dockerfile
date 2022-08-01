@@ -7,9 +7,8 @@ RUN [ "${NPM_AUDIT_LEVEL}" != "" ] || NPM_AUDIT_LEVEL="low"; \
     echo "NPM_AUDIT_LEVEL: \"${NPM_AUDIT_LEVEL}\""; \
     npm audit --omit=dev --audit-level="${NPM_AUDIT_LEVEL}" && \
     npm ci
-COPY server/@types ./@types
 COPY server/src ./src
-COPY server/.eslintrc.json server/tsconfig.json ./
+COPY server/.eslintrc.json server/tsconfig*.json ./
 RUN npm run lint
 ARG SEMVER
 RUN [ "${SEMVER}" != "" ] || SEMVER="0.0.0"; \
@@ -21,7 +20,7 @@ RUN npm test
 
 
 FROM scratch AS export
-COPY --from=build /app/bin.cjs /runtime/index.cjs
+COPY --from=build /app/bin /runtime
 
 
 
@@ -36,12 +35,12 @@ FROM node:gallium-alpine3.16
 RUN mkdir -p /home/node/app && \
     chown node:node /home/node/app
 WORKDIR /home/node/app
-COPY --chown=node:node --from=prod-deps /home/node/app/node_modules node_modules
-COPY --chown=node:node artifacts/runtime/index.cjs index.cjs
-USER node
 ARG SEMVER
 ENV SEMVER=${SEMVER}
-# VOLUME [ "/media", "/run/secrets/cert.crt", "/run/secrets/cert.key" ]
+USER node
+COPY --chown=node:node --from=prod-deps /home/node/app/node_modules node_modules
+COPY --chown=node:node artifacts/runtime/ ./
+VOLUME [ "/media" `#, "/run/secrets/cert.crt", "/run/secrets/cert.key"` ]
 HEALTHCHECK --interval=30s --timeout=1s --start-period=5s --retries=1 \
     CMD if [ -f "/run/secrets/cert.crt" ] && [ -f "/run/secrets/cert.key" ]; then \
             if [ ! "$(wget --no-check-certificate --server-response https://localhost:58082/health 2>&1 | awk '/^  HTTP/{print $2}')" = "200" ]; then exit 1; fi \
@@ -50,4 +49,4 @@ HEALTHCHECK --interval=30s --timeout=1s --start-period=5s --retries=1 \
         fi
 EXPOSE "58082/tcp"
 ENTRYPOINT [ "node" ]
-CMD [ "index.cjs" ]
+CMD [ "." ]
