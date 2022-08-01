@@ -80,6 +80,7 @@ async function getFile(absolutePath: string): Promise<string | undefined> {
         .then(() => fs.existsSync(absolutePath) || Promise.reject(`file ${absolutePath} not found`))
         .then(() => fs.promises.readFile(absolutePath))
         .then(rawFile => {
+            // TODO: jschardet.detectAll and return multiple subtitles if detection not 100%
             const encoding = jschardet.detect(rawFile).encoding;
             const decodedFile = new TextDecoder(encoding).decode(rawFile);
             return decodedFile;
