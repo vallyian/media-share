@@ -1,5 +1,7 @@
 // TODO: use a viewengine
 
+import { ItemStat } from "../@types/ItemStat";
+
 export const favicon =
     "<svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"#0080FF\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\">" +
     "<path d=\"M11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.499 2.499 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5z\"/>" +
@@ -27,7 +29,7 @@ export function videoPlayer(relativePath: string, fileExtension: string, mimeTyp
     `;
 }
 
-function link(parent, name) {
+function link(parent: string, name: string) {
     return parent === ""
         ? encodeURIComponent(name)
         : parent.split(/[\\/]/g).concat(name).map(p => encodeURIComponent(p)).join("/");

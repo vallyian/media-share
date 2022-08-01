@@ -2,8 +2,8 @@
 
 DOCKER_USERNAME=${DOCKER_USERNAME:-vallyian}
 DOCKER_REPO=${DOCKER_REPO:-media-share}
-# PLATFORMS=linux/amd64,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/s390x
-PLATFORMS=linux/amd64,linux/arm64/v8
+PLATFORMS=linux/amd64,linux/arm64/v8 # linux/arm/v7,linux/ppc64le,linux/s390x
+
 github_env() {
     echo "::set-output name=GITHUB_MAIN::${GITHUB_MAIN}"
 }

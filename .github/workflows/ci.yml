@@ -78,6 +78,20 @@ jobs:
                   name: server-runtime
                   path: artifacts/runtime
 
+            - name: Upload test results
+              uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # v3.1.0
+              if: always()
+              with:
+                  name: test-results
+                  path: artifacts/test-results
+
+            - name: Publish Test Results
+              uses: EnricoMi/publish-unit-test-result-action@2a60c5d47eb29cd5cc922f51bbea18e148f56203 # v2.0.0
+              if: always()
+              with:
+                github_token: ${{secrets.GITHUB_TOKEN}}
+                junit_files: artifacts/test-results/*.xml
+
             - name: Scan runtime image
               env:
                   DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}

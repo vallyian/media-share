@@ -10,10 +10,7 @@ import { globals, processExit } from "./globals";
 import { env } from "./env";
 import { makeApp } from "./app";
 
-serve(makeApp).catch((err: Error) => {
-    globals.console.error("Critical", err);
-    globals.process.exit(err.status || ExitCode.Generic);
-});
+serve(makeApp).catch((err: Error) => processExit(ExitCode.Generic, "Critical", err));
 
 enum ExitCode {
     Generic = 1,
@@ -83,8 +80,8 @@ function starListen(app: Application) {
     server.listen(env.PORT, () => globals.console.info(`service (worker process ${globals.process.pid}) is online`));
 }
 
-function getCert(): { cert?: Buffer, key?: Buffer, warns: string[] } {
-    let [cert, key,] = [undefined, undefined];
+function getCert(): { cert: Buffer | undefined, key: Buffer | undefined, warns: string[] } {
+    let [cert, key,] = [<Buffer | undefined>undefined, <Buffer | undefined>undefined];
     const warns = [];
 
     const crtPath = path.normalize(env.CERT_CRT);

@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import { ItemStat } from "../@types/ItemStat";
+
 export function statDir(absolutePath: string): Promise<boolean> {
     return Promise.resolve()
         .then(() => fs.promises.stat(absolutePath))

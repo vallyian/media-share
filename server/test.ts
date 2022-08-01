@@ -1,11 +1,10 @@
-/* eslint-disable no-restricted-syntax */
-/* eslint-disable @typescript-eslint/no-var-requires */
+import Jasmine from "jasmine";
+import { SpecReporter, StacktraceOption } from "jasmine-spec-reporter";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import { JUnitXmlReporter } from "jasmine-reporters";
 
-const Jasmine = require("jasmine");
-const { JUnitXmlReporter } = require("jasmine-reporters");
-const { SpecReporter, StacktraceOption } = require("jasmine-spec-reporter");
-
-const { name } = require("./package.json");
+import packageJson from "./package.json";
 
 const runner = new Jasmine();
 
@@ -25,11 +24,11 @@ runner.addReporter(
     new JUnitXmlReporter({
         savePath: "./test-results",
         consolidateAll: false,
-        filePrefix: name.replace(/[^a-zA-Z0-9]/g, "") + "_" + new Date().toISOString().replace(/[^0-9]/g, "_")
+        filePrefix: packageJson.name.replace(/[^a-zA-Z0-9]/g, "") + "_" + new Date().toISOString().replace(/[^0-9]/g, "_")
     })
 );
 
 runner.execute().catch((e: Error) => {
-    console.error("test run failed:", e);
-    process.exit(1);
+    globalThis.console.error("test run failed:", e);
+    globalThis.process.exit(1);
 });
