@@ -21,6 +21,7 @@ RUN npm test
 
 FROM scratch AS export
 COPY --from=build /app/bin /runtime
+COPY --from=build /app/test-results /test-results
 
 
 
