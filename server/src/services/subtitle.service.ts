@@ -5,6 +5,15 @@ import child_process from "node:child_process";
 import jschardet from "jschardet";
 import ffmpegPath from "ffmpeg-static";
 
+export function hasSubtitle(mediaPath: string, subtitle: string): boolean {
+    const rx = new RegExp(`\\${subtitle}$`, "i");
+    const ret = (
+        fs.existsSync(mediaPath.replace(rx, ".sub")) ||
+        fs.existsSync(mediaPath.replace(rx, ".srt"))
+    );
+    return ret;
+}
+
 export async function subtitle(mediaPath: string, videoExtension: string): Promise<string | undefined> {
     if (fs.existsSync(mediaPath))
         return;

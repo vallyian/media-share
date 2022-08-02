@@ -3,10 +3,13 @@ import path from "node:path";
 import { NextFunction, Request, Response } from "express";
 import ejs from "ejs";
 
+import { Pill } from "../@types/Pill";
 import { AppRequest } from "../@types/AppRequest";
-import { subtitle } from "../services/subtitle.service";
+import { hasSubtitle, subtitle } from "../services/subtitle.service";
 import { routes } from "../routes";
 import { globals } from "../globals";
+import { dirIndex, getPills } from "../services/dir.service";
+import { ItemStat } from "../@types/ItemStat";
 
 export async function preStaticMiddleware(req: Request, res: Response, next: NextFunction) {
     const request = <AppRequest>req;
@@ -18,10 +21,29 @@ export async function preStaticMiddleware(req: Request, res: Response, next: Nex
 
     const { mime, data } = await (async () => {
         switch (fileExtension) {
-            case ".mp4": return {
-                mime: "text/html; charset=UTF-8",
-                data: await ejs.renderFile("src/views/partials/video.ejs", { relativePath: request.relativePath, fileExtension, mimeType: "video/mp4" })
-            };
+            case ".mp4": {
+                const pills = getPills(request.mediaPath);
+                const fileName = pills[pills.length - 1]?.name;
+                const rx = new RegExp(`${fileName}$`, "i");
+                const parent = request.relativePath.replace(rx, "");
+                let siblings = await dirIndex(parent, request.mediaPath.replace(rx, ""));
+                if (siblings instanceof Error)
+                    siblings = new Array<ItemStat>();
+                siblings = siblings.filter(s => /\.mp4$/i.test(s.name));
+                const fileIndex = siblings.findIndex(s => s.name === fileName);
+                return {
+                    mime: "text/html; charset=UTF-8",
+                    data: await ejs.renderFile("src/views/index.ejs", {
+                        page: "video",
+                        pills: getPills(request.mediaPath),
+                        hasSubtitle: hasSubtitle(request.mediaPath, fileExtension),
+                        relativePath: request.relativePath,
+                        fileExtension, mimeType: "video/mp4",
+                        prev: <Pill>{ name: siblings[fileIndex - 1]?.name, link: parent + siblings[fileIndex - 1]?.name },
+                        next: <Pill>{ name: siblings[fileIndex + 1]?.name, link: parent + siblings[fileIndex + 1]?.name }
+                    })
+                };
+            }
             case ".vtt": return {
                 mime: "text/vtt; charset=UTF-8",
                 data: await subtitle(request.mediaPath, String(request.query["video"] || ""))

@@ -1,5 +1,3 @@
-import path from "node:path";
-
 import { Response, NextFunction, Request } from "express";
 
 import { AppRequest } from "../@types/AppRequest";
@@ -20,23 +18,8 @@ export async function dirIndexMiddleware(req: Request, res: Response, next: Next
             ? next(items)
             : res.render("index", {
                 page: "dir-index",
-                pills: getPills(request.mediaPath),
+                pills: dirService.getPills(request.mediaPath),
                 items
             }))
         .catch(err => next(err));
-}
-
-function getPills(mediaPath: string) {
-    const parts = mediaPath.split(path.sep);
-
-    const pills = [];
-
-    let link = "";
-    pills.push({ name: parts.shift(), link: "/" });
-    for (const name of parts) {
-        link += `/${encodeURIComponent(name)}`;
-        pills.push({ name, link });
-    }
-
-    return pills;
 }

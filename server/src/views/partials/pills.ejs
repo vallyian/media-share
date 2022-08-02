@@ -1,0 +1,7 @@
+<nav aria-label="breadcrumb" class="navbar sticky-top <% if (locals.dark) { %>bg-dark<% } else { %>bg-light<% } %>">
+    <ol class="breadcrumb">
+        <% pills.forEach(pill=> { %>
+        <li class="breadcrumb-item"><a href="<%- pill.link %>"><%- pill.name %></a></li>
+        <% }); %>
+    </ol>
+</nav>

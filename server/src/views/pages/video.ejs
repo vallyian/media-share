@@ -1,0 +1,28 @@
+<style>
+    .modal { --bs-modal-width: 75%; }
+    .modal-content { border: none; }
+    .navbar { z-index: 1100; }
+</style>
+
+<%- include(`../partials/pills`, { pills, dark: true }); %>
+
+<div class="modal d-block bg-dark">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark">
+            <video controls autoplay preload="metadata">
+                <source type="<%- mimeType %>" src="<%- relativePath %>?static=true" />
+                <% if (hasSubtitle) { %>
+                <track
+                    kind="subtitles"
+                    default
+                    label="English"
+                    srclang="en"
+                    src="<%- relativePath.replace(new RegExp('\\' + fileExtension, 'i'), '.vtt') %>?video=<%= fileExtension %>"
+                />
+                <% } %>
+            </video>
+            <% if (prev.name) { %>previous: <a class="opacity-25" href="<%- prev.link %>"><%- prev.name %></a><% } %>
+            <% if (next.name) { %>next: <a class="opacity-25" href="<%- next.link %>"><%- next.name %></a><% } %>
+        </div>
+    </div>
+</div>

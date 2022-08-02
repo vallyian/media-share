@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { ItemStat } from "../@types/ItemStat";
+import { Pill } from "../@types/Pill";
 
 export function statDir(mediaPath: string): Promise<boolean> {
     return Promise.resolve()
@@ -28,6 +29,21 @@ export function dirIndex(relativePath: string, mediaPath: string): Promise<Error
             });
         }))
         .then(items => sort(items));
+}
+
+export function getPills(mediaPath: string): Pill[] {
+    const parts = mediaPath.split(path.sep);
+
+    const pills = [];
+
+    let link = "";
+    pills.push({ name: <string>parts.shift(), link: "/" });
+    for (const name of parts) {
+        link += `/${encodeURIComponent(name)}`;
+        pills.push({ name, link });
+    }
+
+    return pills;
 }
 
 function size(value: number): string {
