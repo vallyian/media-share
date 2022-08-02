@@ -1,0 +1,24 @@
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">name</th>
+            <th scope="col">size</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% items.forEach(item=> { %>
+        <tr>
+            <td>
+                <a href="<%- item.parent === ''
+                    ? encodeURIComponent(item.name)
+                    : item.parent.split(/[\\/]/g).concat(item.name).map(p => encodeURIComponent(p)).join('/')
+                %>">
+                    <% if (item.isDir) { %><%- include(`../icons/folder.svg`); %><% } %>
+                    <%=item.name%>
+                </a>
+            </td>
+            <td><%= item.size %></td>
+        </tr>
+        <% }); %>
+    </tbody>
+</table>

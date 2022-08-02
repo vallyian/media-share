@@ -50,6 +50,8 @@ function validateMasterEnv(): void {
         || processExit(ExitCode.Environment, "env PORT invalid");
     env.CLUSTERS > 0 && env.CLUSTERS <= os.cpus().length
         || processExit(ExitCode.Environment, "env CLUSTERS invalid");
+    env.MEDIA_DIR && fs.existsSync(env.MEDIA_DIR) && fs.statSync(env.MEDIA_DIR).isDirectory()
+        || processExit(ExitCode.Environment, "env MEDIA_DIR invalid");
 }
 
 function startWorkers(): void {
