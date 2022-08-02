@@ -3,20 +3,20 @@ import path from "node:path";
 
 import { ItemStat } from "../@types/ItemStat";
 
-export function statDir(absolutePath: string): Promise<boolean> {
+export function statDir(mediaPath: string): Promise<boolean> {
     return Promise.resolve()
-        .then(() => fs.promises.stat(absolutePath))
+        .then(() => fs.promises.stat(mediaPath))
         .then(stat => stat.isDirectory())
         .catch(() => false);
 }
 
-export function dirIndex(relativePath: string, absolutePath: string): Promise<Error | ItemStat[]> {
+export function dirIndex(relativePath: string, mediaPath: string): Promise<Error | ItemStat[]> {
     let items: string[];
     return Promise.resolve()
-        .then(() => fs.promises.readdir(absolutePath))
+        .then(() => fs.promises.readdir(mediaPath))
         .then(i => {
             items = i;
-            return Promise.all(items.map(item => fs.promises.stat(path.join(absolutePath, item))));
+            return Promise.all(items.map(item => fs.promises.stat(path.join(mediaPath, item))));
         })
         .then(stats => stats.map((stat, statIndex) => {
             const isDir = stat.isDirectory();

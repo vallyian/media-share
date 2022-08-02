@@ -26,10 +26,11 @@
 * local folders
 
 ```sh
-export MEDIA_DIR="${HOME}/media"
-export CERT_CRT="${HOME}/certs/cert.crt" # optional
-export CERT_KEY="${HOME}/certs/cert.key" # optional
-export DEBUG="*" # optional
+echo 'prerequisite (Linux):     ln -s "path/to/real/location" server/media            '
+echo 'prerequisite (Windows):   mklink /d .\server\media "x:\path\to\real\location"   '
+`# optional #` export CERT_CRT="${HOME}/certs/cert.crt" # or   set CERT_CRT="%userprofile%\certs\cert.crt"
+`# optional #` export CERT_KEY="${HOME}/certs/cert.key" # or   set CERT_CRT="%userprofile%\certs\cert.crt"
+`# optional #` export DEBUG="*" # optional
 npm --prefix server start
 ```
 
@@ -40,7 +41,7 @@ npm --prefix server start
 ```sh
 (docker stop media-share-local && docker rm media-share-local || echo "not running") && \
 docker run --name media-share-local --rm \
-    -v "${HOME}/media:/media" \
+    -v "${HOME}/media:/home/node/app/media" \
     -v "${HOME}/certs/cert.crt:/run/secrets/cert.crt" `# optional` \
     -v "${HOME}/certs/cert.key:/run/secrets/cert.key" `# optional` \
     -p "127.0.0.1:58081:58082" \
@@ -54,7 +55,7 @@ docker run --name media-share-local --rm \
 ```sh
 (docker stop media-share && docker rm media-share || echo "not running") && \
 docker run --name media-share --pull always --restart=always -d \
-    -v "${HOME}/media:/media" \
+    -v "${HOME}/media:/home/node/app//media" \
     -v "${HOME}/certs/cert.crt:/run/secrets/cert.crt" `# optional` \
     -v "${HOME}/certs/cert.key:/run/secrets/cert.key" `# optional` \
     -p "127.0.0.1:58080:58082" \

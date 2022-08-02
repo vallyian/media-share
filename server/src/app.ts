@@ -1,14 +1,12 @@
 import express from "express";
 import helmet from "helmet";
 
-import { env } from "./env";
 import { healthMiddleware } from "./middleware/health.middleware";
 import { pathMiddleware } from "./middleware/path.middleware";
 import { dirIndexMiddleware } from "./middleware/dir-index.middleware";
 import { postStaticMiddleware, preStaticMiddleware } from "./middleware/file-handler.middleware";
 import { notFoundMiddleware } from "./middleware/not-found.middleware";
 import { errorMiddleware } from "./middleware/error.middleware";
-
 import { routes } from "./routes";
 
 let app: express.Application;
@@ -26,7 +24,7 @@ export function makeApp(): express.Application {
     app.use(pathMiddleware);
     app.use(dirIndexMiddleware);
     app.use(preStaticMiddleware);
-    app.use(express.static(env.MEDIA_DIR));
+    app.use(express.static("media"));
     app.use(postStaticMiddleware);
     app.use(notFoundMiddleware);
     app.use(errorMiddleware);

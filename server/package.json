@@ -27,7 +27,7 @@
         "postbuild": "node -e \"fs.cpSync('src/views', 'bin/views', { recursive: true, force: true })\"",
         "pretest": "node -e \"fs.rmSync('test-results', { recursive: true, force: true })\" && npm run ci",
         "test": "ts-node --project tsconfig.spec.json test.ts",
-        "prestart": "npm run build -- --sourceMap",
+        "prestart": "npm run prebuild",
         "start": "node -e \"process.env.NODE_ENV='development'; process.env.PORT=58081; child_process.execSync('ts-node-dev --prefer-ts --clear --debug --inspect --watch -- src', {stdio:'inherit'})\""
     },
     "dependencies": {

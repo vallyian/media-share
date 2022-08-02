@@ -18,8 +18,14 @@ export async function preStaticMiddleware(req: Request, res: Response, next: Nex
 
     const { mime, data } = await (async () => {
         switch (fileExtension) {
-            case ".mp4": return { mime: "text/html; charset=UTF-8", data: await ejs.renderFile("src/views/partials/video.ejs", { relativePath: request.relativePath, fileExtension, mimeType: "video/mp4" }) };
-            case ".vtt": return { mime: "text/vtt; charset=UTF-8", data: await subtitle(request.absolutePath, String(request.query["video"] || "")) };
+            case ".mp4": return {
+                mime: "text/html; charset=UTF-8",
+                data: await ejs.renderFile("src/views/partials/video.ejs", { relativePath: request.relativePath, fileExtension, mimeType: "video/mp4" })
+            };
+            case ".vtt": return {
+                mime: "text/vtt; charset=UTF-8",
+                data: await subtitle(request.mediaPath, String(request.query["video"] || ""))
+            };
             default: return { mime: "", data: "" };
         }
     })().catch(err => {

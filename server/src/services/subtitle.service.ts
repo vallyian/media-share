@@ -5,23 +5,23 @@ import child_process from "node:child_process";
 import jschardet from "jschardet";
 import ffmpegPath from "ffmpeg-static";
 
-export async function subtitle(absolutePath: string, videoExtension: string): Promise<string | undefined> {
-    if (fs.existsSync(absolutePath))
+export async function subtitle(mediaPath: string, videoExtension: string): Promise<string | undefined> {
+    if (fs.existsSync(mediaPath))
         return;
 
     let file: string | undefined = "";
-    file = await sub(absolutePath, videoExtension || ".mp4"); if (file) return file;
-    file = await srt(absolutePath); if (file) return file;
+    file = await sub(mediaPath, videoExtension || ".mp4"); if (file) return file;
+    file = await srt(mediaPath); if (file) return file;
 
     return;
 }
 
-async function sub(absolutePath: string, videoExtension: string): Promise<string | undefined> {
-    const file = await getFile(absolutePath.replace(/\.vtt$/i, ".sub"));
+async function sub(mediaPath: string, videoExtension: string): Promise<string | undefined> {
+    const file = await getFile(mediaPath.replace(/\.vtt$/i, ".sub"));
     if (!file) return;
 
     const rx = /^(\{\d+\})(\{\d+\})(.+)/;
-    const fps = await getFps(absolutePath.replace(/\.vtt$/i, videoExtension));
+    const fps = await getFps(mediaPath.replace(/\.vtt$/i, videoExtension));
     const fpsToTime = (frameId: number): string => new Date(frameId / fps * 1000).toISOString().substring(11, 23);
     const newContent = file.split(/\n/gmi).reduce((content, line) => {
         const cleanLine = line.trim();
@@ -42,8 +42,8 @@ async function sub(absolutePath: string, videoExtension: string): Promise<string
         : undefined;
 }
 
-async function srt(absolutePath: string): Promise<string | undefined> {
-    const file = await getFile(absolutePath.replace(/\.vtt$/i, ".srt"));
+async function srt(mediaPath: string): Promise<string | undefined> {
+    const file = await getFile(mediaPath.replace(/\.vtt$/i, ".srt"));
     if (!file) return;
 
     let content = "";
@@ -75,10 +75,10 @@ async function srt(absolutePath: string): Promise<string | undefined> {
         : undefined;
 }
 
-async function getFile(absolutePath: string): Promise<string | undefined> {
+async function getFile(mediaPath: string): Promise<string | undefined> {
     return Promise.resolve()
-        .then(() => fs.existsSync(absolutePath) || Promise.reject(`file ${absolutePath} not found`))
-        .then(() => fs.promises.readFile(absolutePath))
+        .then(() => fs.existsSync(mediaPath) || Promise.reject(`file ${mediaPath} not found`))
+        .then(() => fs.promises.readFile(mediaPath))
         .then(rawFile => {
             // TODO: jschardet.detectAll and return multiple subtitles if detection not 100%
             const encoding = jschardet.detect(rawFile).encoding;

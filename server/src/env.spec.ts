@@ -3,10 +3,7 @@
 import * as os from "node:os";
 
 describe("env", () => {
-    beforeEach(() => {
-        delete require.cache[require.resolve("./env")];
-        process.env["MEDIA_DIR"] = "test-media-dir";
-    });
+    beforeEach(() => delete require.cache[require.resolve("./env")]);
 
     describe("NODE_ENV", () => {
         it("default is production", () => {
@@ -48,20 +45,6 @@ describe("env", () => {
             process.env["PORT"] = "42";
             const { env } = require("./env");
             expect(env.PORT).toEqual(+process.env["PORT"]);
-        });
-    });
-
-    describe("MEDIA_DIR", () => {
-        it("default is /media", () => {
-            delete process.env["MEDIA_DIR"];
-            const { env } = require("./env");
-            expect(env.MEDIA_DIR).toEqual("/media");
-        });
-
-        it("is overwritten", () => {
-            process.env["MEDIA_DIR"] = "overwritten";
-            const { env } = require("./env");
-            expect(env.MEDIA_DIR).toEqual(process.env["MEDIA_DIR"]);
         });
     });
 
