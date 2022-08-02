@@ -26,11 +26,12 @@
 * local folders
 
 ```sh
-echo 'prerequisite (Linux):     ln -s "path/to/real/location" server/media            '
-echo 'prerequisite (Windows):   mklink /d .\server\media "x:\path\to\real\location"   '
-`# optional #` export CERT_CRT="${HOME}/certs/cert.crt" # or   set CERT_CRT="%userprofile%\certs\cert.crt"
-`# optional #` export CERT_KEY="${HOME}/certs/cert.key" # or   set CERT_CRT="%userprofile%\certs\cert.crt"
-`# optional #` export DEBUG="*" # optional
+# required: create (or symlink) ./media dir'
+# optional: create (or symlink) ./server/certs/cert.crt and ./server/certs/cert.key files
+#           mkdir -p server/certs
+#           openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -out server/certs/cert.crt -keyout server/certs/cert.key
+
+export DEBUG="*" # optional
 npm --prefix server start
 ```
 
@@ -42,8 +43,8 @@ npm --prefix server start
 (docker stop media-share-local && docker rm media-share-local || echo "not running") && \
 docker run --name media-share-local --rm \
     -v "${HOME}/media:/home/node/app/media" \
-    -v "${HOME}/certs/cert.crt:/run/secrets/cert.crt" `# optional` \
-    -v "${HOME}/certs/cert.key:/run/secrets/cert.key" `# optional` \
+    -v "${HOME}/certs/cert.crt:/run/secrets/cert.crt:ro" `# optional` \
+    -v "${HOME}/certs/cert.key:/run/secrets/cert.key:ro" `# optional` \
     -p "127.0.0.1:58081:58082" \
     vallyian/media-share:local
 ```
@@ -55,9 +56,9 @@ docker run --name media-share-local --rm \
 ```sh
 (docker stop media-share && docker rm media-share || echo "not running") && \
 docker run --name media-share --pull always --restart=always -d \
-    -v "${HOME}/media:/home/node/app//media" \
-    -v "${HOME}/certs/cert.crt:/run/secrets/cert.crt" `# optional` \
-    -v "${HOME}/certs/cert.key:/run/secrets/cert.key" `# optional` \
+    -v "${HOME}/media:/home/node/app/media" \
+    -v "${HOME}/certs/cert.crt:/run/secrets/cert.crt:ro" `# optional` \
+    -v "${HOME}/certs/cert.key:/run/secrets/cert.key:ro" `# optional` \
     -p "127.0.0.1:58080:58082" \
     vallyian/media-share:latest
 ```

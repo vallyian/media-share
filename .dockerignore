@@ -6,6 +6,7 @@
 artifacts
 !artifacts/runtime
 bin
+certs
 dist
 media
 node_modules

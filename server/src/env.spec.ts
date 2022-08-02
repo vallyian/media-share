@@ -47,32 +47,4 @@ describe("env", () => {
             expect(env.PORT).toEqual(+process.env["PORT"]);
         });
     });
-
-    describe("CERT_CRT", () => {
-        it("default is /run/secrets/cert.crt", () => {
-            delete process.env["CERT_CRT"];
-            const { env } = require("./env");
-            expect(env.CERT_CRT).toEqual("/run/secrets/cert.crt");
-        });
-
-        it("is overwritten", () => {
-            process.env["CERT_CRT"] = "overwritten";
-            const { env } = require("./env");
-            expect(env.CERT_CRT).toEqual(process.env["CERT_CRT"]);
-        });
-    });
-
-    describe("CERT_KEY", () => {
-        it("default is /run/secrets/cert.key", () => {
-            delete process.env["CERT_KEY"];
-            const { env } = require("./env");
-            expect(env.CERT_KEY).toEqual("/run/secrets/cert.key");
-        });
-
-        it("is overwritten", () => {
-            process.env["CERT_KEY"] = "overwritten";
-            const { env } = require("./env");
-            expect(env.CERT_KEY).toEqual(process.env["CERT_KEY"]);
-        });
-    });
 });

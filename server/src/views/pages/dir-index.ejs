@@ -4,7 +4,7 @@
     </div>
 </nav>
 
-<table class="table">
+<table class="table table-hover">
     <thead>
         <tr>
             <th scope="col">name</th>
@@ -15,11 +15,12 @@
         <% items.forEach(item=> { %>
         <tr>
             <td>
-                <a href="<%- item.parent === ''
+                <a class="<% if (item.isDir) { %>text-dark<% } %>" href="<%- item.parent === ''
                     ? encodeURIComponent(item.name)
                     : item.parent.split(/[\\/]/g).concat(item.name).map(p => encodeURIComponent(p)).join('/')
                 %>">
-                    <% if (item.isDir) { %><%- include(`../icons/folder.svg`); %><% } %>
+                <span class="text-warning"><% if (item.isDir) { %><%- include(`../icons/folder.svg`); %><% } %></span>
+
                     <%=item.name%>
                 </a>
             </td>
