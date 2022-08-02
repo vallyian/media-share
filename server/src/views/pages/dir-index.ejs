@@ -1,3 +1,9 @@
+<nav class="navbar sticky-top bg-light">
+    <div class="container justify-content-start">
+        <% pills.forEach(pill=> { %><a class="badge text-bg-secondary me-1 mb-1" href="<%- pill.link %>"><%- pill.name %></a><% }); %>
+    </div>
+</nav>
+
 <table class="table">
     <thead>
         <tr>
