@@ -77,7 +77,7 @@ function starListen(app: Application) {
         ? https.createServer({ cert, key }, app)
         : app;
 
-    server.listen(env.PORT, "127.0.0.1", () => globals.console.info(`service (worker process ${globals.process.pid}) is online`));
+    server.listen(env.PORT, () => globals.console.info(`service (worker process ${globals.process.pid}) is online`));
 }
 
 function getCert(): { cert: Buffer | undefined, key: Buffer | undefined, warns: string[] } {

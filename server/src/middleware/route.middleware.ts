@@ -78,7 +78,7 @@ function dirIndexResponse(decodedPaths: DecodedPaths, res: Response, next: NextF
 }
 
 function favicon(): Promise<FileResponse> {
-    const viewPath = "src/views/icons/share-fill.ejs";
+    const viewPath = `${env.VIEWS_DIR}/icons/share-fill.ejs`;
     return Promise.resolve()
         .then(() => ejs.renderFile(viewPath, { fill: "#0080FF" }))
         .then(data => data !== viewPath ? data : "")

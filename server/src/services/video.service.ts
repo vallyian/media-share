@@ -3,6 +3,7 @@ import ejs from "ejs";
 import { FileResponse } from "../@types/FileResponse";
 import { ItemStat } from "../@types/ItemStat";
 import { PathLink } from "../@types/PathLink";
+import { env } from "../env";
 import { globals } from "../globals";
 import { routes } from "../routes";
 import * as fsService from "./fs.service";
@@ -30,7 +31,7 @@ export async function viewData(mediaPath: string, relativePath: string, videoExt
                 next: undefined
             };
         });
-    const viewPath = "src/views/index.ejs";
+    const viewPath = `${env.VIEWS_DIR}/index.ejs`;
 
     const data = await Promise.resolve()
         .then(() => ejs.renderFile(viewPath, {
