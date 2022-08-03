@@ -1,4 +1,4 @@
-export type Pill = {
+export type PathLink = {
     name: string;
     link: string;
 }

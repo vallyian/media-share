@@ -1,7 +1,19 @@
+<style>
+    .breadcrumb{
+        --bs-breadcrumb-margin-bottom: 0;
+    }
+</style>
+
 <nav aria-label="breadcrumb" class="navbar sticky-top <% if (locals.dark) { %>bg-dark<% } else { %>bg-light<% } %>">
     <ol class="breadcrumb">
-        <% pills.forEach(pill=> { %>
-        <li class="breadcrumb-item"><a href="<%- pill.link %>"><%- pill.name %></a></li>
+        <% pills.forEach((pill, index) => { %>
+        <li class="breadcrumb-item">
+            <% if (index < pills.length - 1) { %>
+            <a href="<%- pill.link %>"><%- pill.name %></a>
+            <% } else { %>
+            <span class="active"><%- pill.name %></span>
+            <% } %>
+        </li>
         <% }); %>
     </ol>
 </nav>

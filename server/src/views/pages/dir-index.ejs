@@ -15,7 +15,7 @@
                     ? encodeURIComponent(item.name)
                     : item.parent.split(/[\\/]/g).concat(item.name).map(p => encodeURIComponent(p)).join('/')
                 %>">
-                <span class="text-warning"><% if (item.isDir) { %><%- include(`../icons/folder.svg`); %><% } %></span>
+                <span class="text-warning"><% if (item.isDir) { %><%- include(`../icons/folder`); %><% } %></span>
 
                     <%=item.name%>
                 </a>
