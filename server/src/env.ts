@@ -11,6 +11,7 @@ export const env = Object.freeze({
     PORT: +e("PORT", "58082"),
 
     /* other */
+    VIEWS_DIR: e("NODE_ENV", "production") === "development" ? "src/views" : "views"
 });
 
 function e(env: string, required: ErrorConstructor | string): string {
