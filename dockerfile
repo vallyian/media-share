@@ -33,8 +33,9 @@ RUN NODE_ENV=production npm ci --omit=dev
 
 
 FROM node:gallium-alpine3.16
-RUN mkdir -p /home/node/app && \
-    chown node:node /home/node/app
+RUN mkdir -p /home/node/app/media && \
+    touch /home/node/app/media/_no_media_volume_mounted_ && \
+    chown -R node:node /home/node/app
 WORKDIR /home/node/app
 ARG SEMVER
 ENV SEMVER=${SEMVER}

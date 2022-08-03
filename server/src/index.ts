@@ -77,19 +77,23 @@ function starListen(app: Application) {
         ? https.createServer({ cert, key }, app)
         : app;
 
-    server.listen(env.PORT, () => globals.console.info(`service (worker process ${globals.process.pid}) is online`));
+    server.listen(env.PORT, "127.0.0.1", () => globals.console.info(`service (worker process ${globals.process.pid}) is online`));
 }
 
 function getCert(): { cert: Buffer | undefined, key: Buffer | undefined, warns: string[] } {
     let [cert, key,] = [<Buffer | undefined>undefined, <Buffer | undefined>undefined];
     const warns = [];
 
-    const crtPath = path.normalize(env.CERT_CRT);
+    const crtPath = env.NODE_ENV === "development"
+        ? path.join("certs", "cert.crt")
+        : "/run/secrets/cert.crt";
     fs.existsSync(crtPath) && fs.statSync(crtPath).isFile()
         ? cert = fs.readFileSync(crtPath)
         : warns.push(`cert file "${crtPath}" not found`);
 
-    const keyPath = path.normalize(env.CERT_KEY);
+    const keyPath = env.NODE_ENV === "development"
+        ? path.join("certs", "cert.key")
+        : "/run/secrets/cert.key";
     fs.existsSync(keyPath) && fs.statSync(keyPath).isFile()
         ? key = fs.readFileSync(keyPath)
         : warns.push(`cert key file "${keyPath}" not found`);

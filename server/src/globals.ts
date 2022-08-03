@@ -4,6 +4,7 @@ export const globals = {
 };
 
 export function processExit(code: number, ...error: unknown[]): never {
-    if (error) globalThis.console.error(error);
+    if (error)
+        globalThis.console.error(...error);
     globalThis.process.exit(code);
 }
