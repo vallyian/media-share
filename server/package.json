@@ -21,7 +21,7 @@
     "scripts": {
         "ci": "node -e \"fs.existsSync('node_modules') || child_process.execSync('npm ci', {stdio:'inherit'})\"",
         "prelint": "npm run ci",
-        "lint": "tsc --noEmit --project tsconfig.app.json && eslint --ignore-pattern \"views\" src/**",
+        "lint": "tsc --noEmit --project tsconfig.app.json && eslint src/**",
         "prebuild": "node -e \"fs.rmSync('bin', { recursive: true, force: true })\" && npm run ci",
         "build": "tsc --noEmitOnError --listEmittedFIles --project tsconfig.app.json",
         "postbuild": "node -e \"fs.cpSync('src/views', 'bin/views', { recursive: true, force: true })\"",

@@ -8,14 +8,15 @@ RUN [ "${NPM_AUDIT_LEVEL}" != "" ] || NPM_AUDIT_LEVEL="low"; \
     npm audit --omit=dev --audit-level="${NPM_AUDIT_LEVEL}" && \
     npm ci
 COPY server/src ./src
-COPY server/.eslintrc.json server/tsconfig*.json ./
-RUN npm run lint
+COPY server/tsconfig*.json ./
 ARG SEMVER
 RUN [ "${SEMVER}" != "" ] || SEMVER="0.0.0"; \
     echo "SEMVER: \"${SEMVER}\""; \
     npm run build
 COPY server/test.ts .
 RUN npm test
+# COPY server/.eslintignore server/.eslintrc.json ./
+# RUN npm run lint
 
 
 
