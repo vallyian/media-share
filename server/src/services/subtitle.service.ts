@@ -4,99 +4,155 @@ import child_process from "node:child_process";
 
 import jschardet from "jschardet";
 import ffmpegPath from "ffmpeg-static";
+import { globals } from "../globals";
+import { FileResponse } from "../@types/FileResponse";
 
-export async function subtitle(absolutePath: string, videoExtension: string): Promise<string | undefined> {
-    if (fs.existsSync(absolutePath))
+export function exists(mediaPath: string, videoExtension: string, desired?: string): boolean {
+    const rx = new RegExp(`\\${videoExtension}$`, "i");
+    const subs = desired
+        ? [desired]
+        : [".sub", ".srt"];
+    const ret = subs.map(s => fs.existsSync(mediaPath.replace(rx, s))).some(s => !!s);
+    return ret;
+}
+
+export async function viewData(mediaPath: string, videoExtension: string | undefined): Promise<FileResponse | undefined> {
+    const data = await transform(mediaPath, String(videoExtension || ""));
+    return data
+        ? { mime: "text/vtt; charset=UTF-8", data }
+        : undefined;
+}
+
+async function transform(mediaPath: string, videoExtension: string): Promise<string | undefined> {
+    if (fs.existsSync(mediaPath))
         return;
 
     let file: string | undefined = "";
-    file = await sub(absolutePath, videoExtension || ".mp4"); if (file) return file;
-    file = await srt(absolutePath); if (file) return file;
+
+    file = await sub(mediaPath, videoExtension || ".mp4");
+    if (file) return file;
+
+    file = await srt(mediaPath);
+    if (file) return file;
 
     return;
 }
 
-async function sub(absolutePath: string, videoExtension: string): Promise<string | undefined> {
-    const file = await getFile(absolutePath.replace(/\.vtt$/i, ".sub"));
-    if (!file) return;
+function sub(mediaPath: string, videoExtension: string): Promise<string | undefined> {
+    return Promise.resolve()
+        .then(() => Promise.all([
+            getFile(mediaPath.replace(/\.vtt$/i, ".sub")),
+            getFps(mediaPath.replace(/\.vtt$/i, videoExtension)).then(v => v || 25 /* default */)
+        ]))
+        .then(([file, fps]) => {
+            if (!file) return undefined;
 
-    const rx = /^(\{\d+\})(\{\d+\})(.+)/;
-    const fps = await getFps(absolutePath.replace(/\.vtt$/i, videoExtension));
-    const fpsToTime = (frameId: number): string => new Date(frameId / fps * 1000).toISOString().substring(11, 23);
-    const newContent = file.split(/\n/gmi).reduce((content, line) => {
-        const cleanLine = line.trim();
-        if (!cleanLine) return content;
+            const time = (frameId: number): string => new Date(frameId / fps * 1000).toISOString().substring(11, 23);
+            const rx = /^(\{\d+\})(\{\d+\})(.+)/;
+            const newContent = file.split(/\n/gmi).reduce((content, line) => {
+                const cleanLine = line.trim();
+                if (!cleanLine) return content;
 
-        const parts = cleanLine.match(rx);
-        if (parts?.length !== 4) return content;
+                const parts = cleanLine.match(rx);
+                if (parts?.length !== 4) return content;
 
-        const from = fpsToTime(+((parts[1] || "").replace(/[{}]/g, "")));
-        const to = fpsToTime(+((parts[2] || "").replace(/[{}]/g, "")));
-        const text = (parts[3] || "").replaceAll(/\s?\|\s?/gmi, "\n");
+                const from = time(+((parts[1] || "").replace(/[{}]/g, "")));
+                const to = time(+((parts[2] || "").replace(/[{}]/g, "")));
+                const text = (parts[3] || "").replaceAll(/\s?\|\s?/gmi, "\n");
 
-        return `${content}\n${from} --> ${to}\n${text}\n`;
-    }, "");
+                return `${content}\n${from} --> ${to}\n${text}\n`;
+            }, "");
 
-    return newContent
-        ? `WEBVTT\n${newContent}`
-        : undefined;
+            return newContent
+                ? `WEBVTT\n${newContent}`
+                : undefined;
+        })
+        .catch(err => {
+            globals.console.error(err);
+            return undefined;
+        });
 }
 
-async function srt(absolutePath: string): Promise<string | undefined> {
-    const file = await getFile(absolutePath.replace(/\.vtt$/i, ".srt"));
-    if (!file) return;
+function srt(mediaPath: string): Promise<string | undefined> {
+    return Promise.resolve()
+        .then(() => getFile(mediaPath.replace(/\.vtt$/i, ".srt")))
+        .then(file => {
+            if (!file) return undefined;
 
-    let content = "";
+            let content = "";
+            const rx = /^(\d{2}:\d{2}:\d{2}[.,]\d{2,3})(?:,|\s-->\s)(\d{2}:\d{2}:\d{2}[.,]\d{2,3})$/;
+            const time = (val?: string) => (val || "").replace(",", ".") + (/[.,]\d{2}$/.test((val || "")) ? "0" : "");
+            const lines = file.split(/(\r|\n|\r\n)+/gmi).reduce((sum, l) => {
+                l = l.trim();
+                if (l) sum.push(l);
+                return sum;
+            }, new Array<string>());
 
-    const rx = /^(\d{2}:\d{2}:\d{2}[.,]\d{2,3})(?:,|\s-->\s)(\d{2}:\d{2}:\d{2}[.,]\d{2,3})$/;
-    const lines = file.split(/(\r|\n|\r\n)+/gmi).reduce((sum, l) => {
-        l = l.trim();
-        if (l) sum.push(l);
-        return sum;
-    }, <string[]>[]);
+            while (lines.length > 0) {
+                const line = lines.shift();
+                if (!line) continue;
 
-    while (lines.length > 0) {
-        const line = lines.shift();
-        if (line) {
-            const parts = line.match(rx);
-            if (parts?.length === 3) {
-                const from = (parts[1] || "").replace(",", ".") + (/[.,]\d{2}$/.test((parts[1] || "")) ? "0" : "");
-                const to = (parts[2] || "").replace(",", ".") + (/[.,]\d{2}$/.test((parts[2] || "")) ? "0" : "");
-                let text = (lines.shift() || "").trim().replaceAll("[br]", "\n");
-                while (lines[0] && !(rx.test(lines[0])) && !(/^\d+$/.test(lines[0])))
-                    text += `\n${lines.shift()}`;
+                const parts = line.match(rx);
+                if (parts?.length !== 3) continue;
+
+                const from = time(parts[1]);
+                const to = time(parts[2]);
+                const text = (() => {
+                    let ret = (lines.shift() || "").trim().replaceAll("[br]", "\n");
+                    while (lines[0] && !(rx.test(lines[0])) && !(/^\d+$/.test(lines[0])))
+                        ret += `\n${lines.shift()}`;
+                    return ret;
+                })();
+
                 content += `\n${from} --> ${to}\n${text}\n`;
             }
-        }
-    }
 
-    return content
-        ? `WEBVTT\n${content}`
-        : undefined;
+            return content
+                ? `WEBVTT\n${content}`
+                : Promise.reject(`no vtt content created from ${mediaPath}`);
+        })
+        .catch(err => {
+            globals.console.error(err);
+            return undefined;
+        });
 }
 
-async function getFile(absolutePath: string): Promise<string | undefined> {
+function getFile(mediaPath: string): Promise<string | undefined> {
     return Promise.resolve()
-        .then(() => fs.existsSync(absolutePath) || Promise.reject(`file ${absolutePath} not found`))
-        .then(() => fs.promises.readFile(absolutePath))
+        .then(() => fs.existsSync(mediaPath)
+            || Promise.reject(`file ${mediaPath} not found`))
+        .then(() => fs.promises.readFile(mediaPath))
         .then(rawFile => {
+            // TODO: jschardet.detectAll and return multiple subtitles if detection not 100%
             const encoding = jschardet.detect(rawFile).encoding;
             const decodedFile = new TextDecoder(encoding).decode(rawFile);
             return decodedFile;
         })
-        .catch(() => undefined);
+        .catch(err => {
+            globals.console.error(err);
+            return undefined;
+        });
 }
 
-function getFps(videoPath: string, def = 25): Promise<number> {
+function getFps(videoPath: string): Promise<number | undefined> {
     return Promise.resolve()
-        .then(() => fs.existsSync(videoPath) || Promise.reject(`video file "${videoPath}" not found`))
-        .then(() => fs.existsSync(ffmpegPath) || Promise.reject(`ffmpeg binary "${ffmpegPath}" not found`))
-        .then(() => new Promise<number>(ok => child_process.exec(`"${ffmpegPath}" -i "${videoPath}"`, (_err, stdout, stderr) => {
-            const fps = (((`${stdout}${stderr}`.match(/Stream #.*: Video: .*, (\d+\.?\d{0,}) fps,/gmi) || [])[0] || "").match(/, (\d+\.?\d{0,}) fps,/) || [])[1] || "";
-            ok(isFinite(+fps) && +fps > 0 ? +fps : def);
-        })))
+        .then(() => fs.existsSync(videoPath)
+            || Promise.reject(`video file "${videoPath}" not found`))
+        .then(() => fs.existsSync(ffmpegPath)
+            || Promise.reject(`ffmpeg binary "${ffmpegPath}" not found`))
+        .then(() => new Promise<number>((ok, reject) =>
+            child_process.exec(
+                `"${ffmpegPath}" -i "${videoPath}"`,
+                (_err, stdout, stderr) => {
+                    const fps = (((`${stdout}${stderr}`.match(/Stream #.*: Video: .*, (\d+\.?\d{0,}) fps,/gmi) || [])[0] || "").match(/, (\d+\.?\d{0,}) fps,/) || [])[1] || "";
+                    isFinite(+fps) && +fps > 0
+                        ? ok(+fps)
+                        : reject(`invalid fps value "${fps}" in video "${videoPath}"`);
+                }
+            )
+        ))
         .catch(err => {
-            global.console.error(err);
-            return def;
+            globals.console.error(err);
+            return undefined;
         });
 }

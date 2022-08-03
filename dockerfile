@@ -8,14 +8,15 @@ RUN [ "${NPM_AUDIT_LEVEL}" != "" ] || NPM_AUDIT_LEVEL="low"; \
     npm audit --omit=dev --audit-level="${NPM_AUDIT_LEVEL}" && \
     npm ci
 COPY server/src ./src
-COPY server/.eslintrc.json server/tsconfig*.json ./
-RUN npm run lint
+COPY server/tsconfig*.json ./
 ARG SEMVER
 RUN [ "${SEMVER}" != "" ] || SEMVER="0.0.0"; \
     echo "SEMVER: \"${SEMVER}\""; \
     npm run build
 COPY server/test.ts .
 RUN npm test
+# COPY server/.eslintignore server/.eslintrc.json ./
+# RUN npm run lint
 
 
 
@@ -33,8 +34,9 @@ RUN NODE_ENV=production npm ci --omit=dev
 
 
 FROM node:gallium-alpine3.16
-RUN mkdir -p /home/node/app && \
-    chown node:node /home/node/app
+RUN mkdir -p /home/node/app/media && \
+    touch /home/node/app/media/_no_media_volume_mounted_ && \
+    chown -R node:node /home/node/app
 WORKDIR /home/node/app
 ARG SEMVER
 ENV SEMVER=${SEMVER}

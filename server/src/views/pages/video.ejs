@@ -1,0 +1,35 @@
+<style>
+    /* .modal { --bs-modal-width: 75%; } */
+    .modal-content { border: none; }
+    .navbar { z-index: 1100; }
+    .breadcrumb > .breadcrumb-item > .active {
+        color: var(--bs-breadcrumb-divider-color);
+    }
+</style>
+
+<%- include(`../partials/pills`, { pills, dark: true }); %>
+
+<div class="modal d-block bg-dark">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark">
+            <video controls autoplay preload="metadata" <% if (next.name) { %>data-next-video="<%- next.link %>"<% } %>>
+                <source type="<%- mimeType %>" src="<%- relativePath %>?static=true" />
+                <% if (hasSubtitle) { %>
+                <track
+                    kind="subtitles"
+                    default
+                    label="English"
+                    srclang="en"
+                    src="<%- relativePath.replace(new RegExp('\\' + fileExtension, 'i'), '.vtt') %>?video=<%= fileExtension %>"
+                />
+                <% } %>
+            </video>
+            <div class="row opacity-50">
+                <div class="col text-end"><% if (prev.name) { %><a href="<%- prev.link %>"><< prev</a><% } %></div>
+                <div class="col text-start"><% if (next.name) { %><a href="<%- next.link %>">next >></a><% } %></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
