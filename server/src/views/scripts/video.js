@@ -4,7 +4,12 @@ window.addEventListener("load", () => {
     if (!video) return;
 
     const nextVideo = (video.getAttribute("data-next-video") || "").trim();
-    if (!nextVideo) return;
+    if (nextVideo)
+        video.addEventListener("loadend", () => window.location = nextVideo, { passive: true });
 
-    video.onended = () => window.location = nextVideo;
+    window.matchMedia("(display-mode: fullscreen)").addEventListener("change", ({ matches }) => {
+        if (!matches) return;
+        const fn = video.requestFullscreen || video.webkitRequestFullscreen || video.mozRequestFullScreen;
+        fn.call(video).catch(err => err);
+    });
 }, { passive: true });

@@ -4,31 +4,30 @@
     .modal-content { border: none; }
     .navbar { z-index: 1100; }
     .breadcrumb > .breadcrumb-item > .active { color: var(--bs-breadcrumb-divider-color); }
-    video { border: 1px solid #222; outline: none; }
+    video { outline: none; width: 100%; height: 100%; }
+    video::cue { color:yellow; background-color: rgba(0,0,0,0.25); font-size: 3rem !important; }
+    .video { position: fixed; left: 0; right: 0; top: 0; bottom: 0; }
+    .video-b { bottom: 2rem; }
 </style>
 
 <%- include(`../partials/pills`, { pills, dark: true }); %>
 
-<div class="modal d-block">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <video controls autoplay preload="metadata" <% if (next.name) { %>data-next-video="<%- next.link %>"<% } %>>
-                <source type="<%- mimeType %>" src="<%- relativePath %>?static=true" />
-                <% if (hasSubtitle) { %>
-                <track
-                    kind="subtitles"
-                    default
-                    label="English"
-                    srclang="en"
-                    src="<%- relativePath.replace(new RegExp('\\' + fileExtension, 'i'), '.vtt') %>?video=<%= fileExtension %>"
-                />
-                <% } %>
-            </video>
-            <div class="opacity-50 text-center m-2">
-                <% if (prev.name) { %><a class="p-2" href="<%- prev.link %>"><< prev</a><% } %>
-                <% if (next.name) { %><a class="p-2" href="<%- next.link %>">next >></a><% } %>
-            </div>
-        </div>
+<div class="video <% if (prev.name || next.name) { %>video-b<% } %>">
+    <video controls autoplay preload="metadata" <% if (next.name) { %>data-next-video="<%- next.link %>"<% } %>>
+        <source type="<%- mimeType %>" src="<%- relativePath %>?static=true" />
+        <% if (hasSubtitle) { %>
+        <track
+            kind="subtitles"
+            default
+            label="English"
+            srclang="en"
+            src="<%- relativePath.replace(new RegExp('\\' + fileExtension, 'i'), '.vtt') %>?video=<%= fileExtension %>"
+        />
+        <% } %>
+    </video>
+    <div class="opacity-50 text-center">
+        <% if (prev.name) { %><a class="pe-1" href="<%- prev.link %>"><< prev</a><% } %>
+        <% if (next.name) { %><a class="ps-1" href="<%- next.link %>">next >></a><% } %>
     </div>
 </div>
 
