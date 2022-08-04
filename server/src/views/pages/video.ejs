@@ -1,17 +1,17 @@
 <style>
+    body, .modal-content { background-color: black; }
     /* .modal { --bs-modal-width: 75%; } */
     .modal-content { border: none; }
     .navbar { z-index: 1100; }
-    .breadcrumb > .breadcrumb-item > .active {
-        color: var(--bs-breadcrumb-divider-color);
-    }
+    .breadcrumb > .breadcrumb-item > .active { color: var(--bs-breadcrumb-divider-color); }
+    video { border: 1px solid #222; outline: none; }
 </style>
 
 <%- include(`../partials/pills`, { pills, dark: true }); %>
 
-<div class="modal d-block bg-dark">
+<div class="modal d-block">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content bg-dark">
+        <div class="modal-content">
             <video controls autoplay preload="metadata" <% if (next.name) { %>data-next-video="<%- next.link %>"<% } %>>
                 <source type="<%- mimeType %>" src="<%- relativePath %>?static=true" />
                 <% if (hasSubtitle) { %>
@@ -24,9 +24,9 @@
                 />
                 <% } %>
             </video>
-            <div class="row opacity-50">
-                <div class="col text-end"><% if (prev.name) { %><a href="<%- prev.link %>"><< prev</a><% } %></div>
-                <div class="col text-start"><% if (next.name) { %><a href="<%- next.link %>">next >></a><% } %></div>
+            <div class="opacity-50 text-center m-2">
+                <% if (prev.name) { %><a class="p-2" href="<%- prev.link %>"><< prev</a><% } %>
+                <% if (next.name) { %><a class="p-2" href="<%- next.link %>">next >></a><% } %>
             </div>
         </div>
     </div>

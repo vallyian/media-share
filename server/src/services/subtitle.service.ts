@@ -7,12 +7,12 @@ import ffmpegPath from "ffmpeg-static";
 import { globals } from "../globals";
 import { FileResponse } from "../@types/FileResponse";
 
-export function exists(mediaPath: string, videoExtension: string, desired?: string): boolean {
-    const rx = new RegExp(`\\${videoExtension}$`, "i");
-    const subs = desired
-        ? [desired]
+export function exists(videoPath: string, videoExtension: string, desiredSubtitleExtension?: string): boolean {
+    const videoExtensionRx = new RegExp(`\\${videoExtension}$`, "i");
+    const subtitleExtensions = desiredSubtitleExtension
+        ? [desiredSubtitleExtension]
         : [".sub", ".srt"];
-    const ret = subs.map(s => fs.existsSync(mediaPath.replace(rx, s))).some(s => !!s);
+    const ret = subtitleExtensions.map(subtitleExtension => fs.existsSync(videoPath.replace(videoExtensionRx, subtitleExtension))).some(s => !!s);
     return ret;
 }
 
@@ -27,45 +27,56 @@ async function transform(mediaPath: string, videoExtension: string): Promise<str
     if (fs.existsSync(mediaPath))
         return;
 
-    let file: string | undefined = "";
+    let subtitleFile: string | undefined = "";
+    let subtitleExtension = "";
+    let subtitlePath = "";
+    const videoPath = mediaPath.replace(/\.vtt$/i, videoExtension);
 
-    file = await sub(mediaPath, videoExtension || ".mp4");
-    if (file) return file;
+    subtitleExtension = ".sub";
+    subtitlePath = mediaPath.replace(/\.vtt$/i, subtitleExtension);
+    if (exists(videoPath, videoExtension, subtitleExtension)) {
+        subtitleFile = await subToVtt(subtitlePath, videoPath);
+        if (subtitleFile) return subtitleFile;
+    }
 
-    file = await srt(mediaPath);
-    if (file) return file;
+    subtitleExtension = ".srt";
+    subtitlePath = mediaPath.replace(/\.vtt$/i, subtitleExtension);
+    if (exists(videoPath, videoExtension, subtitleExtension)) {
+        subtitleFile = await srtToVtt(subtitlePath);
+        if (subtitleFile) return subtitleFile;
+    }
 
     return;
 }
 
-function sub(mediaPath: string, videoExtension: string): Promise<string | undefined> {
+function subToVtt(subtitlePath: string, videoPath: string): Promise<string | undefined> {
     return Promise.resolve()
         .then(() => Promise.all([
-            getFile(mediaPath.replace(/\.vtt$/i, ".sub")),
-            getFps(mediaPath.replace(/\.vtt$/i, videoExtension)).then(v => v || 25 /* default */)
+            getFile(subtitlePath),
+            getFps(videoPath).then(v => v || 25 /* default */)
         ]))
         .then(([file, fps]) => {
             if (!file) return undefined;
 
             const time = (frameId: number): string => new Date(frameId / fps * 1000).toISOString().substring(11, 23);
             const rx = /^(\{\d+\})(\{\d+\})(.+)/;
-            const newContent = file.split(/\n/gmi).reduce((content, line) => {
+            const content = file.split(/\n/gmi).reduce((data, line) => {
                 const cleanLine = line.trim();
-                if (!cleanLine) return content;
+                if (!cleanLine) return data;
 
                 const parts = cleanLine.match(rx);
-                if (parts?.length !== 4) return content;
+                if (parts?.length !== 4) return data;
 
                 const from = time(+((parts[1] || "").replace(/[{}]/g, "")));
                 const to = time(+((parts[2] || "").replace(/[{}]/g, "")));
                 const text = (parts[3] || "").replaceAll(/\s?\|\s?/gmi, "\n");
 
-                return `${content}\n${from} --> ${to}\n${text}\n`;
+                return `${data}\n${from} --> ${to}\n${text}\n`;
             }, "");
 
-            return newContent
-                ? `WEBVTT\n${newContent}`
-                : undefined;
+            return content
+                ? `WEBVTT\n${content}`
+                : Promise.reject(`no vtt content created from ${subtitlePath}`);
         })
         .catch(err => {
             globals.console.error(err);
@@ -73,9 +84,9 @@ function sub(mediaPath: string, videoExtension: string): Promise<string | undefi
         });
 }
 
-function srt(mediaPath: string): Promise<string | undefined> {
+function srtToVtt(subtitlePath: string): Promise<string | undefined> {
     return Promise.resolve()
-        .then(() => getFile(mediaPath.replace(/\.vtt$/i, ".srt")))
+        .then(() => getFile(subtitlePath))
         .then(file => {
             if (!file) return undefined;
 
@@ -109,7 +120,7 @@ function srt(mediaPath: string): Promise<string | undefined> {
 
             return content
                 ? `WEBVTT\n${content}`
-                : Promise.reject(`no vtt content created from ${mediaPath}`);
+                : Promise.reject(`no vtt content created from ${subtitlePath}`);
         })
         .catch(err => {
             globals.console.error(err);
@@ -119,11 +130,12 @@ function srt(mediaPath: string): Promise<string | undefined> {
 
 function getFile(mediaPath: string): Promise<string | undefined> {
     return Promise.resolve()
-        .then(() => fs.existsSync(mediaPath)
-            || Promise.reject(`file ${mediaPath} not found`))
         .then(() => fs.promises.readFile(mediaPath))
         .then(rawFile => {
-            // TODO: jschardet.detectAll and return multiple subtitles if detection not 100%
+            /*
+                TODO: jschardet.detectAll and return multiple subtitles if detection not 100%
+                (<any>jschardet).detectAll(rawFile)
+            */
             const encoding = jschardet.detect(rawFile).encoding;
             const decodedFile = new TextDecoder(encoding).decode(rawFile);
             return decodedFile;
