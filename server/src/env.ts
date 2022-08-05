@@ -1,4 +1,5 @@
 import os from "node:os";
+import crypto from "node:crypto";
 
 import { globals, processExit } from "./globals";
 
@@ -11,7 +12,8 @@ export const env = Object.freeze({
     PORT: +e("PORT", "58082"),
 
     /* other */
-    VIEWS_DIR: e("NODE_ENV", "production") === "development" ? "src/views" : "views"
+    VIEWS_DIR: e("NODE_ENV", "production") === "development" ? "src/views" : "views",
+    COOKIE_PASS: crypto.randomBytes(256).toString("base64url")
 });
 
 function e(env: string, required: ErrorConstructor | string): string {

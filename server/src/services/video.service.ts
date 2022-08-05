@@ -1,12 +1,9 @@
-import ejs from "ejs";
-
 import { FileResponse } from "../@types/FileResponse";
 import { ItemStat } from "../@types/ItemStat";
 import { PathLink } from "../@types/PathLink";
-import { env } from "../env";
 import { globals } from "../globals";
-import { routes } from "../routes";
 import * as fsService from "./fs.service";
+import * as renderService from "./render.service";
 import * as subtitleService from "./subtitle.service";
 
 export async function viewData(mediaPath: string, relativePath: string, videoExtension: string): Promise<FileResponse | undefined> {
@@ -31,36 +28,20 @@ export async function viewData(mediaPath: string, relativePath: string, videoExt
                 next: undefined
             };
         });
-    const viewPath = `${env.VIEWS_DIR}/index.ejs`;
 
-    const data = await Promise.resolve()
-        .then(() => ejs.renderFile(viewPath, {
-            page: "video",
-            pills: pathLinks,
-            hasSubtitle: subtitleService.exists(mediaPath, videoExtension),
-            relativePath,
-            fileExtension: videoExtension,
-            mimeType: "video/mp4",
-            prev: <PathLink>{
-                name: siblings.prev,
-                link: parent + siblings.prev
-            },
-            next: <PathLink>{
-                name: siblings.next,
-                link: parent + siblings.next
-            },
-            script: `${routes.appScripts}/video.js`
-        }))
-        .then(data => data !== viewPath
-            ? data
-            : undefined
-        )
-        .catch(err => {
-            globals.console.error(err);
-            return undefined;
-        });
-
-    return data
-        ? { mime: "text/html; charset=UTF-8", data }
-        : undefined;
+    return renderService.renderPage("video", {
+        pills: pathLinks,
+        hasSubtitle: subtitleService.exists(mediaPath, videoExtension),
+        relativePath,
+        fileExtension: videoExtension,
+        mimeType: "video/mp4",
+        prev: <PathLink>{
+            name: siblings.prev,
+            link: parent + siblings.prev
+        },
+        next: <PathLink>{
+            name: siblings.next,
+            link: parent + siblings.next
+        }
+    });
 }

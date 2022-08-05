@@ -5,7 +5,7 @@ window.addEventListener("load", () => {
 
     const nextVideo = (video.getAttribute("data-next-video") || "").trim();
     if (nextVideo)
-        video.addEventListener("loadend", () => window.location = nextVideo, { passive: true });
+        video.addEventListener("ended", () => window.location = nextVideo);
 
     window.matchMedia("(display-mode: fullscreen)").addEventListener("change", ({ matches }) => {
         if (!matches) return;

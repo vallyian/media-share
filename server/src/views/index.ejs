@@ -13,15 +13,15 @@
             crossorigin="anonymous"
         />
         <style>
-            a {
-                text-decoration: none;
-            }
+            a { text-decoration: none; }
         </style>
+
+        <% if (locals.script) { %><script src="<%= script %>" async defer></script><% } %>
     </head>
 
     <body>
-        <div class="container"><%- include(`pages/${page}`); %></div>
-
-        <% if (locals.script) { %><script src="<%= script %>" defer></script><% } %>
+        <div class="container">
+            <%- include(`pages/${page}`); %>
+        </div>
     </body>
 </html>
