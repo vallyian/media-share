@@ -1,5 +1,7 @@
 # media-share
 
+fast media share web server with a very basic UI
+
 ## Prerequisites
 
 * [Docker](https://docs.docker.com/get-docker/)
