@@ -6,7 +6,7 @@ describe("env", () => {
     beforeEach(() => {
          delete require.cache[require.resolve("./env")];
          process.env["G_CLIENT_ID"] = "g-client-id";
-         process.env["G_EMAULS"] = "em@i.l";
+         process.env["G_EMAILS"] = "em@i.l";
     });
 
     describe("NODE_ENV", () => {
