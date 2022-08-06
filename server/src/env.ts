@@ -5,6 +5,8 @@ import { globals, processExit } from "./globals";
 
 export const env = Object.freeze({
     /* from process.env - required => throw if missing */
+    G_CLIENT_ID: e("G_CLIENT_ID", Error),
+    G_EMAILS: e("G_EMAILS", Error).split(","),
 
     /* from process.env - defaults implied */
     NODE_ENV: e("NODE_ENV", "production"),

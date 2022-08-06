@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
-import { globals } from "../globals";
 
+import { globals } from "../globals";
+import { env } from "../env";
 import { renderPage } from "../services/render.service";
 
 export function authMiddleware(req: Request, res: Response, next: NextFunction) {
@@ -32,7 +33,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
             });
 
     return Promise.resolve()
-        .then(() => renderPage("auth"))
+        .then(() => renderPage("auth", { gClientId: env.G_CLIENT_ID }))
         .then(({ mime, data }) => res.setHeader("Content-type", mime).end(data))
         .catch(err => next(err));
 }
