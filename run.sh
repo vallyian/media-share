@@ -55,6 +55,13 @@ scan() {
     || exit 1
 }
 
+check_test_results() {
+    if [ ! -f artifacts/test-results/*.xml ];
+        echo "no test results found"
+        exit 1
+    fi
+}
+
 push() {
     docker buildx build \
         -t ${DOCKER_USERNAME}/${DOCKER_REPO}:${SEMVER} \
@@ -68,11 +75,12 @@ push() {
 }
 
 case "${1}" in
-    "github_env"  ) github_env  ;;
-    "calc_semver" ) calc_semver ;;
-    "build"       ) build       ;;
-    "scan"        ) scan        ;;
-    "push"        ) push        ;;
+    "github_env"         ) github_env         ;;
+    "calc_semver"        ) calc_semver        ;;
+    "build"              ) build              ;;
+    "scan"               ) scan               ;;
+    "check-test-results" ) check_test_results ;;
+    "push"               ) push               ;;
 
     *) exit 1
 esac

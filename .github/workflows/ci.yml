@@ -86,11 +86,7 @@ jobs:
                   path: artifacts/test-results
 
             - name: Check test results
-              run: |
-                if [ ! -f test-results/*.xml ]; then
-                   echo "test results not found"
-                   exit 1
-                fi
+              run: ./run.sh check-test-results
 
             - name: Publish Test Results
               uses: EnricoMi/publish-unit-test-result-action@2a60c5d47eb29cd5cc922f51bbea18e148f56203 # v2.0.0
