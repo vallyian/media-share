@@ -3,7 +3,11 @@
 import * as os from "node:os";
 
 describe("env", () => {
-    beforeEach(() => delete require.cache[require.resolve("./env")]);
+    beforeEach(() => {
+         delete require.cache[require.resolve("./env")];
+         process.env["G_CLIENT_ID"] = "g-client-id";
+         process.env["G_EMAULS"] = "em@i.l";
+    });
 
     describe("NODE_ENV", () => {
         it("default is production", () => {
