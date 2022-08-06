@@ -8,6 +8,7 @@ import { authMiddleware } from "./middleware/auth.middleware";
 import { routeMiddleware } from "./middleware/route.middleware";
 import { notFoundMiddleware } from "./middleware/not-found.middleware";
 import { errorMiddleware } from "./middleware/error.middleware";
+import { randomString } from "./services/crypto.service";
 import { routes } from "./routes";
 import { env } from "./env";
 
@@ -27,7 +28,7 @@ export function makeApp(): express.Application {
         }
     }));
     app.disable("X-Powered-By");
-    app.use(cookieParser(env.COOKIE_PASS));
+    app.use(cookieParser(randomString(256)));
 
     app.set("view engine", "ejs");
     app.set("views", env.VIEWS_DIR);

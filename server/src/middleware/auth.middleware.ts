@@ -1,8 +1,12 @@
 import { NextFunction, Request, Response } from "express";
+import { OAuth2Client, TokenPayload } from "google-auth-library";
 
 import { globals } from "../globals";
 import { env } from "../env";
 import { renderPage } from "../services/render.service";
+import { encrypt, decrypt } from "../services/crypto.service";
+
+type AccessToken = Pick<TokenPayload, "email">;
 
 export function authMiddleware(req: Request, res: Response, next: NextFunction) {
     const accessTokenCookieName = "access_token";
@@ -14,7 +18,9 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
     if (accessToken)
         return Promise.resolve()
             .then(() => verifyAccessToken(accessToken))
-            .then(() => next())
+            .then(valid => valid
+                ? next()
+                : Promise.reject("invalid access token"))
             .catch(err => {
                 globals.console.error(err);
                 return next(err);
@@ -23,7 +29,9 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
     if (idToken)
         return Promise.resolve()
             .then(() => verifyIdToken(idToken))
-            .then(() => getAccessToken())
+            .then(token => token
+                ? getAccessToken(token)
+                : Promise.reject("invalid id token"))
             .then(token => res
                 .cookie(accessTokenCookieName, token, { secure: true, signed: true, httpOnly: true, sameSite: true })
                 .redirect(redirect || "/"))
@@ -38,17 +46,39 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
         .catch(err => next(err));
 }
 
-function verifyAccessToken(accessToken: string): Promise<boolean> {
-    // TODO: verify access token
-    return Promise.resolve(!!accessToken);
+function verifyAccessToken(accessToken: string): Promise<AccessToken> {
+    return Promise.resolve()
+        .then(() => {
+            if (!accessToken) return Promise.reject("invalid access token arg");
+            return decrypt(accessToken);
+        })
+        .then(decrypted => JSON.parse(decrypted))
+        .then((token: AccessToken) => {
+            if (!token.email) return Promise.reject("invalid access token email");
+            if (!env.G_EMAILS.includes(token.email)) return Promise.reject("email not authorized");
+            return token;
+        });
 }
 
-function verifyIdToken(idToken: string): Promise<boolean> {
-    // TODO: validate id token
-    return Promise.resolve(!!idToken);
+function verifyIdToken(idToken: string): Promise<TokenPayload> {
+    return Promise.resolve()
+        .then(() => new OAuth2Client(env.G_CLIENT_ID).verifyIdToken({
+            idToken,
+            audience: env.G_CLIENT_ID,
+        }))
+        .then(ticket => ticket.getPayload()
+            || Promise.reject("idToken payload is undefined"));
 }
 
-function getAccessToken(): string {
-    // TODO: opaque access token
-    return "access token";
+function getAccessToken(idToken: TokenPayload): Promise<string> {
+    return Promise.resolve()
+        .then(() => {
+            if (!idToken.email_verified) return Promise.reject("id token email not verified");
+            if (!idToken.email) return Promise.reject("invalid id token email");
+            if (!env.G_EMAILS.includes(idToken.email)) return Promise.reject("email not authorized");
+            return {
+                email: idToken.email
+            };
+        })
+        .then((at: AccessToken) => encrypt(JSON.stringify(at)));
 }
