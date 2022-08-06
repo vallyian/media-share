@@ -29,7 +29,7 @@ jobs:
               id: github_env
               env:
                   GITHUB_MAIN: ${{ github.ref == 'refs/heads/main' }}
-              run: ./run.sh github_env
+              run: ./run.sh github-env
 
             - name: Tag version
               id: tag_version
@@ -46,7 +46,7 @@ jobs:
                   GITHUB_SHA: ${{ github.sha }}
                   GITHUB_MAIN: ${{ steps.github_env.outputs.GITHUB_MAIN }}
                   SEMVER: ${{ steps.tag_version.outputs.new_version }}
-              run: ./run.sh calc_semver
+              run: ./run.sh calc-semver
 
         outputs:
             GITHUB_MAIN: ${{ steps.github_env.outputs.GITHUB_MAIN }}
