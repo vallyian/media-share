@@ -41,6 +41,13 @@ build() {
     || exit 3
 }
 
+check_test_results() {
+    if [ ! -f artifacts/test-results/*.xml ]; then
+        echo "no test results found"
+        exit 1
+    fi
+}
+
 scan() {
     docker run \
         --rm \
@@ -53,13 +60,6 @@ scan() {
                 --exit-code=1 \
                 ${DOCKER_USERNAME}/${DOCKER_REPO}:local \
     || exit 1
-}
-
-check_test_results() {
-    if [ ! -f artifacts/test-results/*.xml ];
-        echo "no test results found"
-        exit 1
-    fi
 }
 
 push() {
@@ -75,11 +75,11 @@ push() {
 }
 
 case "${1}" in
-    "github_env"         ) github_env         ;;
-    "calc_semver"        ) calc_semver        ;;
+    "github-env"         ) github_env         ;;
+    "calc-semver"        ) calc_semver        ;;
     "build"              ) build              ;;
-    "scan"               ) scan               ;;
     "check-test-results" ) check_test_results ;;
+    "scan"               ) scan               ;;
     "push"               ) push               ;;
 
     *) exit 1
