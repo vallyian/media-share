@@ -14,7 +14,7 @@ RUN [ "${SEMVER}" != "" ] || SEMVER="0.0.0"; \
     echo "SEMVER: \"${SEMVER}\""; \
     npm run build
 COPY server/test.ts .
-RUN npm test
+RUN npm test || (mkdir -p test-results && touch test-results/unit_test_run_failed)
 # COPY server/.eslintignore server/.eslintrc.json ./
 # RUN npm run lint
 
