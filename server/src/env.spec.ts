@@ -9,6 +9,31 @@ describe("env", () => {
          process.env["G_EMAILS"] = "em@i.l";
     });
 
+    describe("G_CLIENT_ID", () => {
+        it("throw if missing", () => {
+            delete process.env["G_CLIENT_ID"];
+            const env = () => require("./env");
+            expect(env).toThrow();
+        });
+    });
+
+    describe("G_EMAILS", () => {
+        it("throw if missing", () => {
+            delete process.env["G_EMAILS"];
+            const env = () => require("./env");
+            expect(env).toThrow();
+        });
+
+        [
+            { emails: "1", count: 1 },
+            { emails: "1,2", count: 2 }
+        ].forEach(({ emailS, count }) => it(`list contains ${count} items`, () => {
+            process.env["G_EMAILS"] = emails;
+            const { env } = require("./env");
+            expect(env.G_EMAILS.length).toEqual(count);
+        }));
+    });
+
     describe("NODE_ENV", () => {
         it("default is production", () => {
             delete process.env["NODE_ENV"];
