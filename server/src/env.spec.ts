@@ -27,7 +27,7 @@ describe("env", () => {
         [
             { emails: "1", count: 1 },
             { emails: "1,2", count: 2 }
-        ].forEach(({ emailS, count }) => it(`list contains ${count} items`, () => {
+        ].forEach(({ emails, count }) => it(`list contains ${count} items`, () => {
             process.env["G_EMAILS"] = emails;
             const { env } = require("./env");
             expect(env.G_EMAILS.length).toEqual(count);
