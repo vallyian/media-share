@@ -41,7 +41,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
 
     return Promise.resolve()
         .then(() => renderPage("auth", { gClientId: env.G_CLIENT_ID }))
-        .then(({ mime, data }) => res.setHeader("Content-type", mime).end(data))
+        .then(({ mime, data }) => res.setHeader("Content-type", mime).status(401).end(data))
         .catch(err => next(err));
 }
 
