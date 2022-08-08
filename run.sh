@@ -46,7 +46,9 @@ test_end_to_end() {
 
     if [ ! -f server/certs/cert.crt ] || [ ! -f server/certs/cert.key ]; then
         mkdir -p server/certs
-        openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -out server/certs/cert.crt -keyout server/certs/cert.key
+        openssl req -new -newkey rsa:4096 -days 1 -nodes -x509 \
+            -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com" \
+            -out server/certs/cert.crt -keyout server/certs/cert.key
     fi
 
     if [ ! -f server/media/test-dir/test-file ]; then
