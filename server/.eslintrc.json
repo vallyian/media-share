@@ -20,14 +20,6 @@
         "indent": [ "error", 4, { "SwitchCase": 1 } ],
         "quotes": [ "error", "double" ],
         "semi": [ "error", "always" ],
-        "@typescript-eslint/no-floating-promises": [ "error" ],
-        "no-console": "off",
-        "no-restricted-syntax": [
-            "error",
-            {
-                "selector": "CallExpression[callee.object.name=/^(global|globalThis|console|process)$/]",
-                "message": "Use globals.ts instead"
-            }
-        ]
+        "@typescript-eslint/no-floating-promises": [ "error" ]
     }
 }

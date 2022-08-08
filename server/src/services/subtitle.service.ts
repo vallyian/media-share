@@ -4,7 +4,6 @@ import child_process from "node:child_process";
 
 import jschardet from "jschardet";
 import ffmpegPath from "ffmpeg-static";
-import { globals } from "../globals";
 import { FileResponse } from "../@types/FileResponse";
 
 export function exists(videoPath: string, videoExtension: string, desiredSubtitleExtension?: string): boolean {
@@ -79,7 +78,7 @@ function subToVtt(subtitlePath: string, videoPath: string): Promise<string | und
                 : Promise.reject(`no vtt content created from ${subtitlePath}`);
         })
         .catch(err => {
-            globals.console.error(err);
+            console.error(err);
             return undefined;
         });
 }
@@ -123,7 +122,7 @@ function srtToVtt(subtitlePath: string): Promise<string | undefined> {
                 : Promise.reject(`no vtt content created from ${subtitlePath}`);
         })
         .catch(err => {
-            globals.console.error(err);
+            console.error(err);
             return undefined;
         });
 }
@@ -141,7 +140,7 @@ function getFile(mediaPath: string): Promise<string | undefined> {
             return decodedFile;
         })
         .catch(err => {
-            globals.console.error(err);
+            console.error(err);
             return undefined;
         });
 }
@@ -164,7 +163,7 @@ function getFps(videoPath: string): Promise<number | undefined> {
             )
         ))
         .catch(err => {
-            globals.console.error(err);
+            console.error(err);
             return undefined;
         });
 }

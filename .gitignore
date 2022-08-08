@@ -12,6 +12,7 @@ media
 node_modules
 test-results
 
+.env
 # .dockerignore
 # .editorconfig
 # .gitattributes

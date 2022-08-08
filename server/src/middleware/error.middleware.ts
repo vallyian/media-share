@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 
 import { AppError } from "../@types/AppError";
-import { globals } from "../globals";
 import { env } from "../env";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- last arg required by express to correctly interpret as error middleware
@@ -27,7 +26,7 @@ export function errorMiddleware(err: AppError, req: Request, res: Response, _nex
         body,
     };
 
-    globals.console.error(errJson);
+    console.error(errJson);
 
     return res
         .status(errJson.status)

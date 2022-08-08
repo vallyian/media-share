@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { OAuth2Client, TokenPayload } from "google-auth-library";
 
-import { globals } from "../globals";
 import { env } from "../env";
 import { renderPage } from "../services/render.service";
 import { encrypt, decrypt } from "../services/crypto.service";
@@ -22,7 +21,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
                 ? next()
                 : Promise.reject("invalid access token"))
             .catch(err => {
-                globals.console.error(err);
+                console.error(err);
                 return next(err);
             });
 
@@ -36,7 +35,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
                 .cookie(accessTokenCookieName, token, { secure: true, signed: true, httpOnly: true, sameSite: true })
                 .redirect(redirect || "/"))
             .catch(err => {
-                globals.console.error(err);
+                console.error(err);
                 return next(err);
             });
 

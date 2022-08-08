@@ -1,7 +1,6 @@
 import { FileResponse } from "../@types/FileResponse";
 import { ItemStat } from "../@types/ItemStat";
 import { PathLink } from "../@types/PathLink";
-import { globals } from "../globals";
 import * as fsService from "./fs.service";
 import * as renderService from "./render.service";
 import * as subtitleService from "./subtitle.service";
@@ -22,7 +21,7 @@ export async function viewData(mediaPath: string, relativePath: string, videoExt
             };
         })
         .catch(err => {
-            globals.console.error(err);
+            console.error(err);
             return {
                 prev: undefined,
                 next: undefined

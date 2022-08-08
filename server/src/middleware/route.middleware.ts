@@ -3,7 +3,6 @@ import path from "node:path";
 import { NextFunction, Request, Response } from "express";
 
 import { FileResponse } from "../@types/FileResponse";
-import { globals } from "../globals";
 import * as fsService from "../services/fs.service";
 import * as videoService from "../services/video.service";
 import * as subtitleService from "../services/subtitle.service";
@@ -44,7 +43,7 @@ export async function routeMiddleware(req: Request, res: Response, next: NextFun
 
     if (isFile)
         return res.sendFile(decodedPaths.media, {
-            root: globals.process.cwd(),
+            root: process.cwd(),
             dotfiles: "allow"
         });
 
