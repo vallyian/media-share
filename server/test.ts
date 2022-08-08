@@ -29,6 +29,6 @@ runner.addReporter(
 );
 
 runner.execute().catch((e: Error) => {
-    globalThis.console.error("test run failed:", e);
-    globalThis.process.exit(1);
+    console.error("test run failed:", e);
+    process.exit(1);
 });

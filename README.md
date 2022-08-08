@@ -23,15 +23,19 @@ fast media share web server with a very basic UI
 
 **Security warning**: Only expose shared volumes that don't contain sensitive data !!!  
 **Security warning**: Only expose this outside `127.0.0.1` if you understand the risks !!!  
-**Info** generate self-signed certs with `openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -out cert.crt -keyout cert.key`
 
 * local folders
 
 ```sh
 # required: create (or symlink) ./media dir'
-# optional: create (or symlink) ./server/certs/cert.crt and ./server/certs/cert.key files
-#           mkdir -p server/certs
-#           openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -out server/certs/cert.crt -keyout server/certs/cert.key
+
+# required: create (or symlink) ./server/certs/cert.crt and ./server/certs/cert.key files
+#    mkdir -p server/certs
+#    openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -out server/certs/cert.crt -keyout server/certs/cert.key
+
+# required: .env file or indicidual env vars 
+export G_CLIENT_ID="" # reqired, see https://console.cloud.google.com/apis/credentials
+export G_EMAILS="" # required, comma separated list of authorized emails
 
 export DEBUG="*" # optional
 npm --prefix server start
@@ -45,8 +49,9 @@ npm --prefix server start
 (docker stop media-share-local && docker rm media-share-local || echo "not running") && \
 docker run --name media-share-local --rm \
     -v "${HOME}/media:/home/node/app/media" \
-    -v "${HOME}/certs/cert.crt:/run/secrets/cert.crt:ro" `# optional` \
-    -v "${HOME}/certs/cert.key:/run/secrets/cert.key:ro" `# optional` \
+    -v "${HOME}/certs/cert.crt:/run/secrets/cert.crt:ro" \
+    -v "${HOME}/certs/cert.key:/run/secrets/cert.key:ro" \
+    -v "${PWD}/server/.env:/run/secrets/.env:ro" \
     -p "127.0.0.1:58081:58082" \
     vallyian/media-share:local
 ```
@@ -59,8 +64,10 @@ docker run --name media-share-local --rm \
 (docker stop media-share && docker rm media-share || echo "not running") && \
 docker run --name media-share --pull always --restart=always -d \
     -v "${HOME}/media:/home/node/app/media" \
-    -v "${HOME}/certs/cert.crt:/run/secrets/cert.crt:ro" `# optional` \
-    -v "${HOME}/certs/cert.key:/run/secrets/cert.key:ro" `# optional` \
+    -v "${HOME}/certs/cert.crt:/run/secrets/cert.crt:ro" \
+    -v "${HOME}/certs/cert.key:/run/secrets/cert.key:ro" \
+    -e "G_CLIENT_ID=" `# required` \
+    -e "G_EMAILS=" `# required` \
     -p "127.0.0.1:58080:58082" \
     vallyian/media-share:latest
 ```

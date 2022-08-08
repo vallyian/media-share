@@ -14,7 +14,7 @@ RUN [ "${SEMVER}" != "" ] || SEMVER="0.0.0"; \
     echo "SEMVER: \"${SEMVER}\""; \
     npm run build
 COPY server/test.ts .
-RUN npm test
+RUN npm test || (mkdir -p test-results && touch test-results/unit_test_run_failed)
 # COPY server/.eslintignore server/.eslintrc.json ./
 # RUN npm run lint
 
@@ -34,7 +34,8 @@ RUN NODE_ENV=production npm ci --omit=dev
 
 
 FROM node:gallium-alpine3.16
-RUN mkdir -p /home/node/app/media && \
+RUN apk add zlib=1.2.12-r2 && echo "temp fix for CVE-2022-37434 ###########################################################" && \
+    mkdir -p /home/node/app/media && \
     touch /home/node/app/media/_no_media_volume_mounted_ && \
     chown -R node:node /home/node/app
 WORKDIR /home/node/app

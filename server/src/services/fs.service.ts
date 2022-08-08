@@ -18,7 +18,7 @@ export function fileExists(filePath: string): Promise<boolean> {
         .catch(() => false);
 }
 
-export function readDir(relativePath: string, mediaPath: string): Promise<Error | ItemStat[]> {
+export function readDir(relativePath: string, mediaPath: string): Promise<ItemStat[]> {
     let items: string[];
     return Promise.resolve()
         .then(() => fs.promises.readdir(mediaPath))

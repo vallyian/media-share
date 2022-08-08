@@ -1,15 +1,12 @@
 import path from "node:path";
 
 import { NextFunction, Request, Response } from "express";
-import ejs from "ejs";
 
 import { FileResponse } from "../@types/FileResponse";
 import * as fsService from "../services/fs.service";
 import * as videoService from "../services/video.service";
 import * as subtitleService from "../services/subtitle.service";
-import { routes } from "../routes";
-import { globals } from "../globals";
-import { env } from "../env";
+import * as renderService from "../services/render.service";
 
 type DecodedPaths = {
     relative: string;
@@ -23,41 +20,30 @@ export async function routeMiddleware(req: Request, res: Response, next: NextFun
     if (isDir)
         return dirIndexResponse(decodedPaths, res, next);
 
-    let isFile = await fsService.fileExists(decodedPaths.media);
+    const isFile = await fsService.fileExists(decodedPaths.media);
     const fileExtension = path.extname(decodedPaths.relative).toLowerCase();
 
-    let fileHandler: Promise<FileResponse | undefined> | FileResponse | undefined = undefined;
+    let fileHandler: (() => Promise<FileResponse | undefined>) | undefined = undefined;
     switch (true) {
         case fileExtension === ".mp4" && isFile && !req.query["static"]:
-            fileHandler = videoService.viewData(decodedPaths.media, decodedPaths.relative, fileExtension);
+            fileHandler = () => videoService.viewData(decodedPaths.media, decodedPaths.relative, fileExtension);
             break;
         case fileExtension === ".vtt" && !req.query["static"]:
-            fileHandler = subtitleService.viewData(decodedPaths.media, <string | undefined>req.query["video"]);
-            break;
-        case req.path === routes.favicon:
-            fileHandler = favicon();
+            fileHandler = () => subtitleService.viewData(decodedPaths.media, <string | undefined>req.query["video"]);
             break;
         default:
             break;
     }
-    if (fileHandler instanceof Promise)
-        fileHandler = await fileHandler;
-
-    if (fileHandler && fileHandler.mime && fileHandler.data)
-        return res.setHeader("Content-type", fileHandler.mime).end(fileHandler.data);
-
-    if (!isFile) {
-        const scriptFileNameRx = new RegExp(`^${routes.appScripts}/([a-z-]+.js)$`);
-        const scriptFileName = req.path.match(scriptFileNameRx);
-        decodedPaths.media = scriptFileName && scriptFileName[1]
-            ? path.join(...((env.NODE_ENV === "development" ? ["src"] : []).concat(["views", "scripts", scriptFileName[1]])))
-            : "";
-        isFile = decodedPaths.media !== "" && await fsService.fileExists(decodedPaths.media);
+    if (fileHandler) {
+        const fileHandlerResult = await Promise.resolve().then(() => fileHandler?.())
+            .catch(() => undefined);
+        if (fileHandlerResult && fileHandlerResult.mime && fileHandlerResult.data)
+            return res.setHeader("Content-type", fileHandlerResult.mime).end(fileHandlerResult.data);
     }
 
     if (isFile)
         return res.sendFile(decodedPaths.media, {
-            root: globals.process.cwd(),
+            root: process.cwd(),
             dotfiles: "allow"
         });
 
@@ -67,25 +53,12 @@ export async function routeMiddleware(req: Request, res: Response, next: NextFun
 function dirIndexResponse(decodedPaths: DecodedPaths, res: Response, next: NextFunction) {
     return Promise.resolve()
         .then(() => fsService.readDir(decodedPaths.relative, decodedPaths.media))
-        .then(items => items instanceof Error
-            ? next(items)
-            : res.render("index", {
-                page: "dir-index",
-                pills: fsService.pathLinks(decodedPaths.media),
-                items
-            }))
+        .then(items => renderService.renderPage("dir-index", {
+            pills: fsService.pathLinks(decodedPaths.media),
+            items
+        }))
+        .then(({ mime, data }) => res.setHeader("Content-type", mime).end(data))
         .catch(err => next(err));
-}
-
-function favicon(): Promise<FileResponse> {
-    const viewPath = `${env.VIEWS_DIR}/icons/share-fill.ejs`;
-    return Promise.resolve()
-        .then(() => ejs.renderFile(viewPath, { fill: "#0080FF" }))
-        .then(data => data !== viewPath ? data : "")
-        .then(data => ({
-            mime: "image/svg+xml",
-            data
-        }));
 }
 
 function decodePaths(requestPath: string): DecodedPaths {
