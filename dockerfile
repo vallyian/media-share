@@ -29,14 +29,14 @@ COPY --from=build /app/test-results /test-results
 FROM node:gallium-alpine3.16 AS prod-deps
 WORKDIR /home/node/app
 COPY server/package*.json ./
-# temp fix for CVE-2022-37434 ###########################################################
-RUN apk add zlib=1.2.12-r2 && \
-    NODE_ENV=production npm ci --omit=dev
+RUN NODE_ENV=production npm ci --omit=dev
 
 
 
 FROM node:gallium-alpine3.16
-RUN mkdir -p /home/node/app/media && \
+# temp fix for CVE-2022-37434 ###########################################################
+RUN apk add zlib=1.2.12-r2 && \
+    mkdir -p /home/node/app/media && \
     touch /home/node/app/media/_no_media_volume_mounted_ && \
     chown -R node:node /home/node/app
 WORKDIR /home/node/app
