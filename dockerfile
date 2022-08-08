@@ -29,7 +29,8 @@ COPY --from=build /app/test-results /test-results
 FROM node:gallium-alpine3.16 AS prod-deps
 WORKDIR /home/node/app
 COPY server/package*.json ./
-RUN NODE_ENV=production npm ci --omit=dev
+RUN apk add zlib=1.2.12-r2 && `# temp fix for CVE-2022-37434 ###########################################################` \
+    NODE_ENV=production npm ci --omit=dev
 
 
 
