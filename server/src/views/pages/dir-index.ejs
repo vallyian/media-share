@@ -1,27 +1,28 @@
 <%- include(`../partials/pills`, { pills }); %>
 
-<table class="table table-hover">
-    <thead>
-        <tr>
-            <th scope="col">name</th>
-            <th scope="col">size</th>
-        </tr>
-    </thead>
-    <tbody>
-        <% items.forEach(item=> { %>
-        <tr>
-            <td>
-                <a class="<% if (item.isDir) { %>text-dark<% } %>" href="<%- item.parent === ''
-                    ? encodeURIComponent(item.name)
-                    : item.parent.split(/[\\/]/g).concat(item.name).map(p => encodeURIComponent(p)).join('/')
-                %>">
-                <span class="text-warning"><% if (item.isDir) { %><%- include(`../icons/folder`); %><% } %></span>
-
-                    <%=item.name%>
-                </a>
-            </td>
-            <td><%= item.size %></td>
-        </tr>
-        <% }); %>
-    </tbody>
-</table>
+<div class="container">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th scope="col">name</th>
+                <th scope="col">size</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% items.forEach(item=> { %>
+            <tr>
+                <td>
+                    <a class="<% if (item.isDir) { %>text-dark<% } %>" href="<%- item.parent === ''
+                        ? encodeURIComponent(item.name)
+                        : item.parent.split(/[\\/]/g).concat(item.name).map(p => encodeURIComponent(p)).join('/')
+                    %>">
+                        <span class="text-warning"><% if (item.isDir) { %><%- include(`../icons/folder`); %><% } %></span>
+                        <%=item.name%>
+                    </a>
+                </td>
+                <td><%= item.size %></td>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+</div>

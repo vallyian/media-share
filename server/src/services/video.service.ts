@@ -29,7 +29,7 @@ export async function viewData(mediaPath: string, relativePath: string, videoExt
         });
 
     return renderService.renderPage("video", {
-        pills: pathLinks,
+        pills: pathLinks.length >= 2 ? pathLinks.splice(pathLinks.length - 2, 2) : pathLinks,
         hasSubtitle: subtitleService.exists(mediaPath, videoExtension),
         relativePath,
         fileExtension: videoExtension,
