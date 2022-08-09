@@ -29,7 +29,7 @@ jobs:
               id: github_env
               env:
                   GITHUB_MAIN: ${{ github.ref == 'refs/heads/main' }}
-              run: ./run.sh github-env
+              run: ./run github-env
 
             - name: Tag version
               id: tag_version
@@ -46,7 +46,7 @@ jobs:
                   GITHUB_SHA: ${{ github.sha }}
                   GITHUB_MAIN: ${{ steps.github_env.outputs.GITHUB_MAIN }}
                   SEMVER: ${{ steps.tag_version.outputs.new_version }}
-              run: ./run.sh calc-semver
+              run: ./run calc-semver
 
         outputs:
             GITHUB_MAIN: ${{ steps.github_env.outputs.GITHUB_MAIN }}
@@ -69,10 +69,10 @@ jobs:
             - uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v2.0.0
 
             - name: Build, test and extract artifacts
-              run: ./run.sh build
+              run: ./run build
 
             # - name: Test runtime
-            #   run: ./run.sh e2e
+            #   run: ./run e2e
 
             - name: Upload server runtime
               uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # v3.1.0
@@ -89,7 +89,7 @@ jobs:
                   path: artifacts/test-results
 
             - name: Check test results
-              run: ./run.sh check-test-results
+              run: ./run check-test-results
 
             - name: Publish Test Results
               uses: EnricoMi/publish-unit-test-result-action@2a60c5d47eb29cd5cc922f51bbea18e148f56203 # v2.0.0
@@ -102,7 +102,7 @@ jobs:
             - name: Scan runtime image
               env:
                   DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}
-              run: ./run.sh scan
+              run: ./run scan
 
             - name: Log in to Docker Hub
               uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b # v2.0.0
@@ -115,4 +115,4 @@ jobs:
               if: ${{ needs.semver.outputs.GITHUB_MAIN == 'true' || github.event.inputs.publish_image == 'true' }}
               env:
                   DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}
-              run: ./run.sh push
+              run: ./run push

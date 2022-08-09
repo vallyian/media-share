@@ -124,5 +124,5 @@ case "${1}" in
     "scan"               ) scan               ;;
     "push"               ) push               ;;
 
-    *) echo "\033[0;31mUSAGE:   ./run.sh github-env | calc-semver | build | e2e | check-test-results | scan | push\033[0m" && exit 1
+    *) echo "\033[0;31mUSAGE:   ./run   github-env | calc-semver | build | e2e | check-test-results | scan | push\033[0m" && exit 1
 esac

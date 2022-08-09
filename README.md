@@ -10,13 +10,13 @@ fast media share web server with a very basic UI
 ## Build
 
 ```sh
-./run.sh build
+./run build
 ```
 
 ## Scan for vulnerabilities
 
 ```sh
-./run.sh scan
+./run scan
 ```
 
 ## Run

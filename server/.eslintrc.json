@@ -20,6 +20,13 @@
         "indent": [ "error", 4, { "SwitchCase": 1 } ],
         "quotes": [ "error", "double" ],
         "semi": [ "error", "always" ],
-        "@typescript-eslint/no-floating-promises": [ "error" ]
+        "@typescript-eslint/no-floating-promises": [ "error" ],
+        "no-restricted-syntax": [
+            "error",
+            {
+                "selector": "CallExpression[callee.name=/^(fit|xit|fdescribe|xdescribe)$/]",
+                "message": "setTimeout must always be invoked with two arguments."
+            }
+        ]
     }
 }
