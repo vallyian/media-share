@@ -1,4 +1,5 @@
-import cluster from "node:cluster";
+import os from "node:os";
+import cluster, { Worker } from "node:cluster";
 import https from "node:https";
 import fs from "node:fs";
 import path from "node:path";
@@ -22,40 +23,38 @@ function serve(expressAppFactory: () => Application | Promise<Application>): Pro
 
 function clusterPrimary(): Promise<void> {
     return Promise.resolve()
-        .then(() => getCert())
-        .then(({ cert, key, warns }) => {
+        .then(() => {
+            const { cert, key, warns } = getCert();
             warns.forEach(warn => console.warn("Warning", warn));
             console.info(`${cert && key ? "[secure]" : "[insecure]"} ${env.NODE_ENV} server (main process ${process.pid}) starting on port ${env.PORT}`);
         })
-        .then(() => startWorkers());
-}
-
-function startWorkers(): void {
-    new Array(env.CLUSTERS).fill(null).forEach(() => cluster.fork(env));
-    cluster.on("exit", (worker, code, signal) => {
-        console.error("Error", `worker ${worker.process.pid} exited; ${JSON.stringify({ code, signal })}`);
-        cluster.fork();
-    });
+        .then(() => {
+            const workers = new Array<Worker>();
+            const fork = () => workers.push(cluster.fork(env));
+            new Array(env.NODE_ENV === "development" ? 1 : os.cpus().length).fill(null).map(fork);
+            cluster.on("exit", (worker, code, signal) => {
+                const workerId = workers.findIndex(w => w.id === worker.id);
+                if (workerId >= 0) workers.splice(workerId, 1);
+                console.error("Error", `worker ${worker.process.pid} exited; ${JSON.stringify({ code, signal })}`);
+                fork();
+            });
+        });
 }
 
 function clusterWorker(expressAppFactory: () => Application | Promise<Application>): Promise<void> {
     return Promise.resolve()
         .then(() => expressAppFactory())
-        .then(app => starListen(app))
+        .then(app => {
+            const { cert, key } = getCert();
+            const server = cert && key
+                ? https.createServer({ cert, key }, app)
+                : app;
+            server.listen(env.PORT, () => console.info(`service (worker process ${process.pid}) is online`));
+        })
         .catch(err => {
             console.error("Critical", err);
             process.exit(process.ExitCode.WorkerStartup);
         });
-}
-
-function starListen(app: Application) {
-    const { cert, key } = getCert();
-
-    const server = cert && key
-        ? https.createServer({ cert, key }, app)
-        : app;
-
-    server.listen(env.PORT, () => console.info(`service (worker process ${process.pid}) is online`));
 }
 
 function getCert(): { cert: Buffer | undefined, key: Buffer | undefined, warns: string[] } {

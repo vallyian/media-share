@@ -1,27 +1,38 @@
 import crypto from "node:crypto";
 
+import { env } from "../env";
+
 // TODO: use hashicorp vault for secrets management https://hub.docker.com/_/vault
 const ALGORITHM = "aes-256-ctr";
-const ivAndKey = Buffer.from(randomString(48), "base64url");
-const iv = ivAndKey.slice(0, 16);
-const key = ivAndKey.slice(16, 48);
 
-export function randomString(length: number): string {
+export function randomString(length = 32): string {
     return crypto.randomBytes(length).toString("base64url");
 }
 
-export function encrypt(plain: string): Promise<string> {
-    const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+export function encrypt(value: string): Promise<string> {
+    let iv: Buffer;
     return Promise.resolve()
-        .then(() => plain
-            || Promise.reject("invalid plain arg"))
-        .then(() => Buffer.concat([cipher.update(plain || ""), cipher.final()]).toString("base64url"));
+        .then(() => value || Promise.reject("invalid plain arg"))
+        .then(() => {
+            iv = Buffer.from(crypto.randomBytes(16));
+            return Buffer.from(env.TOKEN_KEY, "base64url");
+        })
+        .then(key => crypto.createCipheriv(ALGORITHM, key, iv))
+        .then(cipher => Buffer.concat([cipher.update(value), cipher.final()]))
+        .then(encrypted => `${iv.toString("base64url")}:${encrypted.toString("base64url")}`);
 }
 
-export function decrypt(encrypted: string): Promise<string> {
-    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+export function decrypt(value: string): Promise<string> {
+    let iv: Buffer;
+    let encrypted: Buffer;
     return Promise.resolve()
-        .then(() => encrypted
-            || Promise.reject("invalid encrypted arg"))
-        .then(() => Buffer.concat([decipher.update(Buffer.from(encrypted, "base64url")), decipher.final()]).toString());
+        .then(() => value && /^[a-z0-9-_]{22}:[a-z0-9-_]+$/i.test(value) || Promise.reject("invalid encrypted arg"))
+        .then(() => {
+            const parts = value.split(":");
+            iv = Buffer.from(<string>parts[0], "base64url");
+            encrypted = Buffer.from(<string>parts[1], "base64url");
+            return Buffer.from(env.TOKEN_KEY, "base64url");
+        })
+        .then(key => crypto.createDecipheriv(ALGORITHM, key, iv))
+        .then(decipher => Buffer.concat([decipher.update(encrypted), decipher.final()]).toString());
 }

@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-var-requires -- project is set to module but tests are commonjs */
 
-import os from "node:os";
 import fs from "node:fs";
 
 import * as process from "./internals/process";
@@ -97,21 +96,6 @@ describe("env", () => {
             process.env["PORT"] = "42";
             const { env } = require("./env");
             expect(env.PORT).toEqual(+process.env["PORT"]);
-        });
-    });
-
-    describe("CLUSTERS", () => {
-        it("default is os.cpus", () => {
-            delete process.env["NODE_ENV"];
-            const { env } = require("./env");
-            expect(env.CLUSTERS).toEqual(os.cpus().length);
-        });
-
-        it("for dev is 1", () => {
-            delete process.env["NODE_ENV"];
-            process.env["NODE_ENV"] = "development";
-            const { env } = require("./env");
-            expect(env.CLUSTERS).toEqual(1);
         });
     });
 });

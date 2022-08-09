@@ -1,11 +1,11 @@
-import os from "node:os";
 import fs from "node:fs";
 
 import dotenv from "dotenv";
 
 import * as process from "./internals/process";
+import { randomString } from "./services/crypto.service";
 
-let envFile: dotenv.DotenvParseOutput;
+loadEnvFile();
 
 export const env = Object.freeze({
     G_CLIENT_ID: e("G_CLIENT_ID").string(v => /^[a-z0-9-]+\.apps\.googleusercontent\.com$/i.test(v)),
@@ -13,12 +13,13 @@ export const env = Object.freeze({
     NODE_ENV: e("NODE_ENV", "production").val,
     PORT: e("PORT", 58082).number(v => v > 0 && v <= 65536),
 
-    CLUSTERS: e("NODE_ENV").val === "development" ? 1 : os.cpus().length,
-    VIEWS_DIR: e("NODE_ENV").val === "development" ? "src/views" : "views"
+    VIEWS_DIR: e("NODE_ENV").val === "development" ? "src/views" : "views",
+    COOKIE_PASS: e("COOKIE_PASS", randomString(256)).val,
+    TOKEN_KEY: e("TOKEN_KEY", randomString()).val
 });
 
 function e(key: string, def?: unknown) {
-    const val = (v => typeof v !== "undefined" ? String(v).trim() : def ? String(def) : "")(process.env[key] || fromEnvFile(key));
+    const val = (v => typeof v !== "undefined" ? String(v).trim() : def ? String(def) : "")(process.env[key]);
     return {
         val,
         string: (validator: (v: string) => boolean) => (validator ? validator(val) : true) ? val : err(key),
@@ -30,12 +31,11 @@ function e(key: string, def?: unknown) {
     };
 }
 
-function fromEnvFile(key: string): string | undefined {
-    if (!envFile) {
-        const envPath = fs.existsSync("./.env") ? "./.env" : fs.existsSync("/run/secrets/.env") ? "/run/secrets/.env" : undefined;
-        envFile = envPath ? dotenv.parse(fs.readFileSync(envPath)) : {};
-    }
-    return envFile[key];
+function loadEnvFile() {
+    const envPath = fs.existsSync("./.env") ? "./.env" : fs.existsSync("/run/secrets/.env") ? "/run/secrets/.env" : undefined;
+    if (envPath)
+        Object.entries(dotenv.parse(fs.readFileSync(envPath)))
+            .forEach(([k, v]) => { if (process.env[k] === undefined) process.env[k] = v; });
 }
 
 function err(key: string) {
