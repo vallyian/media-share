@@ -126,4 +126,3 @@ case "${1}" in
 
     *) echo "\033[0;31mUSAGE:   ./run   github-env | calc-semver | build | e2e | check-test-results | scan | push\033[0m" && exit 1
 esac
-

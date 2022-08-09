@@ -34,7 +34,7 @@ RUN NODE_ENV=production npm ci --omit=dev
 
 
 FROM node:gallium-alpine3.16
-RUN apk add zlib=1.2.12-r2 && echo "temp fix for CVE-2022-37434 ###########################################################" && \
+RUN apk add zlib=1.2.12-r3 && echo "temp fix for CVE-2022-37434 ###########################################################" && \
     mkdir -p /home/node/app/media && \
     touch /home/node/app/media/_no_media_volume_mounted_ && \
     chown -R node:node /home/node/app
