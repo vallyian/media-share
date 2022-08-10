@@ -8,7 +8,6 @@ github_sha="${GITHUB_SHA}"
 semver="${SEMVER:-0.0.0}"
 npm_audit_level="${NPM_AUDIT_LEVEL:-low}"
 trivy_severity="${TRIVY_SEVERITY:-UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL}"
-ignore_smoke_test_result=true
 artifacts_dir="${PWD}/artifacts"
 
 main() { case "${1}" in
@@ -111,7 +110,7 @@ test() {
 
     if [ "${test_failed}" = "true" ]; then
         echo "smoke test failed"
-        [ "ignore_smoke_test_result" = "false" ] || term
+        term
     fi
 }
 
