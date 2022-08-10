@@ -49,10 +49,10 @@ jobs:
         needs: [semver]
 
         steps:
-            - name: Cekot
+            - name: Checkout
               uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
 
-            - name: Setup Doker emulators
+            - name: Setup Doker multiplatform
               uses: docker/setup-qemu-action@8b122486cedac8393e77aa9734c3528886e4a1a8 # v2.0.0
 
             - name: Setup Docker
