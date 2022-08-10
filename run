@@ -75,7 +75,7 @@ test() {
     openssl req -new -newkey rsa:4096 -days 1 -nodes -x509 \
         -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com" \
         -out "${cert_crt}" -keyout "${cert_key}"
-    chmod +x "${cert_crt}" "${cert_key}"
+    chmod 777 "${cert_crt}" "${cert_key}"
 
     echo "starting service..."
     (docker stop ${container} && docker rm ${container} || echo "container ${container} not running") && \
