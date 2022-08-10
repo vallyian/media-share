@@ -49,11 +49,14 @@ jobs:
         needs: [semver]
 
         steps:
-            - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
+            - name: Cekot
+              uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
 
-            - uses: docker/setup-qemu-action@8b122486cedac8393e77aa9734c3528886e4a1a8 # v2.0.0
+            - name: Setup Doker emulators
+              uses: docker/setup-qemu-action@8b122486cedac8393e77aa9734c3528886e4a1a8 # v2.0.0
 
-            - uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v2.0.0
+            - name: Setup Docker
+              uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v2.0.0
 
             - name: Build, test and extract artifacts
               env:
@@ -65,13 +68,15 @@ jobs:
                   SEMVER: ${{needs.semver.outputs.SEMVER}}
               run: ./run test
 
-            - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # v3.1.0
+            - name: Export atifacts
+              uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # v3.1.0
               if: always()
               with:
                   name: artifacts
                   path: artifacts
 
-            - uses: EnricoMi/publish-unit-test-result-action@2a60c5d47eb29cd5cc922f51bbea18e148f56203 # v2.0.0
+            - name: Publish test resuls
+              uses: EnricoMi/publish-unit-test-result-action@2a60c5d47eb29cd5cc922f51bbea18e148f56203 # v2.0.0
               if: always()
               with:
                   github_token: ${{secrets.GITHUB_TOKEN}}
@@ -87,7 +92,8 @@ jobs:
             - name: Check results
               run: ./run results
 
-            - uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b # v2.0.0
+            - name: Sign in to Docker Hub
+              uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b # v2.0.0
               if: ${{ github.ref == 'refs/heads/main' || github.event.inputs.publish_image == 'true' }}
               with:
                   username: ${{secrets.DOCKER_USERNAME}}
