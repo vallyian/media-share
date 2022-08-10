@@ -46,7 +46,7 @@ npm --prefix server start
 * local image
 
 ```sh
-(docker stop media-share-0.0.0 && docker rm media-share-0.0.0 || echo "not running") && \
+(docker stop media-share-0.0.0 || echo "not running") && \
 docker run --name media-share-0.0.0 --rm \
     -v "${HOME}/media:/home/node/app/media" \
     -v "${HOME}/certs/cert.crt:/run/secrets/cert.crt:ro" \

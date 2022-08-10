@@ -58,47 +58,54 @@ build() {
 }
 
 test() {
-    local container=${docker_username}-${docker_repo}-${semver}
-    local cert_crt="${PWD}/server/certs/cert.crt"
-    local cert_key="${PWD}/server/certs/cert.key"
-    local test_failed=true
+    local container=${docker_username}-${docker_repo}-${semver}-smoke-test
     local smoke_test_dir="${artifacts_dir}/smoke-test"
+    local cert_crt="${smoke_test_dir}/cert.crt"
+    local cert_key="${smoke_test_dir}/cert.key"
     local media_dir="${smoke_test_dir}/test-dir"
-    local test_result="${smoke_test_dir}/smoke-test.txt"
+    local curl_output="${smoke_test_dir}/curl-output.txt"
+    local container_logs="${smoke_test_dir}/container-logs.txt"
+    local test_failed=true
 
     rm -rf "${smoke_test_dir}"
     mkdir -p "${media_dir}"
     echo "test file" > "${media_dir}/test-file"
 
-    if [ ! -f "${cert_crt}" ] || [ ! -f "${cert_key}" ]; then
-        echo "creating test self-signed certs..."
-        mkdir -p server/certs
-        openssl req -new -newkey rsa:4096 -days 1 -nodes -x509 \
-            -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com" \
-            -out "${cert_crt}" -keyout "${cert_key}"
-    fi
+    echo "creating test self-signed certs..."
+    openssl req -new -newkey rsa:4096 -days 1 -nodes -x509 \
+        -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com" \
+        -out "${cert_crt}" -keyout "${cert_key}"
 
     echo "starting service..."
     (docker stop ${container} && docker rm ${container} || echo "container ${container} not running") && \
-    docker run --name ${container} --rm --detach \
+    docker run --name ${container} --rm \
         -v "${smoke_test_dir}:/home/node/app/media" \
         -v "${cert_crt}:/run/secrets/cert.crt:ro" \
         -v "${cert_key}:/run/secrets/cert.key:ro" \
+        -e "DEBUG=*" \
         -e "G_CLIENT_ID=test.apps.googleusercontent.com" \
         -e "G_EMAILS=test@gmail.com" \
-        -p "127.0.0.1:58081:58082" \
-        ${docker_username}/${docker_repo}:${semver}
+        -p "58081:58082" \
+        ${docker_username}/${docker_repo}:${semver} &
 
     echo "waiting for service to become available..."
-    timeout 30s bash -c 'while [[ "$(curl --insecure https://localhost:58081/health)" != "healthy" ]]; do sleep 5; done'
+    timeout 30s bash -c 'while [[ "$(curl --insecure https://localhost:58081/health)" != "healthy" ]]; do sleep 5; done' \
+    || echo "health endpoint not available"
 
-    curl --insecure --verbose https://localhost:58081/test-dir/test-file > "${test_result}" 2>&1
+    curl --insecure --verbose https://localhost:58081/test-dir >> "${curl_output}" 2>&1 \
+    || echo "test index media dir not available"
 
-    if grep -Fq "GET /test-dir/test-file HTTP/1.1"   "${test_result}" \
-    && grep -Fq "HTTP/1.1 401 Unauthorized"          "${test_result}"; \
-    then test_failed=false; fi
+    curl --insecure --verbose https://localhost:58081/test-dir/test-file >> "${curl_output}" 2>&1 \
+    || echo "test static media file not available"
 
-    docker stop ${container}
+    if   grep -Fq "GET /test-dir HTTP/1.1"           "${curl_output}" \
+    &&   grep -Fq "GET /test-dir/test-file HTTP/1.1" "${curl_output}" \
+    &&   grep -Fq "HTTP/1.1 401 Unauthorized"        "${curl_output}" \
+    && ! grep -Fq "HTTP/1.1 200 OK"                  "${curl_output}" \
+    ;then test_failed=false; fi
+
+    docker logs ${container} > "${container_logs}" 2>&1 || echo "docker logs cmd failed"
+    docker stop ${container} || echo "docker stop cmd failed"
     rm -rf "${media_dir}"
 
     if [ "${test_failed}" = "true" ]; then
