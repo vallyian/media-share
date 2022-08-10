@@ -108,10 +108,7 @@ test() {
     docker stop ${container} || echo "docker stop cmd failed"
     rm -rf "${media_dir}"
 
-    if [ "${test_failed}" = "true" ]; then
-        echo "smoke test failed"
-        term
-    fi
+    [ "${test_failed}" = "false" ] || term "smoke test failed"
 }
 
 scan() {
@@ -135,9 +132,7 @@ results() {
     # [ ! -f ${artifacts_dir}/npm-lint.fail    ] || errors="npm lint failed\n${errors}"
     [   -f ${artifacts_dir}/unit-tests/*.xml ] || errors="npm test results not found\n${errors}"
 
-    if [ "${errors}" != "" ]; then
-        term "${errors}"
-    fi
+    [ "${errors}" = "" ] || term "${errors}"
 }
 
 push() {
