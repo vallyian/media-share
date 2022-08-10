@@ -2,7 +2,6 @@
 # certs
 # media
 # node_modules
-# test-results
 src/views
 # .eslintrc.json
 # package*.json
