@@ -37,9 +37,11 @@ function e(key: string, def?: () => unknown) {
 }
 
 function loadEnvFile() {
-    const envPath = fs.existsSync("./.env") ? "./.env" : fs.existsSync("/run/secrets/.env") ? "/run/secrets/.env" : undefined;
-    if (envPath)
-        Object.entries(dotenv.parse(fs.readFileSync(envPath))).forEach(([k, v]) => process.env[k] = process.env[k] || v);
+    try {
+        const envPath = fs.existsSync("./.env") ? "./.env" : fs.existsSync("/run/secrets/.env") ? "/run/secrets/.env" : undefined;
+        if (envPath)
+            Object.entries(dotenv.parse(fs.readFileSync(envPath))).forEach(([k, v]) => process.env[k] = process.env[k] || v);
+    } catch (_err) { /* */ }
 }
 
 function err(key: string) {

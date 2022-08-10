@@ -22,7 +22,7 @@ runner.addReporter(
 );
 runner.addReporter(
     new JUnitXmlReporter({
-        savePath: "./test-results",
+        savePath: "../artifacts/unit-tests",
         consolidateAll: false,
         filePrefix: packageJson.name.replace(/[^a-zA-Z0-9]/g, "") + "_" + new Date().toISOString().replace(/[^0-9]/g, "_")
     })

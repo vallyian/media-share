@@ -20,17 +20,18 @@
     "type": "commonjs",
     "scripts": {
         "ci": "node -e \"fs.existsSync('node_modules') || child_process.execSync('npm ci', {stdio:'inherit'})\"",
-        "prelint": "npm run ci",
-        "lint": "tsc --noEmit --project tsconfig.app.json && eslint src/**",
+        "prelint": "node -e \"['../artifacts/npm-lint.fail'].forEach(i => fs.rmSync(i, { recursive: true, force: true }))\" && npm run ci",
+        "lint": "tsc --noEmit --project tsconfig.app.json && eslint src/** --fix || echo 'fail' > ../artifacts/npm-lint.fail",
         "prebuild": "node -e \"fs.rmSync('bin', { recursive: true, force: true })\" && npm run ci",
         "build": "tsc --noEmitOnError --listEmittedFIles --project tsconfig.app.json",
         "postbuild": "node -e \"fs.cpSync('src/views', 'bin/views', { recursive: true, force: true })\"",
-        "pretest": "node -e \"fs.rmSync('test-results', { recursive: true, force: true })\" && npm run ci",
-        "test": "ts-node --project tsconfig.spec.json test.ts",
+        "pretest": "node -e \"['../artifacts/unit-tests', '../artifacts/npm-test.fail'].forEach(i => fs.rmSync(i, { recursive: true, force: true }))\" && npm run ci",
+        "test": "ts-node --project tsconfig.spec.json test.ts || echo 'fail' > ../artifacts/npm-test.fail",
         "prestart": "npm run prebuild",
         "start": "node -e \"process.env.NODE_ENV='development'; process.env.PORT=58082; child_process.execSync('ts-node-dev --prefer-ts --clear --debug --inspect --watch -- src', {stdio:'inherit'})\""
     },
     "dependencies": {
+        "compression": "^1.7.4",
         "cookie-parser": "^1.4.6",
         "dotenv": "^16.0.1",
         "ejs": "^3.1.8",
@@ -42,6 +43,7 @@
         "tslib": "^2.4.0"
     },
     "devDependencies": {
+        "@types/compression": "^1.7.2",
         "@types/cookie-parser": "^1.4.3",
         "@types/ejs": "^3.1.1",
         "@types/express": "^4.17.13",

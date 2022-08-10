@@ -1,6 +1,7 @@
 import express from "express";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
+import compression from "compression";
 
 import { healthMiddleware } from "./middleware/health.middleware";
 import { favicon, appScript } from "./middleware/static.middleware";
@@ -26,9 +27,9 @@ export function makeApp(): express.Application {
             frameSrc: ["'self'", "https://accounts.google.com/"]
         }
     }));
-    app.disable("X-Powered-By");
+    app.set("x-powered-by", false);
+    app.use(compression());
     app.use(cookieParser(env.COOKIE_PASS));
-
     app.set("view engine", "ejs");
     app.set("views", env.VIEWS_DIR);
 

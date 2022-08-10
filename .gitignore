@@ -10,11 +10,10 @@ certs
 dist
 media
 node_modules
-test-results
 
-.env
 # .dockerignore
 # .editorconfig
+.env
 # .gitattributes
 # .gitignore
 # [Dd]ocker*

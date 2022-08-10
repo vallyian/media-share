@@ -46,14 +46,14 @@ npm --prefix server start
 * local image
 
 ```sh
-(docker stop media-share-local && docker rm media-share-local || echo "not running") && \
-docker run --name media-share-local --rm \
+(docker stop media-share-0.0.0 && docker rm media-share-0.0.0 || echo "not running") && \
+docker run --name media-share-0.0.0 --rm \
     -v "${HOME}/media:/home/node/app/media" \
     -v "${HOME}/certs/cert.crt:/run/secrets/cert.crt:ro" \
     -v "${HOME}/certs/cert.key:/run/secrets/cert.key:ro" \
     -v "${PWD}/server/.env:/run/secrets/.env:ro" \
     -p "127.0.0.1:58081:58082" \
-    vallyian/media-share:local
+    vallyian/media-share:0.0.0
 ```
 
 => [http://localhost:58081/](http://localhost:58081/)
