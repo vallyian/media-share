@@ -4,7 +4,7 @@ import { OAuth2Client, TokenPayload } from "google-auth-library";
 import { env } from "../env";
 import { renderPage } from "../services/render.service";
 import { encrypt, decrypt } from "../services/crypto.service";
-import { requestQueryParam } from "../services/sanitizer.service";
+import { sanitizeCredential, sanitizeRedirect } from "../services/sanitizer.service";
 
 type AccessToken = Pick<TokenPayload, "email">;
 
@@ -12,8 +12,8 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
     const accessTokenCookieName = "access_token";
 
     const accessToken = req.signedCookies[accessTokenCookieName];
-    const idToken = requestQueryParam(req, "credential");
-    const redirect = requestQueryParam(req, "redirect");
+    const idToken = sanitizeCredential(req.params["credential"]);
+    const redirect = sanitizeRedirect(req.params["redirect"]);
 
     if (accessToken)
         return Promise.resolve()

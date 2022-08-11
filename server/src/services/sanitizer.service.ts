@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import path from "node:path";
 
 import { Request } from "express";
 
@@ -13,15 +14,33 @@ export function requestParam(req: Request, paramName: string): string {
     }
 }
 
-export function requestQueryParam(req: Request, queryParamName: string): string {
-    const value = req.query[queryParamName];
+export function sanitizeCredential(value: unknown): string {
+    if (!value || typeof value !== "string")
+        return "";
+    const valueSanitized = String(value);
+    return /^.+\..+\..+$/i.test(value)
+        ? valueSanitized
+        : "/";
+}
 
-    if (!value || typeof value !== "string") return "";
+export function sanitizeRedirect(value: unknown): string {
+    if (!value || typeof value !== "string")
+        return "";
+    const valueSanitized = path.normalize(value);
+    return fs.existsSync(valueSanitized)
+        ? valueSanitized
+        : "/";
+}
 
-    switch (queryParamName) {
-        // case "credential": return /^.+\..+\..+$/i.test(value) ? value : "";
-        case "redirect": return fs.existsSync(value) ? value : "/";
-        case "video": return /^\.[a-z0-9]{3,4}$/i.test(value) ? value : "";
-        default: return value;
-    }
+export function sanitizeStatict(value: unknown): boolean {
+    return String(value) === "true";
+}
+
+export function sanitizeVideo(value: unknown): string {
+    if (!value || typeof value !== "string")
+        return "";
+    const valueSanitized = path.extname(value);
+    return /^\.[a-z0-9]{3,4}$/i.test(valueSanitized)
+        ? valueSanitized
+        : "";
 }
