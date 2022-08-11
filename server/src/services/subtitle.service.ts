@@ -1,9 +1,10 @@
 import fs from "node:fs";
+import path from "node:path";
+import os from "node:os";
 import { TextDecoder } from "node:util";
 import child_process from "node:child_process";
 
 import jschardet from "jschardet";
-import ffmpegPath from "ffmpeg-static";
 import { FileResponse } from "../@types/FileResponse";
 
 export function exists(videoPath: string, videoExtension: string, desiredSubtitleExtension?: string): boolean {
@@ -68,7 +69,7 @@ function subToVtt(subtitlePath: string, videoPath: string): Promise<string | und
 
                 const from = time(+((parts[1] || "").replace(/[{}]/g, "")));
                 const to = time(+((parts[2] || "").replace(/[{}]/g, "")));
-                const text = (parts[3] || "").replaceAll(/\s?\|\s?/gmi, "\n");
+                const text = (parts[3] || "").replace(/\s?\|\s?/gmi, "\n");
 
                 return `${data}\n${from} --> ${to}\n${text}\n`;
             }, "");
@@ -108,7 +109,7 @@ function srtToVtt(subtitlePath: string): Promise<string | undefined> {
                 const from = time(parts[1]);
                 const to = time(parts[2]);
                 const text = (() => {
-                    let ret = (lines.shift() || "").trim().replaceAll("[br]", "\n");
+                    let ret = (lines.shift() || "").trim().replace(/\[br\]/gmi, "\n");
                     while (lines[0] && !(rx.test(lines[0])) && !(/^\d+$/.test(lines[0])))
                         ret += `\n${lines.shift()}`;
                     return ret;
@@ -149,9 +150,10 @@ function getFps(videoPath: string): Promise<number | undefined> {
     return Promise.resolve()
         .then(() => fs.existsSync(videoPath)
             || Promise.reject(`video file "${videoPath}" not found`))
-        .then(() => fs.existsSync(ffmpegPath)
-            || Promise.reject(`ffmpeg binary "${ffmpegPath}" not found`))
-        .then(() => new Promise<number>((ok, reject) =>
+        .then(() => new Promise<number>((ok, reject) => {
+            const ffmpegPath = path.join(process.cwd(), "node_modules", "ffmpeg-static", os.platform() === "win32" ? "ffmpeg.exe" : "ffmpeg");
+            if (!fs.existsSync(ffmpegPath)) return reject(`ffmpeg binary "${ffmpegPath}" not found`);
+
             child_process.exec(
                 `"${ffmpegPath}" -i "${videoPath}"`,
                 (_err, stdout, stderr) => {
@@ -160,8 +162,8 @@ function getFps(videoPath: string): Promise<number | undefined> {
                         ? ok(+fps)
                         : reject(`invalid fps value "${fps}" in video "${videoPath}"`);
                 }
-            )
-        ))
+            );
+        }))
         .catch(err => {
             console.error(err);
             return undefined;
