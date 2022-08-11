@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { DecodedPath } from "../@types/DecodedPath";
 
 import { ItemStat } from "../@types/ItemStat";
 import { PathLink } from "../@types/PathLink";
@@ -57,6 +58,16 @@ export function pathLinks(mediaPath: string): PathLink[] {
     }
 
     return pills;
+}
+
+export function decodePath(requestPath: string): DecodedPath {
+    const relative = /^[\\/]$/g.test(requestPath)
+        ? ""
+        : decodeURIComponent(requestPath);
+    const media = path.normalize(relative === ""
+        ? "media"
+        : path.join("media", relative));
+    return { relative, media };
 }
 
 function size(value: number): string {

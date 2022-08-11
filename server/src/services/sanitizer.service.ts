@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { Request } from "express";
 
+import { decodePath } from "./fs.service";
+
 export function requestParam(req: Request, paramName: string): string {
     const value = req.params[paramName];
 
@@ -26,9 +28,9 @@ export function sanitizeCredential(value: unknown): string {
 export function sanitizeRedirect(value: unknown): string {
     if (!value || typeof value !== "string")
         return "";
-    const valueSanitized = path.normalize(value);
-    return fs.existsSync(valueSanitized)
-        ? valueSanitized
+    const decodeddPath = decodePath(value);
+    return fs.existsSync(decodeddPath.media)
+        ? decodeddPath.relative
         : "/";
 }
 
