@@ -13,8 +13,16 @@ type DecodedPaths = {
     media: string;
 }
 
+// TODO: req.* sanitizer service
+
 export async function routeMiddleware(req: Request, res: Response, next: NextFunction) {
     const decodedPaths = decodePaths(req.path);
+    const videoExtension = () => {
+        const video = req.query["video"];
+        return video && typeof video === "string" && /^\.mp4$/i.test(video)
+            ? String(video)
+            : "";
+    };
 
     const isDir = await fsService.dirExists(decodedPaths.media);
     if (isDir)
@@ -29,7 +37,7 @@ export async function routeMiddleware(req: Request, res: Response, next: NextFun
             fileHandler = () => videoService.viewData(decodedPaths.media, decodedPaths.relative, fileExtension);
             break;
         case fileExtension === ".vtt" && !req.query["static"]:
-            fileHandler = () => subtitleService.viewData(decodedPaths.media, <string | undefined>req.query["video"]);
+            fileHandler = () => subtitleService.viewData(decodedPaths.media, videoExtension());
             break;
         default:
             break;

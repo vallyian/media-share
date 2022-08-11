@@ -19,8 +19,8 @@ export function exists(videoPath: string, videoExtension: string, desiredSubtitl
     return !!ret;
 }
 
-export async function viewData(mediaPath: string, videoExtension: string | undefined): Promise<FileResponse | undefined> {
-    const data = await transform(mediaPath, String(videoExtension || ""));
+export async function viewData(mediaPath: string, videoExtension: string): Promise<FileResponse | undefined> {
+    const data = await transform(mediaPath, videoExtension);
     return data
         ? { mime: "text/vtt; charset=UTF-8", data }
         : undefined;
