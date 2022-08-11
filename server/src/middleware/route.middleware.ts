@@ -7,6 +7,7 @@ import * as fsService from "../services/fs.service";
 import * as videoService from "../services/video.service";
 import * as subtitleService from "../services/subtitle.service";
 import * as renderService from "../services/render.service";
+import { queryParamVideo } from "../services/sanitizer.service";
 
 type DecodedPaths = {
     relative: string;
@@ -29,7 +30,7 @@ export async function routeMiddleware(req: Request, res: Response, next: NextFun
             fileHandler = () => videoService.viewData(decodedPaths.media, decodedPaths.relative, fileExtension);
             break;
         case fileExtension === ".vtt" && !req.query["static"]:
-            fileHandler = () => subtitleService.viewData(decodedPaths.media, <string | undefined>req.query["video"]);
+            fileHandler = () => subtitleService.viewData(decodedPaths.media, queryParamVideo(req));
             break;
         default:
             break;
