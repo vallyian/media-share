@@ -5,6 +5,7 @@ import { NextFunction, Request, Response } from "express";
 import { renderIcon } from "../services/render.service";
 import { fileExists } from "../services/fs.service";
 import { env } from "../env";
+import { requestParam } from "../services/sanitizer.service";
 
 export function favicon(_req: Request, res: Response, next: NextFunction) {
     return Promise.resolve()
@@ -17,7 +18,7 @@ export function favicon(_req: Request, res: Response, next: NextFunction) {
 }
 
 export function appScript(req: Request, res: Response, next: NextFunction) {
-    const scriptName = req.params["script"];
+    const scriptName = requestParam(req, "script");
     let scriptPath: string;
     return Promise.resolve()
         .then(() => scriptName || Promise.reject(`param script "${scriptName}" invalid or not set`))

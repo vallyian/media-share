@@ -4,6 +4,7 @@ import { OAuth2Client, TokenPayload } from "google-auth-library";
 import { env } from "../env";
 import { renderPage } from "../services/render.service";
 import { encrypt, decrypt } from "../services/crypto.service";
+import { requestQueryParam } from "../services/sanitizer.service";
 
 type AccessToken = Pick<TokenPayload, "email">;
 
@@ -11,8 +12,8 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
     const accessTokenCookieName = "access_token";
 
     const accessToken = req.signedCookies[accessTokenCookieName];
-    const idToken = <string>req.query["credential"];
-    const redirect = <string>req.query["redirect"];
+    const idToken = requestQueryParam(req, "credential");
+    const redirect = requestQueryParam(req, "redirect");
 
     if (accessToken)
         return Promise.resolve()
@@ -33,7 +34,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
                 : Promise.reject("invalid id token"))
             .then(token => res
                 .cookie(accessTokenCookieName, token, { secure: true, signed: true, httpOnly: true, sameSite: true })
-                .redirect(redirect || "/"))
+                .redirect(redirect))
             .catch(err => {
                 console.error(err);
                 return next(err);

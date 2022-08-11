@@ -7,6 +7,7 @@ import * as fsService from "../services/fs.service";
 import * as videoService from "../services/video.service";
 import * as subtitleService from "../services/subtitle.service";
 import * as renderService from "../services/render.service";
+import { requestQueryParam } from "../services/sanitizer.service";
 
 type DecodedPaths = {
     relative: string;
@@ -17,12 +18,6 @@ type DecodedPaths = {
 
 export async function routeMiddleware(req: Request, res: Response, next: NextFunction) {
     const decodedPaths = decodePaths(req.path);
-    const videoExtension = () => {
-        const video = req.query["video"];
-        return video && typeof video === "string" && /^\.mp4$/i.test(video)
-            ? String(video)
-            : "";
-    };
 
     const isDir = await fsService.dirExists(decodedPaths.media);
     if (isDir)
@@ -33,11 +28,11 @@ export async function routeMiddleware(req: Request, res: Response, next: NextFun
 
     let fileHandler: (() => Promise<FileResponse | undefined>) | undefined = undefined;
     switch (true) {
-        case fileExtension === ".mp4" && isFile && !req.query["static"]:
+        case fileExtension === ".mp4" && isFile && requestQueryParam(req, "static") !== "true":
             fileHandler = () => videoService.viewData(decodedPaths.media, decodedPaths.relative, fileExtension);
             break;
-        case fileExtension === ".vtt" && !req.query["static"]:
-            fileHandler = () => subtitleService.viewData(decodedPaths.media, videoExtension());
+        case fileExtension === ".vtt" && requestQueryParam(req, "static") !== "true":
+            fileHandler = () => subtitleService.viewData(decodedPaths.media, requestQueryParam(req, "video"));
             break;
         default:
             break;
