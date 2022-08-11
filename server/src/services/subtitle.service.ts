@@ -152,7 +152,8 @@ function getFps(videoPath: string): Promise<number | undefined> {
             || Promise.reject(`video file "${videoPath}" not found`))
         .then(() => new Promise<number>((ok, reject) => {
             const ffmpegPath = path.join("node_modules", "ffmpeg-static", `ffmpeg${os.platform() === "win32" ? ".exe" : ""}`);
-            if (fs.existsSync(ffmpegPath)) return reject(`ffmpeg binary "${ffmpegPath}" not found`);
+            if (!fs.existsSync(ffmpegPath)) return reject(`ffmpeg binary "${ffmpegPath}" not found`);
+
             child_process.exec(
                 `"${ffmpegPath}" -i "${videoPath}"`,
                 (_err, stdout, stderr) => {
