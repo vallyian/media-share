@@ -5,12 +5,6 @@ import { env } from "../env";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- last arg required by express to correctly interpret as error middleware
 export function errorMiddleware(err: AppError, req: Request, res: Response, _next: NextFunction) {
-    const body = req.body;
-    if (body instanceof Object) {
-        if (body.password) body.password = "...omitted...";
-        if (body.passwordRepeat) body.passwordRepeat = "...omitted...";
-    }
-
     const errJson = {
         status: err.status || 500,
         message: err.message || "internal server error",
@@ -19,11 +13,16 @@ export function errorMiddleware(err: AppError, req: Request, res: Response, _nex
         method: req.method,
         url: req.url,
         headers: (() => {
-            if (req.headers.authorization) req.headers.authorization = "...omitted...";
-            if (req.headers.cookie) req.headers.cookie = "...omitted...";
+            if (req.headers.authorization) {
+                delete req.headers.authorization;
+                req.headers["x-authorization-omitted"] = "...";
+            }
+            if (req.headers.cookie) {
+                delete req.headers.cookie;
+                req.headers["x-cookie-omitted"] = "...";
+            }
             return req.headers;
-        })(),
-        body,
+        })()
     };
 
     console.error(errJson);
