@@ -105,7 +105,7 @@ jobs:
               run: ./run push
 
     codeql:
-        name: Analyze
+        name: CodeQL analysis
         runs-on: ubuntu-latest
         permissions:
             actions: read
@@ -121,7 +121,7 @@ jobs:
               with:
                   languages: "javascript"
 
-            - name: build
+            - name: Build javascript
               run: npm --prefix server run build
 
             - name: Perform CodeQL Analysis
