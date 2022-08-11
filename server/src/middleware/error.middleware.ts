@@ -7,8 +7,7 @@ import { env } from "../env";
 export function errorMiddleware(err: AppError, req: Request, res: Response, _next: NextFunction) {
     const body = req.body;
     if (body instanceof Object) {
-        if (body.password) body.password = "...omitted...";
-        if (body.passwordRepeat) body.passwordRepeat = "...omitted...";
+        if (body.password) body.password = "...";
     }
 
     const errJson = {
@@ -19,8 +18,14 @@ export function errorMiddleware(err: AppError, req: Request, res: Response, _nex
         method: req.method,
         url: req.url,
         headers: (() => {
-            if (req.headers.authorization) req.headers.authorization = "...omitted...";
-            if (req.headers.cookie) req.headers.cookie = "...omitted...";
+            if (req.headers.authorization) {
+                delete req.headers.authorization;
+                req.headers["x-authorization-omitted"] = "...";
+            }
+            if (req.headers.cookie) {
+                delete req.headers.cookie;
+                req.headers["x-cookie-omitted"] = "...";
+            }
             return req.headers;
         })(),
         body,
