@@ -1,9 +1,10 @@
 import fs from "node:fs";
+import path from "node:path";
+import os from "node:os";
 import { TextDecoder } from "node:util";
 import child_process from "node:child_process";
 
 import jschardet from "jschardet";
-import ffmpegPath from "ffmpeg-static";
 import { FileResponse } from "../@types/FileResponse";
 
 export function exists(videoPath: string, videoExtension: string, desiredSubtitleExtension?: string): boolean {
@@ -15,8 +16,8 @@ export function exists(videoPath: string, videoExtension: string, desiredSubtitl
     return ret;
 }
 
-export async function viewData(mediaPath: string, videoExtension: string | undefined): Promise<FileResponse | undefined> {
-    const data = await transform(mediaPath, String(videoExtension || ""));
+export async function viewData(mediaPath: string, videoExtension: string): Promise<FileResponse | undefined> {
+    const data = await transform(mediaPath, videoExtension);
     return data
         ? { mime: "text/vtt; charset=UTF-8", data }
         : undefined;
@@ -149,9 +150,9 @@ function getFps(videoPath: string): Promise<number | undefined> {
     return Promise.resolve()
         .then(() => fs.existsSync(videoPath)
             || Promise.reject(`video file "${videoPath}" not found`))
-        .then(() => fs.existsSync(ffmpegPath)
-            || Promise.reject(`ffmpeg binary "${ffmpegPath}" not found`))
-        .then(() => new Promise<number>((ok, reject) =>
+        .then(() => new Promise<number>((ok, reject) => {
+            const ffmpegPath = path.join("node_modules", "ffmpeg-static", `ffmpeg${os.platform() === "win32" ? ".exe" : ""}`);
+            if (fs.existsSync(ffmpegPath)) return reject(`ffmpeg binary "${ffmpegPath}" not found`);
             child_process.exec(
                 `"${ffmpegPath}" -i "${videoPath}"`,
                 (_err, stdout, stderr) => {
@@ -160,8 +161,8 @@ function getFps(videoPath: string): Promise<number | undefined> {
                         ? ok(+fps)
                         : reject(`invalid fps value "${fps}" in video "${videoPath}"`);
                 }
-            )
-        ))
+            );
+        }))
         .catch(err => {
             console.error(err);
             return undefined;
