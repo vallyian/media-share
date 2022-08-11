@@ -8,12 +8,15 @@ import jschardet from "jschardet";
 import { FileResponse } from "../@types/FileResponse";
 
 export function exists(videoPath: string, videoExtension: string, desiredSubtitleExtension?: string): boolean {
-    const videoExtensionRx = new RegExp(`\\${videoExtension}$`, "i");
+    const extensionRx = /^\.[a-z0-9]{3,4}$/i;
+    const videoExtensionRx = extensionRx.test(videoExtension)
+        ? new RegExp(`\\${videoExtension}$`, "i")
+        : /^\.srt$/i;
     const subtitleExtensions = desiredSubtitleExtension
         ? [desiredSubtitleExtension]
         : [".sub", ".srt"];
-    const ret = subtitleExtensions.map(subtitleExtension => fs.existsSync(videoPath.replace(videoExtensionRx, subtitleExtension))).some(s => !!s);
-    return ret;
+    const ret = subtitleExtensions.find(subtitleExtension => fs.existsSync(videoPath.replace(videoExtensionRx, subtitleExtension)));
+    return !!ret;
 }
 
 export async function viewData(mediaPath: string, videoExtension: string | undefined): Promise<FileResponse | undefined> {
