@@ -6,14 +6,20 @@ import { PathLink } from "../@types/PathLink";
 
 export function dirExists(dirPath: string): Promise<boolean> {
     return Promise.resolve()
-        .then(() => fs.promises.stat(dirPath))
+        .then(() => {
+            const dirPathClean = path.normalize(dirPath);
+            return fs.promises.stat(dirPathClean);
+        })
         .then(stat => stat.isDirectory())
         .catch(() => false);
 }
 
 export function fileExists(filePath: string): Promise<boolean> {
     return Promise.resolve()
-        .then(() => fs.promises.stat(filePath))
+        .then(() => {
+            const filePathClean = path.normalize(filePath);
+            return fs.promises.stat(filePathClean);
+        })
         .then(stat => stat.isFile())
         .catch(() => false);
 }

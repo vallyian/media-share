@@ -151,19 +151,20 @@ function getFile(mediaPath: string): Promise<string | undefined> {
 
 function getFps(videoPath: string): Promise<number | undefined> {
     return Promise.resolve()
-        .then(() => fs.existsSync(videoPath)
-            || Promise.reject(`video file "${videoPath}" not found`))
         .then(() => new Promise<number>((ok, reject) => {
+            const videoPathNormalized = path.normalize(videoPath);
+            if (!fs.existsSync(videoPathNormalized)) return reject(`video file "${videoPath}" not found`);
+
             const ffmpegPath = path.join(process.cwd(), "node_modules", "ffmpeg-static", os.platform() === "win32" ? "ffmpeg.exe" : "ffmpeg");
             if (!fs.existsSync(ffmpegPath)) return reject(`ffmpeg binary "${ffmpegPath}" not found`);
 
             child_process.exec(
-                `"${ffmpegPath}" -i "${videoPath}"`,
+                `"${ffmpegPath}" -i "${videoPathNormalized}"`,
                 (_err, stdout, stderr) => {
                     const fps = (((`${stdout}${stderr}`.match(/Stream #.*: Video: .*, (\d+\.?\d{0,}) fps,/gmi) || [])[0] || "").match(/, (\d+\.?\d{0,}) fps,/) || [])[1] || "";
                     isFinite(+fps) && +fps > 0
                         ? ok(+fps)
-                        : reject(`invalid fps value "${fps}" in video "${videoPath}"`);
+                        : reject(`invalid fps value "${fps}" in video "${videoPathNormalized}"`);
                 }
             );
         }))
