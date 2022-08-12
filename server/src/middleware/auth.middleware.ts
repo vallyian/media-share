@@ -8,66 +8,59 @@ import * as sanitizeService from "../services/sanitize.service";
 
 type AccessToken = Pick<TokenPayload, "email">;
 
-export function authMiddleware(req: Request, res: Response, next: NextFunction) {
-    const accessTokenCookieName = "access_token";
+const accessTokenCookieName = "access_token";
 
+export const authMiddleware = [verifyAccessToken, verifyIdToken, notAuthorized];
+
+function verifyAccessToken(req: Request, res: Response, next: NextFunction) {
     const accessToken = req.signedCookies[accessTokenCookieName];
-    const idToken = sanitizeService.queryParams(req).credential;
-    const redirect = sanitizeService.queryParams(req).redirect;
-
-    if (accessToken)
-        return Promise.resolve()
-            .then(() => verifyAccessToken(accessToken))
-            .then(valid => valid
-                ? next()
-                : Promise.reject("invalid access token"))
-            .catch(err => {
-                console.error(err);
-                return next(err);
-            });
-
-    if (idToken)
-        return Promise.resolve()
-            .then(() => verifyIdToken(idToken))
-            .then(token => token
-                ? getAccessToken(token)
-                : Promise.reject("invalid id token"))
-            .then(token => res
-                .cookie(accessTokenCookieName, token, { secure: true, signed: true, httpOnly: true, sameSite: true })
-                .redirect(redirect || "/"))
-            .catch(err => {
-                console.error(err);
-                return next(err);
-            });
+    if (!accessToken) return next();
 
     return Promise.resolve()
-        .then(() => renderService.renderPage("auth", { gClientId: env.G_CLIENT_ID }))
-        .then(({ mime, data }) => res.setHeader("Content-type", mime).status(401).end(data))
-        .catch(err => next(err));
-}
-
-function verifyAccessToken(accessToken: string): Promise<AccessToken> {
-    return Promise.resolve()
-        .then(() => {
-            if (!accessToken) return Promise.reject("invalid access token arg");
-            return cryptoService.decrypt(accessToken);
-        })
+        .then(() => cryptoService.decrypt(accessToken))
         .then(decrypted => JSON.parse(decrypted))
         .then((token: AccessToken) => {
             if (!token.email) return Promise.reject("invalid access token email");
             if (!env.G_EMAILS.includes(token.email)) return Promise.reject("email not authorized");
             return token;
+        })
+        .then(token => next() /* populate req.user if required */)
+        .catch(err => {
+            console.error(err);
+            return res.status(403).end();
         });
 }
 
-function verifyIdToken(idToken: string): Promise<TokenPayload> {
+function verifyIdToken(req: Request, res: Response, next: NextFunction) {
+    const idToken = sanitizeService.queryParams(req).credential;
+    if (!idToken) return next();
+
+    const redirect = sanitizeService.queryParams(req).redirect;
+
     return Promise.resolve()
         .then(() => new OAuth2Client(env.G_CLIENT_ID).verifyIdToken({
             idToken,
             audience: env.G_CLIENT_ID,
         }))
         .then(ticket => ticket.getPayload()
-            || Promise.reject("idToken payload is undefined"));
+            || Promise.reject("id token payload is undefined"))
+        .then(idToken => idToken
+            ? getAccessToken(idToken)
+            : Promise.reject("invalid id token"))
+        .then(accessToken => res
+            .cookie(accessTokenCookieName, accessToken, { secure: true, signed: true, httpOnly: true, sameSite: true })
+            .redirect(redirect))
+        .catch(err => {
+            console.error(err);
+            return res.status(403).end();
+        });
+}
+
+export function notAuthorized(req: Request, res: Response, next: NextFunction) {
+    return Promise.resolve()
+        .then(() => renderService.renderPage("auth", { gClientId: env.G_CLIENT_ID }))
+        .then(({ mime, data }) => res.setHeader("Content-type", mime).status(401).end(data))
+        .catch(err => next(err));
 }
 
 function getAccessToken(idToken: TokenPayload): Promise<string> {

@@ -41,7 +41,7 @@ export function makeApp(): express.Application {
     app.use(routes.health, healthMiddleware);
     app.use(routes.favicon, favicon);
     app.use(routes.appScripts, appScript);
-    app.use(authMiddleware);
+    app.use(...authMiddleware);
     app.use(routeMiddleware);
     app.use(notFoundMiddleware);
     app.use(errorMiddleware);
