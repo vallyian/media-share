@@ -21,11 +21,12 @@
         "quotes": [ "error", "double" ],
         "semi": [ "error", "always" ],
         "@typescript-eslint/no-floating-promises": [ "error" ],
+        "no-restricted-globals": [ "error", "fit", "xit", "fdescribe", "xdescribe" ],
         "no-restricted-syntax": [
             "error",
             {
-                "selector": "CallExpression[callee.name=/^(fit|xit|fdescribe|xdescribe)$/]",
-                "message": "setTimeout must always be invoked with two arguments."
+                "selector": "CallExpression[callee.object.name='process'][callee.property.name='exit']",
+                "message": "use src/helpers/process.helper.ts"
             }
         ]
     }

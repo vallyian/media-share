@@ -23,7 +23,7 @@ export function makeApp(): express.Application {
     app.use(rateLimit({
         windowMs: env.RATE_LIMIT_MINUTES * 60 * 1000,
         max: env.RATE_LIMIT_COUNTER
-    }))
+    }));
     app.use(helmet.contentSecurityPolicy({
         directives: {
             defaultSrc: ["'self'"],
