@@ -2,14 +2,13 @@
 
 import fs from "node:fs";
 
-import * as process from "./internals/process";
-
 describe("env", () => {
     const validFormatClientId = "test.apps.googleusercontent.com";
     const validFormatEmails = "test@gmail.com";
 
     beforeEach(() => {
         spyOn(fs, "existsSync").and.returnValue(false);
+        spyOn(console, "error");
         delete require.cache[require.resolve("./env")];
         process.env["G_CLIENT_ID"] = validFormatClientId;
         process.env["G_EMAILS"] = validFormatEmails;

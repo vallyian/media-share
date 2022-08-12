@@ -3,7 +3,7 @@ import os from "node:os";
 
 import dotenv from "dotenv";
 
-import * as process from "./internals/process";
+import * as processHelper from "./helpers/process.helper";
 import * as cryptoService from "./services/crypto.service";
 
 loadEnvFile();
@@ -49,5 +49,5 @@ function loadEnvFile() {
 }
 
 function err(key: string) {
-    return process.exit(process.ExitCode.Environment, `env var ${key} invalid`);
+    return processHelper.exit(processHelper.ExitCode.Environment, `env var ${key} invalid`);
 }

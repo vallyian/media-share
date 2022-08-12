@@ -1,15 +1,6 @@
-const { env, on, pid } = process;
+/* eslint-disable no-restricted-syntax */
 
-export {
-    env,
-    on,
-    pid,
-
-    ExitCode,
-    exit
-};
-
-enum ExitCode {
+export enum ExitCode {
     Generic = 1,
     UncaughtException = 2,
     UnhandledRejection = 3,
@@ -20,7 +11,7 @@ enum ExitCode {
     WorkerStartup = 201,
 }
 
-function exit(code: ExitCode, ...error: unknown[]): never {
+export function exit(code: ExitCode, ...error: unknown[]): never {
     if (error) console.error(...error);
     process.exit(code);
 }

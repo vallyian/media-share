@@ -5,15 +5,15 @@ import path from "node:path";
 
 import { Application } from "express";
 
-import * as process from "./internals/process";
 import { env } from "./env";
 import { makeApp } from "./app";
+import * as processHelper from "./helpers/process.helper";
 
-serve(makeApp).catch((err: Error) => process.exit(process.ExitCode.Generic, "Critical", err));
+serve(makeApp).catch((err: Error) => processHelper.exit(processHelper.ExitCode.Generic, "Critical", err));
 
 function serve(expressAppFactory: () => Application | Promise<Application>): Promise<void> {
-    process.on("uncaughtException", err => process.exit(process.ExitCode.UncaughtException, err));
-    process.on("unhandledRejection", (reason, promise) => process.exit(process.ExitCode.UnhandledRejection, reason, promise));
+    process.on("uncaughtException", err => processHelper.exit(processHelper.ExitCode.UncaughtException, err));
+    process.on("unhandledRejection", (reason, promise) => processHelper.exit(processHelper.ExitCode.UnhandledRejection, reason, promise));
 
     return cluster.isPrimary
         ? clusterPrimary()
@@ -52,7 +52,7 @@ function clusterWorker(expressAppFactory: () => Application | Promise<Applicatio
         })
         .catch(err => {
             console.error("Critical", err);
-            process.exit(process.ExitCode.WorkerStartup);
+            processHelper.exit(processHelper.ExitCode.WorkerStartup);
         });
 }
 

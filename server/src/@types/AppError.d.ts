@@ -1,4 +1,4 @@
-export type AppError = globalThis.Error & {
+export type AppError = Error & {
     status?: number | undefined;
     promise?: Promise<unknown>;
 }
