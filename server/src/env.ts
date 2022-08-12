@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import os from "node:os";
 
 import dotenv from "dotenv";
 
@@ -16,6 +17,9 @@ export const env = Object.freeze({
     TOKEN_KEY: e("TOKEN_KEY", () => cryptoService.randomString(32)).val,
 
     VIEWS_DIR: e("NODE_ENV").val === "development" ? "src/views" : "views",
+    CLUSTES: e("NODE_ENV").val === "development" ? 1 : os.cpus().length,
+    RATE_LIMIT_MINUTES: e("RATE_LIMIT_MINUTES", () => 5).number(v => v > 0 && v <= 24 * 60),
+    RATE_LIMIT_COUNTER: Math.ceil(+e("RATE_LIMIT_MINUTES", () => 5).val * 60 * 5 / (e("NODE_ENV").val === "development" ? 1 : os.cpus().length))
 });
 
 function e(key: string, def?: () => unknown) {

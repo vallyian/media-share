@@ -1,4 +1,5 @@
 import express from "express";
+import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import compression from "compression";
@@ -19,6 +20,10 @@ export function makeApp(): express.Application {
 
     app = express();
 
+    app.use(rateLimit({
+        windowMs: env.RATE_LIMIT_MINUTES * 60 * 1000,
+        max: env.RATE_LIMIT_COUNTER
+    }))
     app.use(helmet.contentSecurityPolicy({
         directives: {
             defaultSrc: ["'self'"],
