@@ -1,4 +1,3 @@
-import os from "node:os";
 import cluster, { Worker } from "node:cluster";
 import https from "node:https";
 import fs from "node:fs";
@@ -31,7 +30,7 @@ function clusterPrimary(): Promise<void> {
         .then(() => {
             const workers = new Array<Worker>();
             const fork = () => workers.push(cluster.fork(env));
-            new Array(env.NODE_ENV === "development" ? 1 : os.cpus().length).fill(null).map(fork);
+            new Array(env.CLUSTES).fill(null).map(fork);
             cluster.on("exit", (worker, code, signal) => {
                 const workerId = workers.findIndex(w => w.id === worker.id);
                 if (workerId >= 0) workers.splice(workerId, 1);
