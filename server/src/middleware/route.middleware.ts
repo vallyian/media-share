@@ -7,7 +7,7 @@ import * as fsService from "../services/fs.service";
 import * as videoService from "../services/video.service";
 import * as subtitleService from "../services/subtitle.service";
 import * as renderService from "../services/render.service";
-import { queryParamVideo } from "../services/sanitizer.service";
+import * as sanitizeService from "../services/sanitize.service";
 
 type DecodedPaths = {
     relative: string;
@@ -22,33 +22,31 @@ export async function routeMiddleware(req: Request, res: Response, next: NextFun
         return dirIndexResponse(decodedPaths, res, next);
 
     const isFile = await fsService.fileExists(decodedPaths.media);
-    const fileExtension = path.extname(decodedPaths.relative).toLowerCase();
+    const isStatic = sanitizeService.queryParams(req).static;
 
-    let fileHandler: (() => Promise<FileResponse | undefined>) | undefined = undefined;
-    switch (true) {
-        case fileExtension === ".mp4" && isFile && !req.query["static"]:
-            fileHandler = () => videoService.viewData(decodedPaths.media, decodedPaths.relative, fileExtension);
-            break;
-        case fileExtension === ".vtt" && !req.query["static"]:
-            fileHandler = () => subtitleService.viewData(decodedPaths.media, queryParamVideo(req));
-            break;
-        default:
-            break;
-    }
-    if (fileHandler) {
-        const fileHandlerResult = await Promise.resolve().then(() => fileHandler?.())
-            .catch(() => undefined);
-        if (fileHandlerResult && fileHandlerResult.mime && fileHandlerResult.data)
-            return res.setHeader("Content-type", fileHandlerResult.mime).end(fileHandlerResult.data);
-    }
-
-    if (isFile)
+    if (isFile && isStatic)
         return res.sendFile(decodedPaths.media, {
             root: process.cwd(),
             dotfiles: "allow"
         });
 
-    return next();
+    const fileExtension = path.extname(decodedPaths.relative).toLowerCase();
+
+    let fileHandler: Promise<FileResponse>;
+    switch (true) {
+        case videoService.videoExtensionsRx.test(fileExtension) && isFile:
+            fileHandler = videoService.viewData(decodedPaths.media, decodedPaths.relative, fileExtension);
+            break;
+        case fileExtension === ".vtt":
+            fileHandler = subtitleService.viewData(decodedPaths.media, sanitizeService.queryParams(req).video);
+            break;
+        default:
+            return next();
+    }
+
+    return fileHandler
+        .then(({ mime, data }) => res.setHeader("Content-type", mime).end(data))
+        .catch(err => next(err));
 }
 
 function dirIndexResponse(decodedPaths: DecodedPaths, res: Response, next: NextFunction) {

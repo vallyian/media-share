@@ -2,8 +2,9 @@ import { NextFunction, Request, Response } from "express";
 import { OAuth2Client, TokenPayload } from "google-auth-library";
 
 import { env } from "../env";
-import { renderPage } from "../services/render.service";
-import { encrypt, decrypt } from "../services/crypto.service";
+import * as renderService from "../services/render.service";
+import * as cryptoService from "../services/crypto.service";
+import * as sanitizeService from "../services/sanitize.service";
 
 type AccessToken = Pick<TokenPayload, "email">;
 
@@ -11,8 +12,8 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
     const accessTokenCookieName = "access_token";
 
     const accessToken = req.signedCookies[accessTokenCookieName];
-    const idToken = <string>req.query["credential"];
-    const redirect = <string>req.query["redirect"];
+    const idToken = sanitizeService.queryParams(req).credential;
+    const redirect = sanitizeService.queryParams(req).redirect;
 
     if (accessToken)
         return Promise.resolve()
@@ -40,7 +41,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
             });
 
     return Promise.resolve()
-        .then(() => renderPage("auth", { gClientId: env.G_CLIENT_ID }))
+        .then(() => renderService.renderPage("auth", { gClientId: env.G_CLIENT_ID }))
         .then(({ mime, data }) => res.setHeader("Content-type", mime).status(401).end(data))
         .catch(err => next(err));
 }
@@ -49,7 +50,7 @@ function verifyAccessToken(accessToken: string): Promise<AccessToken> {
     return Promise.resolve()
         .then(() => {
             if (!accessToken) return Promise.reject("invalid access token arg");
-            return decrypt(accessToken);
+            return cryptoService.decrypt(accessToken);
         })
         .then(decrypted => JSON.parse(decrypted))
         .then((token: AccessToken) => {
@@ -79,5 +80,5 @@ function getAccessToken(idToken: TokenPayload): Promise<string> {
                 email: idToken.email
             };
         })
-        .then((at: AccessToken) => encrypt(JSON.stringify(at)));
+        .then((at: AccessToken) => cryptoService.encrypt(JSON.stringify(at)));
 }
