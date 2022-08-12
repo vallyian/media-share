@@ -18,13 +18,13 @@ function verifyAccessToken(req: Request, res: Response, next: NextFunction) {
 
     return Promise.resolve()
         .then(() => cryptoService.decrypt(accessToken))
-        .then(decrypted => JSON.parse(decrypted))
-        .then((token: AccessToken) => {
+        .then(decrypted => {
+            const token: AccessToken = JSON.parse(decrypted);
             if (!token.email) return Promise.reject("invalid access token email");
             if (!env.G_EMAILS.includes(token.email)) return Promise.reject("email not authorized");
-            return token;
+            // populate req.user if required
+            return next();
         })
-        .then(token => next() /* populate req.user if required */)
         .catch(err => {
             console.error(err);
             return res.status(403).end();
@@ -56,7 +56,7 @@ function verifyIdToken(req: Request, res: Response, next: NextFunction) {
         });
 }
 
-export function notAuthorized(req: Request, res: Response, next: NextFunction) {
+export function notAuthorized(_req: Request, res: Response, next: NextFunction) {
     return Promise.resolve()
         .then(() => renderService.renderPage("auth", { gClientId: env.G_CLIENT_ID }))
         .then(({ mime, data }) => res.setHeader("Content-type", mime).status(401).end(data))
