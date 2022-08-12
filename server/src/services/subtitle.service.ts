@@ -16,16 +16,15 @@ export function exists(videoPath: string, videoExtension: string, desiredSubtitl
     return ret;
 }
 
-export async function viewData(mediaPath: string, videoExtension: string): Promise<FileResponse | undefined> {
-    const data = await transform(mediaPath, videoExtension);
-    return data
-        ? { mime: "text/vtt; charset=UTF-8", data }
-        : undefined;
+export async function viewData(mediaPath: string, videoExtension: string): Promise<FileResponse> {
+    return Promise.resolve()
+        .then(() => transform(mediaPath, videoExtension))
+        .then(data => ({ mime: "text/vtt; charset=UTF-8", data }));
 }
 
-async function transform(mediaPath: string, videoExtension: string): Promise<string | undefined> {
+async function transform(mediaPath: string, videoExtension: string): Promise<string> {
     if (fs.existsSync(mediaPath))
-        return;
+        return "";
 
     let subtitleFile: string | undefined = "";
     let subtitleExtension = "";
@@ -46,7 +45,7 @@ async function transform(mediaPath: string, videoExtension: string): Promise<str
         if (subtitleFile) return subtitleFile;
     }
 
-    return;
+    return "";
 }
 
 function subToVtt(subtitlePath: string, videoPath: string): Promise<string | undefined> {

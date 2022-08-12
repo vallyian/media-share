@@ -2,7 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { ItemStat } from "../@types/ItemStat";
-import { PathLink } from "../@types/PathLink";
+
+type PathLink = {
+    name: string;
+    link: string;
+}
 
 export function dirExists(dirPath: string): Promise<boolean> {
     return Promise.resolve()

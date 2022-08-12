@@ -8,8 +8,8 @@
 
 <%- include(`../partials/pills`, { pills, dark: true }); %>
 
-<div class="video <% if (prev.name || next.name) { %>video-b<% } %>">
-    <video controls autoplay preload="metadata" <% if (next.name) { %>data-next-video="<%- next.link %>"<% } %>>
+<div class="video <% if (prev || next) { %>video-b<% } %>">
+    <video controls autoplay preload="metadata">
         <source type="<%- mimeType %>" src="<%- relativePath %>?static=true" />
         <% if (hasSubtitle) { %>
         <track
@@ -22,7 +22,7 @@
         <% } %>
     </video>
     <div class="opacity-50 text-center">
-        <% if (prev.name) { %><a class="pe-1" href="<%- prev.link %>"><< prev</a><% } %>
-        <% if (next.name) { %><a class="ps-1" href="<%- next.link %>">next >></a><% } %>
+        <% if (prev) { %><a class="pe-1" href="<%- prev %>"><< prev</a><% } %>
+        <% if (next) { %><a id="next-media" class="ps-1" href="<%- next %>">next >></a><% } %>
     </div>
 </div>
