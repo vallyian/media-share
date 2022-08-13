@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import { Stat } from "../@types/AppRequest";
 import { ItemStat } from "../@types/ItemStat";
 
 type PathLink = {
@@ -8,32 +9,43 @@ type PathLink = {
     link: string;
 }
 
-export function dirExists(dirPath: string): Promise<boolean> {
+export function stat(itemPath: string): Promise<Stat> {
     return Promise.resolve()
-        .then(() => fs.promises.stat(dirPath))
-        .then(stat => stat.isDirectory())
-        .catch(() => false);
+        .then(() => typeof itemPath === "string" && !!itemPath || Promise.reject())
+        .then(() => fs.promises.stat(itemPath))
+        .then(stat => {
+            if (stat.isDirectory()) return "dir";
+            if (stat.isFile()) return "file";
+            return "unknown";
+        })
+        .catch(() => "error");
 }
 
-export function fileExists(filePath: string): Promise<boolean> {
+export function readFile(filePath: string): Promise<Buffer> {
     return Promise.resolve()
-        .then(() => fs.promises.stat(filePath))
-        .then(stat => stat.isFile())
-        .catch(() => false);
+        .then(() => stat(filePath))
+        .then(stat => stat === "file" || Promise.reject(""))
+        .then(() => fs.promises.readFile(filePath));
 }
 
-export function readDir(relativePath: string, mediaPath: string): Promise<ItemStat[]> {
+export function tryReadFileSync(filePaths: string[]): Buffer | undefined {
+    for (const filePath of filePaths)
+        if (statSync(filePath) === "file") return fs.readFileSync(filePath);
+    return;
+}
+
+export function readDir(mediaDir: string, relativeDir: string): Promise<ItemStat[]> {
     let items: string[];
     return Promise.resolve()
-        .then(() => fs.promises.readdir(mediaPath))
+        .then(() => fs.promises.readdir(mediaDir))
         .then(i => {
             items = i;
-            return Promise.all(items.map(item => fs.promises.stat(path.join(mediaPath, item))));
+            return Promise.all(items.map(item => fs.promises.stat(path.join(mediaDir, item))));
         })
         .then(stats => stats.map((stat, statIndex) => {
             const isDir = stat.isDirectory();
             return (<ItemStat>{
-                parent: relativePath,
+                parent: relativeDir,
                 name: items[statIndex],
                 size: isDir ? "" : size(stat.size),
                 isDir: isDir || undefined
@@ -55,6 +67,17 @@ export function pathLinks(mediaPath: string): PathLink[] {
     }
 
     return pills;
+}
+
+function statSync(dirPath: string): Stat {
+    try {
+        const stat = fs.statSync(dirPath);
+        if (stat.isDirectory()) return "dir";
+        if (stat.isFile()) return "file";
+        return "unknown";
+    } catch (_err) {
+        return "error";
+    }
 }
 
 function size(value: number): string {

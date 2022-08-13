@@ -1,12 +1,12 @@
-import fs from "node:fs";
 import os from "node:os";
 
 import dotenv from "dotenv";
 
 import * as processHelper from "./helpers/process.helper";
 import * as cryptoService from "./services/crypto.service";
+import * as fsService from "./services/fs.service";
 
-loadEnvFile();
+tryLoadEnvFile();
 
 export const env = Object.freeze({
     G_CLIENT_ID: e("G_CLIENT_ID").string(v => /^[a-z0-9-]+\.apps\.googleusercontent\.com$/i.test(v)),
@@ -16,6 +16,7 @@ export const env = Object.freeze({
     COOKIE_PASS: e("COOKIE_PASS", () => cryptoService.randomString(256)).val,
     TOKEN_KEY: e("TOKEN_KEY", () => cryptoService.randomString(32)).val,
 
+    MEDIA_DIR: "media",
     VIEWS_DIR: e("NODE_ENV").val === "development" ? "src/views" : "views",
     CLUSTES: e("NODE_ENV").val === "development" ? 1 : os.cpus().length,
     RATE_LIMIT_MINUTES: e("RATE_LIMIT_MINUTES", () => 5).number(v => v > 0 && v <= 24 * 60),
@@ -40,11 +41,11 @@ function e(key: string, def?: () => unknown) {
     };
 }
 
-function loadEnvFile() {
+function tryLoadEnvFile() {
     try {
-        const envPath = fs.existsSync("./.env") ? "./.env" : fs.existsSync("/run/secrets/.env") ? "/run/secrets/.env" : undefined;
-        if (envPath)
-            Object.entries(dotenv.parse(fs.readFileSync(envPath))).forEach(([k, v]) => process.env[k] = process.env[k] || v);
+        const envFile = fsService.tryReadFileSync([".env", "/run/secrets/.env"]);
+        if (envFile)
+            Object.entries(dotenv.parse(envFile)).forEach(([k, v]) => process.env[k] = process.env[k] || v);
     } catch (_err) { /* */ }
 }
 

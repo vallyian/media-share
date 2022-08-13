@@ -1,3 +1,5 @@
+<script src="/video.js" async defer></script>
+
 <style>
     body { background-color: black; }
     video { outline: none; width: 100%; height: 100%; }
@@ -11,15 +13,7 @@
 <div class="video <% if (prev || next) { %>video-b<% } %>">
     <video controls autoplay preload="metadata">
         <source type="<%- mimeType %>" src="<%- relativePath %>?static=true" />
-        <% if (hasSubtitle) { %>
-        <track
-            kind="subtitles"
-            default
-            label="English"
-            srclang="en"
-            src="<%- relativePath.replace(new RegExp('\\' + fileExtension, 'i'), '.vtt') %>?video=<%= fileExtension %>"
-        />
-        <% } %>
+        <track src="<%- subtitlePath %>" kind="subtitles" default label="English" srclang="en" />
     </video>
     <div class="opacity-50 text-center">
         <% if (prev) { %><a class="pe-1" href="<%- prev %>"><< prev</a><% } %>
