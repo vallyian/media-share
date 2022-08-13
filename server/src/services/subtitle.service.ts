@@ -1,62 +1,46 @@
-import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { TextDecoder } from "node:util";
 import child_process from "node:child_process";
 
 import jschardet from "jschardet";
+
 import { FileResponse } from "../@types/FileResponse";
+import * as fsService from "./fs.service";
 
-export function exists(videoPath: string, videoExtension: string, desiredSubtitleExtension?: string): boolean {
-    const videoExtensionRx = new RegExp(`\\${videoExtension}$`, "i");
-    const subtitleExtensions = desiredSubtitleExtension
-        ? [desiredSubtitleExtension]
-        : [".sub", ".srt"];
-    const ret = subtitleExtensions.map(subtitleExtension => fs.existsSync(videoPath.replace(videoExtensionRx, subtitleExtension))).some(s => !!s);
-    return ret;
-}
+const subtitleExtensions: Record<string, (vttPath: string, videoExtension: string) => Promise<string>> = {
+    ".sub": subToVtt,
+    ".srt": srtToVtt,
+};
 
-export async function viewData(mediaPath: string, videoExtension: string): Promise<FileResponse> {
+const ffmpegPath = path.join("node_modules", "ffmpeg-static", os.platform() === "win32" ? "ffmpeg.exe" : "ffmpeg");
+
+export function viewData(vttPath: string, videoExtension: string): Promise<FileResponse> {
+    const videoPath = vttPath.replace(/\.vtt$/, videoExtension);
     return Promise.resolve()
-        .then(() => transform(mediaPath, videoExtension))
+        .then(() => fsService.stat(videoPath))
+        .then(videoStat => videoStat === "file" || Promise.reject("video not found"))
+        .then(() => transform(vttPath, videoPath))
         .then(data => ({ mime: "text/vtt; charset=UTF-8", data }));
 }
 
-async function transform(mediaPath: string, videoExtension: string): Promise<string> {
-    if (fs.existsSync(mediaPath))
-        return "";
-
-    let subtitleFile: string | undefined = "";
-    let subtitleExtension = "";
-    let subtitlePath = "";
-    const videoPath = mediaPath.replace(/\.vtt$/i, videoExtension);
-
-    subtitleExtension = ".sub";
-    subtitlePath = mediaPath.replace(/\.vtt$/i, subtitleExtension);
-    if (exists(videoPath, videoExtension, subtitleExtension)) {
-        subtitleFile = await subToVtt(subtitlePath, videoPath);
-        if (subtitleFile) return subtitleFile;
+async function transform(vttPath: string, videoPath: string): Promise<string> {
+    for (const [ext, fn] of Object.entries(subtitleExtensions)) {
+        const subtitlePath = vttPath.replace(/\.vtt$/i, ext);
+        if (await fsService.stat(subtitlePath) === "file")
+            return fn(subtitlePath, videoPath);
     }
 
-    subtitleExtension = ".srt";
-    subtitlePath = mediaPath.replace(/\.vtt$/i, subtitleExtension);
-    if (exists(videoPath, videoExtension, subtitleExtension)) {
-        subtitleFile = await srtToVtt(subtitlePath);
-        if (subtitleFile) return subtitleFile;
-    }
-
-    return "";
+    return Promise.reject("subtitle not found");
 }
 
-function subToVtt(subtitlePath: string, videoPath: string): Promise<string | undefined> {
+function subToVtt(subtitlePath: string, videoPath: string): Promise<string> {
     return Promise.resolve()
         .then(() => Promise.all([
             getFile(subtitlePath),
             getFps(videoPath).then(v => v || 25 /* default */)
         ]))
         .then(([file, fps]) => {
-            if (!file) return undefined;
-
             const time = (frameId: number): string => new Date(frameId / fps * 1000).toISOString().substring(11, 23);
             const rx = /^(\{\d+\})(\{\d+\})(.+)/;
             const content = file.split(/\n/gmi).reduce((data, line) => {
@@ -76,19 +60,13 @@ function subToVtt(subtitlePath: string, videoPath: string): Promise<string | und
             return content
                 ? `WEBVTT\n${content}`
                 : Promise.reject(`no vtt content created from ${subtitlePath}`);
-        })
-        .catch(err => {
-            console.error(err);
-            return undefined;
         });
 }
 
-function srtToVtt(subtitlePath: string): Promise<string | undefined> {
+function srtToVtt(subtitlePath: string): Promise<string> {
     return Promise.resolve()
         .then(() => getFile(subtitlePath))
         .then(file => {
-            if (!file) return undefined;
-
             let content = "";
             const rx = /^(\d{2}:\d{2}:\d{2}[.,]\d{2,3})(?:,|\s-->\s)(\d{2}:\d{2}:\d{2}[.,]\d{2,3})$/;
             const time = (val?: string) => (val || "").replace(",", ".") + (/[.,]\d{2}$/.test((val || "")) ? "0" : "");
@@ -120,51 +98,40 @@ function srtToVtt(subtitlePath: string): Promise<string | undefined> {
             return content
                 ? `WEBVTT\n${content}`
                 : Promise.reject(`no vtt content created from ${subtitlePath}`);
-        })
-        .catch(err => {
-            console.error(err);
-            return undefined;
         });
 }
 
-function getFile(mediaPath: string): Promise<string | undefined> {
+function getFile(mediaPath: string): Promise<string> {
     return Promise.resolve()
-        .then(() => fs.promises.readFile(mediaPath))
-        .then(rawFile => {
+        .then(() => fsService.readFile(mediaPath))
+        .then(buffer => {
             /*
                 TODO: jschardet.detectAll and return multiple subtitles if detection not 100%
-                (<any>jschardet).detectAll(rawFile)
+                (<any>jschardet).detectAll(buffer)
             */
-            const encoding = jschardet.detect(rawFile).encoding;
-            const decodedFile = new TextDecoder(encoding).decode(rawFile);
+            const encoding = jschardet.detect(buffer).encoding;
+            const decodedFile = new TextDecoder(encoding).decode(buffer);
             return decodedFile;
-        })
-        .catch(err => {
-            console.error(err);
-            return undefined;
         });
 }
 
 function getFps(videoPath: string): Promise<number | undefined> {
     return Promise.resolve()
-        .then(() => fs.existsSync(videoPath)
-            || Promise.reject(`video file "${videoPath}" not found`))
-        .then(() => new Promise<number>((ok, reject) => {
-            const ffmpegPath = path.join("node_modules", "ffmpeg-static", `ffmpeg${os.platform() === "win32" ? ".exe" : ""}`);
-            if (!fs.existsSync(ffmpegPath)) return reject(`ffmpeg binary "${ffmpegPath}" not found`);
-
-            child_process.exec(
-                `"${ffmpegPath}" -i "${videoPath}"`,
-                (_err, stdout, stderr) => {
-                    const fps = (((`${stdout}${stderr}`.match(/Stream #.*: Video: .*, (\d+\.?\d{0,}) fps,/gmi) || [])[0] || "").match(/, (\d+\.?\d{0,}) fps,/) || [])[1] || "";
-                    isFinite(+fps) && +fps > 0
-                        ? ok(+fps)
-                        : reject(`invalid fps value "${fps}" in video "${videoPath}"`);
-                }
-            );
-        }))
-        .catch(err => {
-            console.error(err);
-            return undefined;
-        });
+        .then(() => Promise.all([
+            fsService.stat(videoPath),
+            fsService.stat(ffmpegPath)
+        ]))
+        .then(([videoStat, ffmepgStat]) => {
+            videoStat === "file" || Promise.reject(`video file "${videoPath}" not found`);
+            ffmepgStat === "file" || Promise.reject(`ffmpeg binary "${ffmpegPath}" not found`);
+        })
+        .then(() => new Promise<number>((ok, reject) => child_process.exec(
+            `"${ffmpegPath}" -i "${videoPath}"`,
+            (_err, stdout, stderr) => {
+                const fps = (((`${stdout}${stderr}`.match(/Stream #.*: Video: .*, (\d+\.?\d{0,}) fps,/gmi) || [])[0] || "").match(/, (\d+\.?\d{0,}) fps,/) || [])[1] || "";
+                isFinite(+fps) && +fps > 0
+                    ? ok(+fps)
+                    : reject(`invalid fps value "${fps}" in video "${videoPath}"`);
+            }
+        )));
 }

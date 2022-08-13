@@ -1,13 +1,12 @@
 import cluster, { Worker } from "node:cluster";
 import https from "node:https";
-import fs from "node:fs";
-import path from "node:path";
 
 import { Application } from "express";
 
 import { env } from "./env";
 import { makeApp } from "./app";
 import * as processHelper from "./helpers/process.helper";
+import * as fsService from "./services/fs.service";
 
 serve(makeApp).catch((err: Error) => processHelper.exit(processHelper.ExitCode.Generic, "Critical", err));
 
@@ -23,8 +22,9 @@ function serve(expressAppFactory: () => Application | Promise<Application>): Pro
 function clusterPrimary(): Promise<void> {
     return Promise.resolve()
         .then(() => {
-            const { cert, key, warns } = getCert();
-            warns.forEach(warn => console.warn("Warning", warn));
+            const { cert, key } = getCert();
+            cert || console.warn("Warning", "no cert file found");
+            key || console.warn("Warning", "no cert key file found");
             console.info(`${cert && key ? "[secure]" : "[insecure]"} ${env.NODE_ENV} server (main process ${process.pid}) starting on port ${env.PORT}`);
         })
         .then(() => {
@@ -56,23 +56,9 @@ function clusterWorker(expressAppFactory: () => Application | Promise<Applicatio
         });
 }
 
-function getCert(): { cert: Buffer | undefined, key: Buffer | undefined, warns: string[] } {
-    let [cert, key,] = [<Buffer | undefined>undefined, <Buffer | undefined>undefined];
-    const warns = [];
-
-    const crtPath = env.NODE_ENV === "development"
-        ? path.join("certs", "cert.crt")
-        : "/run/secrets/cert.crt";
-    fs.existsSync(crtPath) && fs.statSync(crtPath).isFile()
-        ? cert = fs.readFileSync(crtPath)
-        : warns.push(`cert file "${crtPath}" not found`);
-
-    const keyPath = env.NODE_ENV === "development"
-        ? path.join("certs", "cert.key")
-        : "/run/secrets/cert.key";
-    fs.existsSync(keyPath) && fs.statSync(keyPath).isFile()
-        ? key = fs.readFileSync(keyPath)
-        : warns.push(`cert key file "${keyPath}" not found`);
-
-    return { cert, key, warns };
+function getCert(): { cert: Buffer | undefined, key: Buffer | undefined } {
+    return {
+        cert: fsService.tryReadFileSync(["certs/cert.crt", "/run/secrets/cert.crt"]),
+        key: fsService.tryReadFileSync(["certs/cert.key", "/run/secrets/cert.key"])
+    };
 }

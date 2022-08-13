@@ -1,4 +1,4 @@
-import gAuthLib from "google-auth-library";
+import * as gAuthLib from "google-auth-library";
 
 import { env } from "../env";
 import * as cryptoService from "../services/crypto.service";
