@@ -138,9 +138,14 @@ results() {
 push() {
     [ "${semver}" != "0.0.0" ] || term "push can only run in CI"
 
+    local latest_tag
+    [ "${github_main}" = "true" ] && \
+    latest_tag="-t ${docker_username}/${docker_repo}:latest" || \
+    latest_tag=""
+    
     docker buildx build \
+        ${latest_tag} \
         -t ${docker_username}/${docker_repo}:${semver} \
-        -t ${docker_username}/${docker_repo}:latest \
         --build-arg "SEMVER=${semver}" \
         --platform "linux/amd64,linux/arm64/v8" \
         --pull \
