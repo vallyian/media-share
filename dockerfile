@@ -32,6 +32,7 @@ RUN npm audit --omit=dev --audit-level="${NPM_AUDIT_LEVEL}" && \
 
 FROM node:gallium-alpine3.16
 RUN apk add zlib=1.2.12-r3 && echo "temp fix for CVE-2022-37434 ###########################################################" && \
+    apk add tini && \
     mkdir -p /home/node/app/media && \
     touch /home/node/app/media/_no_media_volume_mounted_ && \
     chown -R node:node /home/node/app
@@ -49,5 +50,5 @@ HEALTHCHECK --interval=30s --timeout=1s --start-period=5s --retries=1 \
             if [ ! "$(wget -O /dev/null --server-response http://localhost:58082/health 2>&1 | awk '/^  HTTP/{print $2}')" = "200" ]; then exit 1; fi \
         fi
 EXPOSE "58082/tcp"
-ENTRYPOINT [ "node" ]
-CMD [ "." ]
+ENTRYPOINT [ "/sbin/tini", "--" ]
+CMD [ "node", "." ]
