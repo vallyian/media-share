@@ -97,8 +97,8 @@ function sort(items: ItemStat[], asc = true): ItemStat[] {
     return items.sort((a: ItemStat, b: ItemStat) => {
         if (a.isDir && !b.isDir) return order;
         if (!a.isDir && b.isDir) return -order;
-        const aName = a.name.toUpperCase();
-        const bName = b.name.toUpperCase();
+        const aName = a.name.toUpperCase().replace(/_/g, "!");
+        const bName = b.name.toUpperCase().replace(/_/g, "!");
         if (aName < bName) return order;
         if (aName > bName) return -order;
         return 0;
