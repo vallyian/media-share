@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-var-requires -- project is set to module but tests are commonjs */
 
-import fs from "node:fs";
+import * as fsService from "./services/fs.service";
 
 describe("env", () => {
     const validFormatClientId = "test.apps.googleusercontent.com";
     const validFormatEmails = "test@gmail.com";
 
     beforeEach(() => {
-        spyOn(fs, "existsSync").and.returnValue(false);
+        spyOn(fsService, "tryReadFileSync").and.returnValue(undefined);
         spyOn(console, "error");
         delete require.cache[require.resolve("./env")];
         process.env["AUTH_CLIENT"] = validFormatClientId;
@@ -26,7 +26,7 @@ describe("env", () => {
         it("invalid => process exit", () => {
             const testError = Error("test process exit");
             spyOn(process, "exit").and.throwError(testError);
-            process.env["AUTH_CLIENT"] = "test.unexpected.com";
+            process.env["AUTH_CLIENT"] = "";
             const env = () => require("./env");
             expect(env).toThrow(testError);
         });
@@ -50,7 +50,7 @@ describe("env", () => {
         it("invalid => process exit", () => {
             const testError = Error("test process exit");
             spyOn(process, "exit").and.throwError(testError);
-            process.env["AUTH_EMAILS"] = "test@email.com";
+            process.env["AUTH_EMAILS"] = "test_email.com";
             const env = () => require("./env");
             expect(env).toThrow(testError);
         });

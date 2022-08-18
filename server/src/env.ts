@@ -10,7 +10,7 @@ tryLoadEnvFile();
 
 export const env = Object.freeze({
     AUTH_CLIENT: e("AUTH_CLIENT").string(v => !!v),
-    AUTH_EMAILS: e("AUTH_EMAILS").list(v => v.split(",").map(s => s.trim()).filter(s => !!s), v => v.length > 0),
+    AUTH_EMAILS: e("AUTH_EMAILS").list(v => v.split(",").map(s => s.trim()).filter(s => !!s), v => v.includes("@")),
     NODE_ENV: e("NODE_ENV", () => "production").val,
     PORT: e("PORT", () => 58082).number(v => v > 0 && v <= 65536),
     COOKIE_PASS: e("COOKIE_PASS", () => cryptoService.randomString(256)).val,
