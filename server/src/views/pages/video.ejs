@@ -12,8 +12,10 @@
 
 <div class="video <% if (prev || next) { %>video-b<% } %>">
     <video controls autoplay preload="metadata">
-        <source type="<%- mimeType %>" src="<%- relativePath %>?static=true" />
-        <track src="<%- subtitlePath %>" kind="subtitles" default label="English" srclang="en" />
+        <source type="<%- mimeType %>" src="<%- urlPath %>" />
+        <% subtitles.forEach((subtitle, index) => { %>
+            <track src="<%- subtitle.path %>" kind="subtitles" label="<%- subtitle.name %>" <% if (index === 0) { %>default<% } %> />
+        <% }); %>
     </video>
     <div class="opacity-50 text-center">
         <% if (prev) { %><a class="pe-1" href="<%- prev %>"><< prev</a><% } %>

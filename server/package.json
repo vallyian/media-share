@@ -28,7 +28,7 @@
         "pretest": "node -e \"['../artifacts/unit-tests', '../artifacts/npm-test.fail'].forEach(i => fs.rmSync(i, { recursive: true, force: true }))\" && npm run ci",
         "test": "ts-node --project tsconfig.spec.json test.ts || echo 'fail' > ../artifacts/npm-test.fail",
         "prestart": "npm run prebuild",
-        "start": "node -e \"process.env.NODE_ENV='development'; process.env.PORT=58082; child_process.execSync('ts-node-dev --prefer-ts --clear --debug --inspect --watch -- src', {stdio:'inherit'})\""
+        "start": "node -e \"process.env.NODE_ENV='development'; child_process.execSync('ts-node-dev --prefer-ts --clear --debug --inspect --watch -- src', {stdio:'inherit'})\""
     },
     "dependencies": {
         "compression": "^1.7.4",

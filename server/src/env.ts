@@ -9,15 +9,13 @@ import * as fsService from "./services/fs.service";
 tryLoadEnvFile();
 
 export const env = Object.freeze({
-    G_CLIENT_ID: e("G_CLIENT_ID").string(v => /^[a-z0-9-]+\.apps\.googleusercontent\.com$/i.test(v)),
-    G_EMAILS: e("G_EMAILS").list(v => v.split(","), v => /^.+@gmail.com$/i.test(v.trim())),
+    AUTH_CLIENT: e("AUTH_CLIENT").string(v => !!v),
+    AUTH_EMAILS: e("AUTH_EMAILS").list(v => v.split(",").map(s => s.trim()).filter(s => !!s), v => v.length > 0),
     NODE_ENV: e("NODE_ENV", () => "production").val,
     PORT: e("PORT", () => 58082).number(v => v > 0 && v <= 65536),
     COOKIE_PASS: e("COOKIE_PASS", () => cryptoService.randomString(256)).val,
     TOKEN_KEY: e("TOKEN_KEY", () => cryptoService.randomString(32)).val,
 
-    MEDIA_DIR: "media",
-    VIEWS_DIR: e("NODE_ENV").val === "development" ? "src/views" : "views",
     CLUSTES: e("NODE_ENV").val === "development" ? 1 : os.cpus().length,
     RATE_LIMIT_MINUTES: e("RATE_LIMIT_MINUTES", () => 5).number(v => v > 0 && v <= 24 * 60),
     RATE_LIMIT_COUNTER: Math.ceil(+e("RATE_LIMIT_MINUTES", () => 5).val * 60 * 5 / (e("NODE_ENV").val === "development" ? 1 : os.cpus().length))

@@ -4,13 +4,13 @@ import https from "node:https";
 import { Application } from "express";
 
 import { env } from "./env";
-import { makeApp } from "./app";
+import { initApp } from "./app";
 import * as processHelper from "./helpers/process.helper";
 import * as fsService from "./services/fs.service";
 
-serve(makeApp).catch((err: Error) => processHelper.exit(processHelper.ExitCode.Generic, "Critical", err));
+serve(initApp).catch((err: Error) => processHelper.exit(processHelper.ExitCode.Generic, err));
 
-function serve(expressAppFactory: () => Application | Promise<Application>): Promise<void> {
+function serve(expressAppFactory: () => Promise<Application>): Promise<void> {
     process.on("uncaughtException", err => processHelper.exit(processHelper.ExitCode.UncaughtException, err));
     process.on("unhandledRejection", (reason, promise) => processHelper.exit(processHelper.ExitCode.UnhandledRejection, reason, promise));
 
@@ -40,7 +40,7 @@ function clusterPrimary(): Promise<void> {
         });
 }
 
-function clusterWorker(expressAppFactory: () => Application | Promise<Application>): Promise<void> {
+function clusterWorker(expressAppFactory: () => Promise<Application>): Promise<void> {
     return Promise.resolve()
         .then(() => expressAppFactory())
         .then(app => {

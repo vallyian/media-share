@@ -12,6 +12,6 @@ export enum ExitCode {
 }
 
 export function exit(code: ExitCode, ...error: unknown[]): never {
-    if (error) console.error(...error);
+    if (error) console.error("Critical", ...error);
     process.exit(code);
 }

@@ -9,6 +9,10 @@ export function randomString(length = 32): string {
     return crypto.randomBytes(length).toString("base64url");
 }
 
+export function sha256(input: string) {
+    return crypto.createHash("sha256").update(input).digest("base64");
+}
+
 export function encrypt(value: string): Promise<string> {
     let iv: Buffer;
     return Promise.resolve()

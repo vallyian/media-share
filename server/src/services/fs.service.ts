@@ -1,12 +1,20 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { Stat } from "../@types/AppRequest";
-import { ItemStat } from "../@types/ItemStat";
+import { mediaDir } from "../consts";
 
 type PathLink = {
     name: string;
     link: string;
+}
+
+type Stat = "file" | "dir" | "error" | "unknown";
+
+type ItemStat = {
+    urlDir: string,
+    name: string,
+    size: number | string,
+    isDir?: boolean
 }
 
 export function stat(itemPath: string): Promise<Stat> {
@@ -34,24 +42,31 @@ export function tryReadFileSync(filePaths: string[]): Buffer | undefined {
     return;
 }
 
-export function readDir(mediaDir: string, relativeDir: string): Promise<ItemStat[]> {
-    let items: string[];
-    return Promise.resolve()
-        .then(() => fs.promises.readdir(mediaDir))
-        .then(i => {
-            items = i;
-            return Promise.all(items.map(item => fs.promises.stat(path.join(mediaDir, item))));
-        })
-        .then(stats => stats.map((stat, statIndex) => {
-            const isDir = stat.isDirectory();
-            return (<ItemStat>{
-                parent: relativeDir,
-                name: items[statIndex],
-                size: isDir ? "" : size(stat.size),
-                isDir: isDir || undefined
-            });
-        }))
-        .then(items => sort(items));
+export function urlPath(fsPath: string) {
+    return String(fsPath)
+        .replace(/\\/g, "/")
+        .replace(new RegExp(`^${mediaDir}/`), "")
+        .replace(/\/$/, "")
+        .split("/").map(u => encodeURIComponent(u))
+        .join("/");
+}
+
+export async function readDir(mediaDir: string, sort: "asc" | "desc" = "asc"): Promise<ItemStat[]> {
+    const items = await fs.promises.readdir(mediaDir);
+    const stats = await Promise.all(items.map(item => fs.promises.stat(path.join(mediaDir, item))));
+    const urlDir = urlPath(mediaDir);
+
+    const order = sort === "asc" ? -1 : 1;
+
+    return stats.map((stat, statIndex) => {
+        const isDir = stat.isDirectory();
+        return (<ItemStat>{
+            urlDir,
+            name: items[statIndex],
+            size: isDir ? "" : size(stat.size),
+            isDir: isDir || undefined
+        });
+    }).sort((a, b) => sorter(a, b, order));
 }
 
 export function pathLinks(mediaPath: string): PathLink[] {
@@ -92,15 +107,12 @@ function size(value: number): string {
     }
 }
 
-function sort(items: ItemStat[], asc = true): ItemStat[] {
-    const order = asc ? -1 : 1;
-    return items.sort((a: ItemStat, b: ItemStat) => {
-        if (a.isDir && !b.isDir) return order;
-        if (!a.isDir && b.isDir) return -order;
-        const aName = a.name.toUpperCase().replace(/_/g, "!");
-        const bName = b.name.toUpperCase().replace(/_/g, "!");
-        if (aName < bName) return order;
-        if (aName > bName) return -order;
-        return 0;
-    });
+function sorter(a: ItemStat, b: ItemStat, order: -1 | 1) {
+    if (a.isDir && !b.isDir) return order;
+    if (!a.isDir && b.isDir) return -order;
+    const aName = a.name.toUpperCase().replace(/_/g, "!");
+    const bName = b.name.toUpperCase().replace(/_/g, "!");
+    if (aName < bName) return order;
+    if (aName > bName) return -order;
+    return 0;
 }

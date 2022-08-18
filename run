@@ -83,8 +83,8 @@ test() {
         -v "${cert_crt}:/run/secrets/cert.crt:ro" \
         -v "${cert_key}:/run/secrets/cert.key:ro" \
         -e "DEBUG=*" \
-        -e "G_CLIENT_ID=test.apps.googleusercontent.com" \
-        -e "G_EMAILS=test@gmail.com" \
+        -e "AUTH_CLIENT=test.apps.googleusercontent.com" \
+        -e "AUTH_EMAILS=test@gmail.com" \
         -p "58081:58082" \
         ${docker_username}/${docker_repo}:${semver} &
 
@@ -142,7 +142,7 @@ push() {
     [ "${github_main}" = "true" ] && \
     latest_tag="-t ${docker_username}/${docker_repo}:latest" || \
     latest_tag=""
-    
+
     docker buildx build \
         ${latest_tag} \
         -t ${docker_username}/${docker_repo}:${semver} \

@@ -10,15 +10,15 @@ describe("env", () => {
         spyOn(fs, "existsSync").and.returnValue(false);
         spyOn(console, "error");
         delete require.cache[require.resolve("./env")];
-        process.env["G_CLIENT_ID"] = validFormatClientId;
-        process.env["G_EMAILS"] = validFormatEmails;
+        process.env["AUTH_CLIENT"] = validFormatClientId;
+        process.env["AUTH_EMAILS"] = validFormatEmails;
     });
 
-    describe("G_CLIENT_ID", () => {
+    describe("AUTH_CLIENT", () => {
         it("not set => process exit", () => {
             const testError = Error("test process exit");
             spyOn(process, "exit").and.throwError(testError);
-            delete process.env["G_CLIENT_ID"];
+            delete process.env["AUTH_CLIENT"];
             const env = () => require("./env");
             expect(env).toThrow(testError);
         });
@@ -26,23 +26,23 @@ describe("env", () => {
         it("invalid => process exit", () => {
             const testError = Error("test process exit");
             spyOn(process, "exit").and.throwError(testError);
-            process.env["G_CLIENT_ID"] = "test.unexpected.com";
+            process.env["AUTH_CLIENT"] = "test.unexpected.com";
             const env = () => require("./env");
             expect(env).toThrow(testError);
         });
 
         it("valid", () => {
-            process.env["G_CLIENT_ID"] = validFormatClientId;
+            process.env["AUTH_CLIENT"] = validFormatClientId;
             const { env } = require("./env");
-            expect(env.G_CLIENT_ID).toEqual(validFormatClientId);
+            expect(env.AUTH_CLIENT).toEqual(validFormatClientId);
         });
     });
 
-    describe("G_EMAILS", () => {
+    describe("AUTH_EMAILS", () => {
         it("not set => process exit", () => {
             const testError = Error("test process exit");
             spyOn(process, "exit").and.throwError(testError);
-            delete process.env["G_EMAILS"];
+            delete process.env["AUTH_EMAILS"];
             const env = () => require("./env");
             expect(env).toThrow(testError);
         });
@@ -50,22 +50,22 @@ describe("env", () => {
         it("invalid => process exit", () => {
             const testError = Error("test process exit");
             spyOn(process, "exit").and.throwError(testError);
-            process.env["G_EMAILS"] = "test@email.com";
+            process.env["AUTH_EMAILS"] = "test@email.com";
             const env = () => require("./env");
             expect(env).toThrow(testError);
         });
 
         it("valid (1 value)", () => {
-            process.env["G_EMAILS"] = validFormatEmails;
+            process.env["AUTH_EMAILS"] = validFormatEmails;
             const { env } = require("./env");
-            expect(env.G_EMAILS).toEqual([validFormatEmails]);
+            expect(env.AUTH_EMAILS).toEqual([validFormatEmails]);
         });
 
         it("valid (2 values)", () => {
             const testEmails = [validFormatEmails, "test-2@gmail.com"];
-            process.env["G_EMAILS"] = testEmails.join(",");
+            process.env["AUTH_EMAILS"] = testEmails.join(",");
             const { env } = require("./env");
-            expect(env.G_EMAILS).toEqual(testEmails);
+            expect(env.AUTH_EMAILS).toEqual(testEmails);
         });
     });
 
