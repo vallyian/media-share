@@ -6,55 +6,57 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import compression from "compression";
 
-import { env } from "./env";
-import { routes } from "./routes";
-import { healthMiddleware } from "./middleware/health.middleware";
-import { mediaInfoMiddleware } from "./middleware/media-info.middleware";
-import { faviconMiddleware } from "./middleware/favicon.middleware";
-import { authMiddleware } from "./middleware/auth.middleware";
-import { videoFileMiddleware } from "./middleware/video-file.middleware";
-import { subtitleFileMiddleware } from "./middleware/subtitle-file.middleware";
-import { dirIndexMiddleware } from "./middleware/dir-index.middleware";
-import { notFoundMiddleware } from "./middleware/not-found.middleware";
-import { errorMiddleware } from "./middleware/error.middleware";
+import { IdTokenAdapter } from "./@types/Auth";
+import consts from "./consts";
+import env from "./env";
+import infrastructure from "./infrastructure";
+import healthMiddleware from "./middleware/health.middleware";
+import faviconMiddleware from "./middleware/favicon.middleware";
+import authMiddlewareFactory from "./middleware/auth.middleware";
+import videoFileMiddleware from "./middleware/video-file.middleware";
+import subtitleFileMiddleware from "./middleware/subtitle-file.middleware";
+import dirIndexMiddleware from "./middleware/dir-index.middleware";
+import notFoundMiddleware from "./middleware/not-found.middleware";
+import errorMiddleware from "./middleware/error.middleware";
 
-let app: express.Application;
+const app: express.Application = express();
 
-export function makeApp(): express.Application {
-    if (app) return app;
+export default {
+    app,
+    initApp
+};
 
-    app = express();
+async function initApp(di = infrastructure) {
+    Object.entries(di).forEach(([injectionToken, injectionObj]) => app.set(injectionToken, injectionObj));
 
+    app.set("x-powered-by", false);
     app.use(rateLimit({
         windowMs: env.RATE_LIMIT_MINUTES * 60 * 1000,
         max: env.RATE_LIMIT_COUNTER
     }));
-    app.use(helmet.contentSecurityPolicy({
+    app.use((csp => helmet.contentSecurityPolicy({
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrcElem: ["'self'", "https://accounts.google.com/gsi/client"],
-            connectSrc: ["'self'", "https://accounts.google.com/"],
-            frameSrc: ["'self'", "https://accounts.google.com/"]
+            scriptSrcElem: ["'self'", ...(csp.flatMap(c => c.scriptSrcElem || []))],
+            connectSrc: ["'self'", ...(csp.flatMap(c => c.connectSrc || []))],
+            frameSrc: ["'self'", ...(csp.flatMap(c => c.frameSrc || []))],
         }
-    }));
-    app.set("x-powered-by", false);
+    }))((<IdTokenAdapter[]>Object.values(app.get("idTokenAdapters"))).map(a => a.csp)));
     app.use(compression());
 
-    app.use(routes.health, healthMiddleware);
-    app.use(express.static(path.join(env.VIEWS_DIR, "scripts")));
-    app.use(cookieParser(env.COOKIE_PASS));
     app.set("view engine", "ejs");
-    app.set("views", env.VIEWS_DIR);
+    app.set("views", env.NODE_ENV === "development" ? path.join("src", "views") : "views");
 
-    app.use(mediaInfoMiddleware);
-    app.use(routes.favicon, faviconMiddleware);
+    app.set("media", "media");
 
-    app.use(authMiddleware);
+    app.use("/health", healthMiddleware);
+    app.use("/favicon.ico", faviconMiddleware);
+    app.use(express.static(path.join(app.get("views"), "scripts")));
 
-    app.use(dirIndexMiddleware);
-    app.use(videoFileMiddleware);
-    app.use(subtitleFileMiddleware);
-    app.use(express.static(env.MEDIA_DIR));
+    app.use(cookieParser(env.COOKIE_PASS), authMiddlewareFactory());
+    app.use(videoFileMiddleware, subtitleFileMiddleware);
+    app.use(express.static(consts.mediaDir), dirIndexMiddleware);
+
     app.use(notFoundMiddleware);
     app.use(errorMiddleware);
 

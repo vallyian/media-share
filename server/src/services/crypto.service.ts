@@ -1,15 +1,17 @@
 import crypto from "node:crypto";
+import env from "../env";
 
-import { env } from "../env";
+export default {
+    randomString: (length = 32) => crypto.randomBytes(length).toString("base64url"),
+    sha256: (input: string) => crypto.createHash("sha256").update(input).digest("base64"),
+    encrypt,
+    decrypt
+};
 
 // TODO: use hashicorp vault for secrets management https://hub.docker.com/_/vault
 const ALGORITHM = "aes-256-ctr";
 
-export function randomString(length = 32): string {
-    return crypto.randomBytes(length).toString("base64url");
-}
-
-export function encrypt(value: string): Promise<string> {
+function encrypt(value: string): Promise<string> {
     let iv: Buffer;
     return Promise.resolve()
         .then(() => value || Promise.reject("invalid plain arg"))
@@ -22,7 +24,7 @@ export function encrypt(value: string): Promise<string> {
         .then(encrypted => `${iv.toString("base64url")}:${encrypted.toString("base64url")}`);
 }
 
-export function decrypt(value: string): Promise<string> {
+function decrypt(value: string): Promise<string> {
     let iv: Buffer;
     let encrypted: Buffer;
     return Promise.resolve()

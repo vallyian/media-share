@@ -34,8 +34,8 @@ fast media share web server with a very basic UI
 #    openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -out server/certs/cert.crt -keyout server/certs/cert.key
 
 # required: .env file or indicidual env vars 
-export G_CLIENT_ID="" # reqired, see https://console.cloud.google.com/apis/credentials
-export G_EMAILS="" # required, comma separated list of authorized emails
+export AUTH_CLIENT="" # reqired, see https://console.cloud.google.com/apis/credentials
+export AUTH_EMAILS="" # required, comma separated list of authorized emails
 
 export DEBUG="*" # optional
 npm --prefix server start
@@ -66,8 +66,8 @@ docker run --name media-share --pull always --restart=always -d \
     -v "${HOME}/media:/home/node/app/media" \
     -v "${HOME}/certs/cert.crt:/run/secrets/cert.crt:ro" \
     -v "${HOME}/certs/cert.key:/run/secrets/cert.key:ro" \
-    -e "G_CLIENT_ID=" `# required` \
-    -e "G_EMAILS=" `# required` \
+    -e "AUTH_CLIENT=" `# required` \
+    -e "AUTH_EMAILS=" `# required` \
     -p "127.0.0.1:58080:58082" \
     vallyian/media-share:latest
 ```

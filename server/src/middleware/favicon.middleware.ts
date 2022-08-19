@@ -1,10 +1,11 @@
-import { NextFunction, Request, Response } from "express";
+import express from "express";
 
-import * as renderService from "../services/render.service";
+export default faviconMiddleware;
 
-export function faviconMiddleware(_req: Request, res: Response, next: NextFunction) {
+function faviconMiddleware(_req: express.Request, res: express.Response, next: express.NextFunction) {
     return Promise.resolve()
-        .then(() => renderService.renderIcon("share-fill", { fill: "#0080FF" }))
-        .then(({ mime, data }) => res.setHeader("Content-type", mime).end(data))
+        .then(() => res
+            .set("Cache-Control", "public, max-age=31557600")
+            .render("icons/share-fill", { fill: "#0080FF" }))
         .catch(err => next(err));
 }

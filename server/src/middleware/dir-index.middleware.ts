@@ -1,20 +1,21 @@
-import { NextFunction, Request, Response } from "express";
+import path from "node:path";
+import express from "express";
+import consts from "../consts";
+import fsService from "../services/fs.service";
 
-import { AppRequest } from "../@types/AppRequest";
-import * as fsService from "../services/fs.service";
-import * as renderService from "../services/render.service";
+export default dirIndexMiddleware;
 
-export function dirIndexMiddleware(req: Request, res: Response, next: NextFunction) {
-    const _req = <AppRequest>req;
-    if (_req.stat !== "dir")
+async function dirIndexMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
+    const dirPath = req.path === "" ? consts.mediaDir : path.join(consts.mediaDir, path.normalize(decodeURIComponent(req.path)));
+    if (await fsService.stat(dirPath) !== "dir")
         return next();
 
     return Promise.resolve()
-        .then(() => fsService.readDir(_req.mediaPath, _req.relativePath))
-        .then(items => renderService.renderPage("dir-index", {
-            pills: fsService.pathLinks(_req.mediaPath),
+        .then(() => fsService.readDir(dirPath))
+        .then(items => res.render("index", {
+            page: "dir-index",
+            pills: fsService.pathLinks(dirPath),
             items
         }))
-        .then(({ mime, data }) => res.setHeader("Content-type", mime).end(data))
         .catch(err => next(err));
 }
