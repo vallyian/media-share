@@ -1,17 +1,17 @@
 import path from "node:path";
-
-import { NextFunction, Request, Response } from "express";
-
+import express from "express";
 import { AppError } from "../@types/AppError";
-import { mediaDir, supportedSubtitlesRx, supportedVideosRx } from "../consts";
-import * as fsService from "../services/fs.service";
+import consts from "../consts";
+import fsService from "../services/fs.service";
 
-export async function videoFileMiddleware(req: Request, res: Response, next: NextFunction) {
+export default videoFileMiddleware;
+
+async function videoFileMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
     let videoPath = path.normalize(decodeURIComponent(req.path));
-    if (!supportedVideosRx.test(videoPath) || req.query["static"] === "true")
+    if (!consts.supportedVideosRx.test(videoPath) || req.query["static"] === "true")
         return next();
 
-    videoPath = path.join(mediaDir, videoPath);
+    videoPath = path.join(consts.mediaDir, videoPath);
     if (await fsService.stat(videoPath) !== "file") {
         const err: AppError = Error("not found");
         err.status = 404;
@@ -30,12 +30,12 @@ async function viewData(videoPath: string): Promise<Record<string, unknown>> {
     const ext = path.extname(videoPath);
     const fileNameNoExtRx = new RegExp("^" + file.replace(new RegExp(`${ext}$`, "i"), ""), "i");
     const files = await fsService.readDir(dir);
-    const videos = files.filter(s => supportedVideosRx.test(s.name));
+    const videos = files.filter(s => consts.supportedVideosRx.test(s.name));
     const videoIndex = videos.findIndex(s => s.name === file);
     const pathLinks = fsService.pathLinks(videoPath);
-    const urlPath = fsService.urlPath(videoPath.replace(/\\/g, "/").replace(new RegExp(`^${mediaDir}/`), ""));
+    const urlPath = fsService.urlPath(videoPath.replace(/\\/g, "/").replace(new RegExp(`^${consts.mediaDir}/`), ""));
     const urlDir = urlPath.replace(new RegExp(`${encodeURIComponent(file)}$`, "i"), "");
-    const subtitles = files.filter(s => supportedSubtitlesRx.test(s.name) && fileNameNoExtRx.test(s.name));
+    const subtitles = files.filter(s => consts.supportedSubtitlesRx.test(s.name) && fileNameNoExtRx.test(s.name));
     const subParams = (name: string) => /\.vtt$/i.test(name) ? "static=true" : /\.sub$/i.test(name) ? `video=${ext.replace(".", "")}` : "";
     return {
         pills: pathLinks.length >= 2 ? pathLinks.splice(pathLinks.length - 2, 2) : pathLinks,

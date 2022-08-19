@@ -1,17 +1,18 @@
-/* eslint-disable no-restricted-syntax */
+export default { exit };
 
-export enum ExitCode {
-    Generic = 1,
-    UncaughtException = 2,
-    UnhandledRejection = 3,
-    Environment = 4,
+const ExitCode = {
+    Generic: 1,
+    UncaughtException: 2,
+    UnhandledRejection: 3,
+    Environment: 4,
     /* primary */
-    InitFunction = 102,
+    InitFunction: 102,
     /* workers */
-    WorkerStartup = 201,
-}
+    WorkerStartup: 201,
+};
 
-export function exit(code: ExitCode, ...error: unknown[]): never {
+function exit(code: keyof typeof ExitCode, ...error: unknown[]): never {
     if (error) console.error("Critical", ...error);
-    process.exit(code);
+    // eslint-disable-next-line no-restricted-syntax
+    process.exit(ExitCode[code]);
 }

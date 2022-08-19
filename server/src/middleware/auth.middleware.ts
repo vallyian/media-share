@@ -1,20 +1,17 @@
 import { NextFunction, Request, Response } from "express";
-
 import { IdTokenAdapter, IdTokenPayload } from "../@types/Auth";
-import { env } from "../env";
-import { app } from "../app";
-import * as cryptoService from "../services/crypto.service";
+import env from "../env";
+import app from "../app";
+import cryptoService from "../services/crypto.service";
+
+export default () => authMiddleware;
 
 type AccessTokenPayload = Pick<IdTokenPayload, "email">;
-
-export function authMiddlewareFactory() {
-    return authMiddleware;
-}
 
 async function authMiddleware(req: Request, res: Response, next: NextFunction) {
     const accessTokenCookieName = "access_token";
     // TODO: logic to find used adapter
-    const adapter: IdTokenAdapter = app.get("idTokenAdapters")["google"];
+    const adapter: IdTokenAdapter = app.app.get("idTokenAdapters")["google"];
 
     const accessToken = req.signedCookies[accessTokenCookieName];
     if (accessToken)

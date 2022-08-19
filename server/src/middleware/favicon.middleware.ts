@@ -1,6 +1,8 @@
-import { NextFunction, Request, Response } from "express";
+import express from "express";
 
-export function faviconMiddleware(_req: Request, res: Response, next: NextFunction) {
+export default faviconMiddleware;
+
+function faviconMiddleware(_req: express.Request, res: express.Response, next: express.NextFunction) {
     return Promise.resolve()
         .then(() => res
             .set("Cache-Control", "public, max-age=31557600")

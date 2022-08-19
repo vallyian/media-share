@@ -1,12 +1,12 @@
 import path from "node:path";
+import express from "express";
+import consts from "../consts";
+import fsService from "../services/fs.service";
 
-import { NextFunction, Request, Response } from "express";
+export default dirIndexMiddleware;
 
-import { mediaDir } from "../consts";
-import * as fsService from "../services/fs.service";
-
-export async function dirIndexMiddleware(req: Request, res: Response, next: NextFunction) {
-    const dirPath = req.path === "" ? mediaDir : path.join(mediaDir, path.normalize(decodeURIComponent(req.path)));
+async function dirIndexMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
+    const dirPath = req.path === "" ? consts.mediaDir : path.join(consts.mediaDir, path.normalize(decodeURIComponent(req.path)));
     if (await fsService.stat(dirPath) !== "dir")
         return next();
 

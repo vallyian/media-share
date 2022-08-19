@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-var-requires -- project is set to module but tests are commonjs */
 
-import * as fsService from "./services/fs.service";
+import fsService from "./services/fs.service";
 
 describe("env", () => {
     const validFormatClientId = "test.apps.googleusercontent.com";
     const validFormatEmails = "test@gmail.com";
 
     beforeEach(() => {
-        spyOn(fsService, "tryReadFileSync").and.returnValue(undefined);
+        spyOn(fsService, "readFileSync").and.returnValue(undefined);
         spyOn(console, "error");
         delete require.cache[require.resolve("./env")];
         process.env["AUTH_CLIENT"] = validFormatClientId;
@@ -33,7 +33,7 @@ describe("env", () => {
 
         it("valid", () => {
             process.env["AUTH_CLIENT"] = validFormatClientId;
-            const { env } = require("./env");
+            const env = require("./env").default;
             expect(env.AUTH_CLIENT).toEqual(validFormatClientId);
         });
     });
@@ -57,14 +57,14 @@ describe("env", () => {
 
         it("valid (1 value)", () => {
             process.env["AUTH_EMAILS"] = validFormatEmails;
-            const { env } = require("./env");
+            const env = require("./env").default;
             expect(env.AUTH_EMAILS).toEqual([validFormatEmails]);
         });
 
         it("valid (2 values)", () => {
             const testEmails = [validFormatEmails, "test-2@gmail.com"];
             process.env["AUTH_EMAILS"] = testEmails.join(",");
-            const { env } = require("./env");
+            const env = require("./env").default;
             expect(env.AUTH_EMAILS).toEqual(testEmails);
         });
     });
@@ -72,13 +72,13 @@ describe("env", () => {
     describe("NODE_ENV", () => {
         it("not set => default", () => {
             delete process.env["NODE_ENV"];
-            const { env } = require("./env");
+            const env = require("./env").default;
             expect(env.NODE_ENV).toEqual("production");
         });
 
         it("value", () => {
             process.env["NODE_ENV"] = "overwritten";
-            const { env } = require("./env");
+            const env = require("./env").default;
             expect(env.NODE_ENV).toEqual(process.env["NODE_ENV"]);
         });
     });
@@ -86,19 +86,19 @@ describe("env", () => {
     describe("PORT", () => {
         it("not set => default", () => {
             delete process.env["PORT"];
-            const { env } = require("./env");
+            const env = require("./env").default;
             expect(env.PORT).toEqual(58082);
         });
 
         it("invalid => default", () => {
             process.env["PORT"] = "99999999";
-            const { env } = require("./env");
+            const env = require("./env").default;
             expect(env.PORT).toEqual(58082);
         });
 
         it("value", () => {
             process.env["PORT"] = "42";
-            const { env } = require("./env");
+            const env = require("./env").default;
             expect(env.PORT).toEqual(+process.env["PORT"]);
         });
     });
@@ -107,13 +107,13 @@ describe("env", () => {
         it("not set => default (regenerated)", () => {
             delete require.cache[require.resolve("./env")];
             delete process.env["COOKIE_PASS"];
-            let env = require("./env").env;
+            let env = require("./env").default;
             const firstValue = env.COOKIE_PASS;
             expect(firstValue.length).toEqual(342);
 
             delete process.env["COOKIE_PASS"];
             delete require.cache[require.resolve("./env")];
-            env = require("./env").env;
+            env = require("./env").default;
             const secondValue = env.COOKIE_PASS;
             expect(secondValue.length).toEqual(342);
 
@@ -122,7 +122,7 @@ describe("env", () => {
 
         it("value", () => {
             process.env["COOKIE_PASS"] = "overwritten";
-            const { env } = require("./env");
+            const env = require("./env").default;
             expect(env.COOKIE_PASS).toEqual(process.env["COOKIE_PASS"]);
         });
     });
@@ -131,13 +131,13 @@ describe("env", () => {
         it("not set => default (regenerated)", () => {
             delete require.cache[require.resolve("./env")];
             delete process.env["TOKEN_KEY"];
-            let env = require("./env").env;
+            let env = require("./env").default;
             const firstValue = env.TOKEN_KEY;
             expect(firstValue.length).toEqual(43);
 
             delete process.env["TOKEN_KEY"];
             delete require.cache[require.resolve("./env")];
-            env = require("./env").env;
+            env = require("./env").default;
             const secondValue = env.TOKEN_KEY;
             expect(secondValue.length).toEqual(43);
 
@@ -146,7 +146,7 @@ describe("env", () => {
 
         it("value", () => {
             process.env["TOKEN_KEY"] = "overwritten";
-            const { env } = require("./env");
+            const env = require("./env").default;
             expect(env.TOKEN_KEY).toEqual(process.env["TOKEN_KEY"]);
         });
     });

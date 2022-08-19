@@ -1,10 +1,11 @@
-import { Request, Response, NextFunction } from "express";
-
+import express from "express";
 import { AppError } from "../@types/AppError";
-import { env } from "../env";
+import env from "../env";
+
+export default errorMiddleware;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- last arg required by express to correctly interpret as error middleware
-export function errorMiddleware(err: AppError, req: Request, res: Response, _next: NextFunction) {
+function errorMiddleware(err: AppError, req: express.Request, res: express.Response, _next: express.NextFunction) {
     const errJson = {
         status: err.status || 500,
         message: err.message || "internal server error",

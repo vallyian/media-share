@@ -1,14 +1,12 @@
 import os from "node:os";
-
 import dotenv from "dotenv";
-
-import * as processHelper from "./helpers/process.helper";
-import * as cryptoService from "./services/crypto.service";
-import * as fsService from "./services/fs.service";
+import processHelper from "./helpers/process.helper";
+import cryptoService from "./services/crypto.service";
+import fsService from "./services/fs.service";
 
 tryLoadEnvFile();
 
-export const env = Object.freeze({
+export default Object.freeze({
     AUTH_CLIENT: e("AUTH_CLIENT").string(v => !!v),
     AUTH_EMAILS: e("AUTH_EMAILS").list(v => v.split(",").map(s => s.trim()).filter(s => !!s), v => v.includes("@")),
     NODE_ENV: e("NODE_ENV", () => "production").val,
@@ -41,12 +39,12 @@ function e(key: string, def?: () => unknown) {
 
 function tryLoadEnvFile() {
     try {
-        const envFile = fsService.tryReadFileSync([".env", "/run/secrets/.env"]);
+        const envFile = fsService.readFileSync([".env", "/run/secrets/.env"]);
         if (envFile)
             Object.entries(dotenv.parse(envFile)).forEach(([k, v]) => process.env[k] = process.env[k] || v);
     } catch (_err) { /* */ }
 }
 
 function err(key: string) {
-    return processHelper.exit(processHelper.ExitCode.Environment, `env var ${key} invalid`);
+    return processHelper.exit("Environment", `env var ${key} invalid`);
 }

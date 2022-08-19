@@ -1,12 +1,15 @@
 import fs from "node:fs";
 import path from "node:path";
+import consts from "../consts";
 
-import { mediaDir } from "../consts";
-
-type PathLink = {
-    name: string;
-    link: string;
-}
+export default {
+    stat,
+    readFile,
+    readFileSync,
+    urlPath,
+    readDir,
+    pathLinks
+};
 
 type Stat = "file" | "dir" | "error" | "unknown";
 
@@ -17,44 +20,64 @@ type ItemStat = {
     isDir?: boolean
 }
 
-export function stat(itemPath: string): Promise<Stat> {
-    return Promise.resolve()
-        .then(() => typeof itemPath === "string" && !!itemPath || Promise.reject())
-        .then(() => fs.promises.stat(itemPath))
-        .then(stat => {
-            if (stat.isDirectory()) return "dir";
-            if (stat.isFile()) return "file";
-            return "unknown";
-        })
-        .catch(() => "error");
+type PathLink = {
+    name: string;
+    link: string;
 }
 
-export function readFile(filePath: string): Promise<Buffer> {
-    return Promise.resolve()
-        .then(() => stat(filePath))
-        .then(stat => stat === "file" || Promise.reject(""))
-        .then(() => fs.promises.readFile(filePath));
+async function stat(itemPath: string): Promise<Stat> {
+    if (typeof itemPath !== "string" || itemPath === "")
+        return "error";
+    try {
+        const stat = await fs.promises.stat(itemPath);
+        if (stat.isDirectory()) return "dir";
+        if (stat.isFile()) return "file";
+        return "unknown";
+    } catch (_ex) {
+        return "error";
+    }
 }
 
-export function tryReadFileSync(filePaths: string[]): Buffer | undefined {
+function statSync(itemPath: string): Stat {
+    if (typeof itemPath !== "string" || itemPath === "") return "error";
+    try {
+        const stat = fs.statSync(itemPath);
+        if (stat.isDirectory()) return "dir";
+        if (stat.isFile()) return "file";
+        return "unknown";
+    } catch (_err) {
+        return "error";
+    }
+}
+
+async function readFile(filePath: string): Promise<Buffer> {
+    if (await stat(filePath) !== "file") throw Error(`path "${filePath}" not a file or not found`);
+    const data = await fs.promises.readFile(filePath);
+    return data;
+}
+
+function readFileSync(filePaths: string[]): Buffer | undefined {
     for (const filePath of filePaths)
-        if (statSync(filePath) === "file") return fs.readFileSync(filePath);
+        if (statSync(filePath) === "file")
+            return fs.readFileSync(filePath);
     return;
 }
 
-export function urlPath(fsPath: string) {
+function urlPath(fsPath: string) {
     return String(fsPath)
         .replace(/\\/g, "/")
-        .replace(new RegExp(`^${mediaDir}/`), "")
+        .replace(new RegExp(`^${consts.mediaDir}/`), "")
         .replace(/\/$/, "")
         .split("/").map(u => encodeURIComponent(u))
         .join("/");
 }
 
-export async function readDir(mediaDir: string, sort: "asc" | "desc" = "asc"): Promise<ItemStat[]> {
-    const items = await fs.promises.readdir(mediaDir);
-    const stats = await Promise.all(items.map(item => fs.promises.stat(path.join(mediaDir, item))));
-    const urlDir = urlPath(mediaDir);
+async function readDir(dirPath: string, sort: "asc" | "desc" = "asc"): Promise<ItemStat[]> {
+    if (await stat(dirPath) !== "dir") throw Error(`path "${dirPath}" not a dir or not found`);
+
+    const items = await fs.promises.readdir(dirPath);
+    const stats = await Promise.all(items.map(item => fs.promises.stat(path.join(dirPath, item))));
+    const urlDir = urlPath(dirPath);
 
     const order = sort === "asc" ? -1 : 1;
 
@@ -69,7 +92,7 @@ export async function readDir(mediaDir: string, sort: "asc" | "desc" = "asc"): P
     }).sort((a, b) => sorter(a, b, order));
 }
 
-export function pathLinks(mediaPath: string): PathLink[] {
+function pathLinks(mediaPath: string): PathLink[] {
     const parts = mediaPath.split(path.sep);
 
     const pills = [];
@@ -82,17 +105,6 @@ export function pathLinks(mediaPath: string): PathLink[] {
     }
 
     return pills;
-}
-
-function statSync(dirPath: string): Stat {
-    try {
-        const stat = fs.statSync(dirPath);
-        if (stat.isDirectory()) return "dir";
-        if (stat.isFile()) return "file";
-        return "unknown";
-    } catch (_err) {
-        return "error";
-    }
 }
 
 function size(value: number): string {

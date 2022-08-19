@@ -1,17 +1,18 @@
 import path from "node:path";
 import os from "node:os";
-import { TextDecoder } from "node:util";
+import util from "node:util";
 import child_process from "node:child_process";
-
-import { NextFunction, Request, Response } from "express";
+import express from "express";
 import jschardet from "jschardet";
-
 import { AppError } from "../@types/AppError";
-import { mediaDir, supportedSubtitles, supportedSubtitlesRx, supportedVideos } from "../consts";
-import { stat, readFile } from "../services/fs.service";
+import consts from "../consts";
+import fsService from "../services/fs.service";
+
+export default subtitleFileMiddleware;
 
 const ffmpegPath = path.join("node_modules", "ffmpeg-static", os.platform() === "win32" ? "ffmpeg.exe" : "ffmpeg");
-const converters = supportedSubtitles.reduce((con, ext) => {
+
+const converters = consts.supportedSubtitles.reduce((con, ext) => {
     switch (ext) {
         case ".sub": con[ext] = subToVtt; break;
         case ".srt": con[ext] = srtToVtt; break;
@@ -20,15 +21,15 @@ const converters = supportedSubtitles.reduce((con, ext) => {
     return con;
 }, <Record<string, (subtitlePath: string, videoExtension?: string) => Promise<string>>>{});
 
-export async function subtitleFileMiddleware(req: Request, res: Response, next: NextFunction) {
+async function subtitleFileMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
     const converter = converters[path.extname(req.path).toLowerCase()];
-    if (!supportedSubtitlesRx.test(req.path) || req.query["static"] === "true" || !converter)
+    if (!consts.supportedSubtitlesRx.test(req.path) || req.query["static"] === "true" || !converter)
         return next();
 
-    const videoExtension = supportedVideos.filter(v => v === `.${String(req.query["video"])}`)[0];
+    const videoExtension = consts.supportedVideos.filter(v => v === `.${String(req.query["video"])}`)[0];
 
-    const subtitlePath = path.join(mediaDir, path.normalize(decodeURIComponent(req.path)));
-    if (await stat(subtitlePath) !== "file") {
+    const subtitlePath = path.join(consts.mediaDir, path.normalize(decodeURIComponent(req.path)));
+    if (await fsService.stat(subtitlePath) !== "file") {
         const err: AppError = Error("not found");
         err.status = 404;
         return next(err);
@@ -105,21 +106,21 @@ async function srtToVtt(subtitlePath: string): Promise<string> {
 }
 
 async function getFile(mediaPath: string): Promise<string> {
-    const buffer = await readFile(mediaPath);
+    const buffer = await fsService.readFile(mediaPath);
     /*
         TODO: jschardet.detectAll and return multiple subtitles if detection not 100%
         (<any>jschardet).detectAll(buffer)
     */
     const encoding = jschardet.detect(buffer).encoding;
-    const decodedFile = new TextDecoder(encoding).decode(buffer);
+    const decodedFile = new util.TextDecoder(encoding).decode(buffer);
     return decodedFile;
 }
 
 function getFps(videoPath: string): Promise<number> {
     return Promise.resolve()
         .then(() => Promise.all([
-            stat(videoPath),
-            stat(ffmpegPath)
+            fsService.stat(videoPath),
+            fsService.stat(ffmpegPath)
         ]))
         .then(([videoStat, ffmepgStat]) => {
             videoStat === "file" || Promise.reject(`video file "${videoPath}" not found`);

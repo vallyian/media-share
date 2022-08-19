@@ -1,7 +1,15 @@
-export const mediaDir = "media";
+const mediaDir = "media";
 
-export const supportedVideos = [".mp4"];
-export const supportedVideosRx = new RegExp("(:?" + supportedVideos.map(e => `\\${e}`).join("|") + ")$", "i");
+const supportedVideos = [".mp4"];
+const supportedVideosRx = new RegExp("(:?" + supportedVideos.map(e => `\\${e}`).join("|") + ")$", "i");
 
-export const supportedSubtitles = [".srt", ".sub"];
-export const supportedSubtitlesRx = new RegExp("(:?" + supportedSubtitles.map(e => `\\${e}`).join("|") + ")$", "i");
+const supportedSubtitles = [".srt", ".sub"];
+const supportedSubtitlesRx = new RegExp("(:?" + supportedSubtitles.map(e => `\\${e}`).join("|") + ")$", "i");
+
+export default Object.freeze({
+    mediaDir,
+    supportedVideos,
+    supportedVideosRx,
+    supportedSubtitles,
+    supportedSubtitlesRx
+});

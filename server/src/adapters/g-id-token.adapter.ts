@@ -1,10 +1,10 @@
 import * as gAuthLib from "google-auth-library";
-
 import { IdTokenAdapter } from "../@types/Auth";
-import { env } from "../env";
-import { sha256 } from "../services/crypto.service";
+import env from "../env";
+import cryptoService from "../services/crypto.service";
 
-export const googleIdTokenAdapter: IdTokenAdapter = { getIdTokenPayload, csp: csp(), html: html() };
+const googleIdTokenAdapter: IdTokenAdapter = { getIdTokenPayload, csp: csp(), html: html() };
+export default googleIdTokenAdapter;
 
 async function getIdTokenPayload(idToken: string, clientId: string) {
     const gClient = new gAuthLib.OAuth2Client(clientId);
@@ -18,7 +18,7 @@ async function getIdTokenPayload(idToken: string, clientId: string) {
 
 function csp(): IdTokenAdapter["csp"] {
     return {
-        scriptSrcElem: ["https://accounts.google.com/gsi/client", `'sha256-${sha256(inlineScript())}'`],
+        scriptSrcElem: ["https://accounts.google.com/gsi/client", `'sha256-${cryptoService.sha256(inlineScript())}'`],
         connectSrc: ["https://accounts.google.com/"],
         frameSrc: ["https://accounts.google.com/"]
     };

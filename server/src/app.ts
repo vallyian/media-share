@@ -7,21 +7,26 @@ import cookieParser from "cookie-parser";
 import compression from "compression";
 
 import { IdTokenAdapter } from "./@types/Auth";
-import { mediaDir } from "./consts";
-import { env } from "./env";
-import * as infrastructure from "./infrastructure";
-import { healthMiddleware } from "./middleware/health.middleware";
-import { faviconMiddleware } from "./middleware/favicon.middleware";
-import { authMiddlewareFactory } from "./middleware/auth.middleware";
-import { videoFileMiddleware } from "./middleware/video-file.middleware";
-import { subtitleFileMiddleware } from "./middleware/subtitle-file.middleware";
-import { dirIndexMiddleware } from "./middleware/dir-index.middleware";
-import { notFoundMiddleware } from "./middleware/not-found.middleware";
-import { errorMiddleware } from "./middleware/error.middleware";
+import consts from "./consts";
+import env from "./env";
+import infrastructure from "./infrastructure";
+import healthMiddleware from "./middleware/health.middleware";
+import faviconMiddleware from "./middleware/favicon.middleware";
+import authMiddlewareFactory from "./middleware/auth.middleware";
+import videoFileMiddleware from "./middleware/video-file.middleware";
+import subtitleFileMiddleware from "./middleware/subtitle-file.middleware";
+import dirIndexMiddleware from "./middleware/dir-index.middleware";
+import notFoundMiddleware from "./middleware/not-found.middleware";
+import errorMiddleware from "./middleware/error.middleware";
 
-export const app: express.Application = express();
+const app: express.Application = express();
 
-export async function initApp(di = infrastructure) {
+export default {
+    app,
+    initApp
+};
+
+async function initApp(di = infrastructure) {
     Object.entries(di).forEach(([injectionToken, injectionObj]) => app.set(injectionToken, injectionObj));
 
     app.set("x-powered-by", false);
@@ -50,7 +55,7 @@ export async function initApp(di = infrastructure) {
 
     app.use(cookieParser(env.COOKIE_PASS), authMiddlewareFactory());
     app.use(videoFileMiddleware, subtitleFileMiddleware);
-    app.use(express.static(mediaDir), dirIndexMiddleware);
+    app.use(express.static(consts.mediaDir), dirIndexMiddleware);
 
     app.use(notFoundMiddleware);
     app.use(errorMiddleware);

@@ -1,5 +1,7 @@
-import { Request, Response } from "express";
+import express from "express";
 
-export function healthMiddleware(_req: Request, res: Response) {
+export default healthMiddleware;
+
+function healthMiddleware(_req: express.Request, res: express.Response) {
     return res.status(200).end("healthy");
 }
