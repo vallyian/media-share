@@ -5,6 +5,7 @@ import fsService from "./services/fs.service";
 describe("env", () => {
     const validFormatClientId = "test.apps.googleusercontent.com";
     const validFormatEmails = "test@gmail.com";
+    const env = () => require("./env").default;
 
     beforeEach(() => {
         spyOn(fsService, "readFileSync").and.returnValue(undefined);
@@ -19,7 +20,6 @@ describe("env", () => {
             const testError = Error("test process exit");
             spyOn(process, "exit").and.throwError(testError);
             delete process.env["AUTH_CLIENT"];
-            const env = () => require("./env");
             expect(env).toThrow(testError);
         });
 
@@ -27,14 +27,12 @@ describe("env", () => {
             const testError = Error("test process exit");
             spyOn(process, "exit").and.throwError(testError);
             process.env["AUTH_CLIENT"] = "";
-            const env = () => require("./env");
             expect(env).toThrow(testError);
         });
 
         it("valid", () => {
             process.env["AUTH_CLIENT"] = validFormatClientId;
-            const env = require("./env").default;
-            expect(env.AUTH_CLIENT).toEqual(validFormatClientId);
+            expect(env().AUTH_CLIENT).toEqual(validFormatClientId);
         });
     });
 
@@ -43,7 +41,6 @@ describe("env", () => {
             const testError = Error("test process exit");
             spyOn(process, "exit").and.throwError(testError);
             delete process.env["AUTH_EMAILS"];
-            const env = () => require("./env");
             expect(env).toThrow(testError);
         });
 
@@ -51,55 +48,47 @@ describe("env", () => {
             const testError = Error("test process exit");
             spyOn(process, "exit").and.throwError(testError);
             process.env["AUTH_EMAILS"] = "test_email.com";
-            const env = () => require("./env");
             expect(env).toThrow(testError);
         });
 
         it("valid (1 value)", () => {
             process.env["AUTH_EMAILS"] = validFormatEmails;
-            const env = require("./env").default;
-            expect(env.AUTH_EMAILS).toEqual([validFormatEmails]);
+            expect(env().AUTH_EMAILS).toEqual([validFormatEmails]);
         });
 
         it("valid (2 values)", () => {
             const testEmails = [validFormatEmails, "test-2@gmail.com"];
             process.env["AUTH_EMAILS"] = testEmails.join(",");
-            const env = require("./env").default;
-            expect(env.AUTH_EMAILS).toEqual(testEmails);
+            expect(env().AUTH_EMAILS).toEqual(testEmails);
         });
     });
 
     describe("NODE_ENV", () => {
         it("not set => default", () => {
             delete process.env["NODE_ENV"];
-            const env = require("./env").default;
-            expect(env.NODE_ENV).toEqual("production");
+            expect(env().NODE_ENV).toEqual("production");
         });
 
         it("value", () => {
             process.env["NODE_ENV"] = "overwritten";
-            const env = require("./env").default;
-            expect(env.NODE_ENV).toEqual(process.env["NODE_ENV"]);
+            expect(env().NODE_ENV).toEqual(process.env["NODE_ENV"]);
         });
     });
 
     describe("PORT", () => {
         it("not set => default", () => {
             delete process.env["PORT"];
-            const env = require("./env").default;
-            expect(env.PORT).toEqual(58082);
+            expect(env().PORT).toEqual(58082);
         });
 
         it("invalid => default", () => {
             process.env["PORT"] = "99999999";
-            const env = require("./env").default;
-            expect(env.PORT).toEqual(58082);
+            expect(env().PORT).toEqual(58082);
         });
 
         it("value", () => {
             process.env["PORT"] = "42";
-            const env = require("./env").default;
-            expect(env.PORT).toEqual(+process.env["PORT"]);
+            expect(env().PORT).toEqual(+process.env["PORT"]);
         });
     });
 
@@ -107,14 +96,12 @@ describe("env", () => {
         it("not set => default (regenerated)", () => {
             delete require.cache[require.resolve("./env")];
             delete process.env["COOKIE_PASS"];
-            let env = require("./env").default;
-            const firstValue = env.COOKIE_PASS;
+            const firstValue = env().COOKIE_PASS;
             expect(firstValue.length).toEqual(342);
 
             delete process.env["COOKIE_PASS"];
             delete require.cache[require.resolve("./env")];
-            env = require("./env").default;
-            const secondValue = env.COOKIE_PASS;
+            const secondValue = env().COOKIE_PASS;
             expect(secondValue.length).toEqual(342);
 
             expect(secondValue).not.toEqual(firstValue);
@@ -122,8 +109,7 @@ describe("env", () => {
 
         it("value", () => {
             process.env["COOKIE_PASS"] = "overwritten";
-            const env = require("./env").default;
-            expect(env.COOKIE_PASS).toEqual(process.env["COOKIE_PASS"]);
+            expect(env().COOKIE_PASS).toEqual(process.env["COOKIE_PASS"]);
         });
     });
 
@@ -131,14 +117,12 @@ describe("env", () => {
         it("not set => default (regenerated)", () => {
             delete require.cache[require.resolve("./env")];
             delete process.env["TOKEN_KEY"];
-            let env = require("./env").default;
-            const firstValue = env.TOKEN_KEY;
+            const firstValue = env().TOKEN_KEY;
             expect(firstValue.length).toEqual(43);
 
             delete process.env["TOKEN_KEY"];
             delete require.cache[require.resolve("./env")];
-            env = require("./env").default;
-            const secondValue = env.TOKEN_KEY;
+            const secondValue = env().TOKEN_KEY;
             expect(secondValue.length).toEqual(43);
 
             expect(secondValue).not.toEqual(firstValue);
@@ -146,8 +130,7 @@ describe("env", () => {
 
         it("value", () => {
             process.env["TOKEN_KEY"] = "overwritten";
-            const env = require("./env").default;
-            expect(env.TOKEN_KEY).toEqual(process.env["TOKEN_KEY"]);
+            expect(env().TOKEN_KEY).toEqual(process.env["TOKEN_KEY"]);
         });
     });
 });
