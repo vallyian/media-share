@@ -18,6 +18,7 @@ import subtitleFileMiddleware from "./middleware/subtitle-file.middleware";
 import dirIndexMiddleware from "./middleware/dir-index.middleware";
 import notFoundMiddleware from "./middleware/not-found.middleware";
 import errorMiddleware from "./middleware/error.middleware";
+import fsService from "./services/fs.service";
 
 const app: express.Application = express();
 
@@ -27,13 +28,18 @@ export default {
 };
 
 async function initApp(di = infrastructure) {
+    if (app.get("init")) return app;
+    app.set("init", true);
+
     Object.entries(di).forEach(([injectionToken, injectionObj]) => app.set(injectionToken, injectionObj));
 
     app.set("x-powered-by", false);
+
     app.use(rateLimit({
         windowMs: env.RATE_LIMIT_MINUTES * 60 * 1000,
         max: env.RATE_LIMIT_COUNTER
     }));
+
     app.use((csp => helmet.contentSecurityPolicy({
         directives: {
             defaultSrc: ["'self'"],
@@ -42,22 +48,25 @@ async function initApp(di = infrastructure) {
             frameSrc: ["'self'", ...(csp.flatMap(c => c.frameSrc || []))],
         }
     }))((<IdTokenAdapter[]>Object.values(app.get("idTokenAdapters"))).map(a => a.csp)));
+
     app.use(compression());
 
-    app.set("view engine", "ejs");
-    app.set("views", env.NODE_ENV === "development" ? path.join("src", "views") : "views");
-
-    app.set("media", "media");
-
-    app.use("/health", healthMiddleware);
-    app.use("/favicon.ico", faviconMiddleware);
-    app.use(express.static(path.join(app.get("views"), "scripts")));
-
-    app.use(cookieParser(env.COOKIE_PASS), authMiddlewareFactory());
-    app.use(videoFileMiddleware, subtitleFileMiddleware);
-    app.use(express.static(consts.mediaDir), dirIndexMiddleware);
+    app.use(env.PROXY_LOCATION, (proxiedApp => {
+        proxiedApp.set("view engine", "ejs");
+        proxiedApp.set("views", env.NODE_ENV === "development" && fsService.statSync("src") === "dir" ? path.join("src", "views") : "views");
+        proxiedApp.use("/health", healthMiddleware);
+        proxiedApp.use("/favicon.ico", faviconMiddleware);
+        proxiedApp.use(express.static(path.join(proxiedApp.get("views"), "scripts")));
+        proxiedApp.use(cookieParser(env.COOKIE_PASS), authMiddlewareFactory());
+        proxiedApp.use(videoFileMiddleware);
+        proxiedApp.use(subtitleFileMiddleware);
+        proxiedApp.use(express.static(consts.mediaDir, { dotfiles: "allow" }));
+        proxiedApp.use(dirIndexMiddleware);
+        return proxiedApp;
+    })(express()));
 
     app.use(notFoundMiddleware);
+
     app.use(errorMiddleware);
 
     return app;

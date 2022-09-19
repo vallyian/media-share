@@ -13,6 +13,7 @@ export default Object.freeze({
     PORT: e("PORT", () => 58082).number(v => v > 0 && v <= 65536),
     COOKIE_PASS: e("COOKIE_PASS", () => cryptoService.randomString(256)).val,
     TOKEN_KEY: e("TOKEN_KEY", () => cryptoService.randomString(32)).val,
+    PROXY_LOCATION: e("PROXY_LOCATION", () => "/").val,
 
     CLUSTES: e("NODE_ENV").val === "development" ? 1 : os.cpus().length,
     RATE_LIMIT_MINUTES: e("RATE_LIMIT_MINUTES", () => 5).number(v => v > 0 && v <= 24 * 60),
@@ -39,7 +40,7 @@ function e(key: string, def?: () => unknown) {
 
 function tryLoadEnvFile() {
     try {
-        const envFile = fsService.readFileSync([".env", "/run/secrets/.env"]);
+        const envFile = fsService.readFileSync([".env"]);
         if (envFile)
             Object.entries(dotenv.parse(envFile)).forEach(([k, v]) => process.env[k] = process.env[k] || v);
     } catch (_err) { /* */ }

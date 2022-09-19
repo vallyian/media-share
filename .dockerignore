@@ -1,21 +1,22 @@
 # also check .gitignore
 
-.angular
-.github
-.vscode
-artifacts
+**/.angular
+**/.devcontainer
+**/.github
+**/.vscode
+**/artifacts
 !artifacts/runtime
-bin
-certs
-dist
-media
-node_modules
+**/bin
+**/certs
+**/dist
+**/media
+**/node_modules
 
-.dockerignore
-.editorconfig
-.env
-.gitattributes
-.gitignore
-[Dd]ocker*
-run
-*.md
+**/.dockerignore
+**/.editorconfig
+**/.env
+**/.gitattributes
+**/.gitignore
+**/[Dd]ocker*
+**/run
+**/*.md

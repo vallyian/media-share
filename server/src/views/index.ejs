@@ -4,8 +4,8 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Media-share</title>
-        <base href="/" />
-        <link rel="icon" type="image/svg+xml" href="favicon.ico" />
+        <base href="<%= baseUrl %>" />
+        <link rel="icon" type="image/svg+xml" href="<%= baseUrl %><%= baseUrl.endsWith('/') ? '' : '/' %>favicon.ico" />
         <link
             rel="stylesheet"
             href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css"
@@ -18,6 +18,12 @@
     </head>
 
     <body>
-        <%- include(`pages/${page}`); %>
+        <% if(locals.page) { %>
+            <%- include(`pages/${page}`); %>
+        <% } else if(locals.html) { %>
+            <%- html %>
+        <% } else { %>
+            400 - Bad request
+        <% } %>
     </body>
 </html>

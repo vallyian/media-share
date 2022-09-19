@@ -3,8 +3,11 @@ import { IdTokenAdapter } from "../@types/Auth";
 import env from "../env";
 import cryptoService from "../services/crypto.service";
 
-const googleIdTokenAdapter: IdTokenAdapter = { getIdTokenPayload, csp: csp(), html: html() };
-export default googleIdTokenAdapter;
+export default (): IdTokenAdapter => ({
+    getIdTokenPayload,
+    csp: csp(),
+    html: html()
+});
 
 async function getIdTokenPayload(idToken: string, clientId: string) {
     const gClient = new gAuthLib.OAuth2Client(clientId);
@@ -18,23 +21,23 @@ async function getIdTokenPayload(idToken: string, clientId: string) {
 
 function csp(): IdTokenAdapter["csp"] {
     return {
-        scriptSrcElem: ["https://accounts.google.com/gsi/client", `'sha256-${cryptoService.sha256(inlineScript())}'`],
+        scriptSrcElem: ["https://accounts.google.com/gsi/client", `'sha256-${cryptoService.sha256(signInCb.toString())}'`],
         connectSrc: ["https://accounts.google.com/"],
         frameSrc: ["https://accounts.google.com/"]
     };
 }
 
-function inlineScript() {
+function html(): string {
     return `
-        window.gSignInCb = response => window.location = "/?id_token=" + response.credential + "&redirect=" + encodeURIComponent(window.location.pathname);
+        <script>${signInCb.toString()}</script>
+        <div class="btn g_id_signin" data-type="standard"></div>
+        <div id="g_id_onload" data-client_id="${env.AUTH_CLIENT}" data-callback="${signInCb.name}"></div>
+        <script src="https://accounts.google.com/gsi/client"></script>
     `;
 }
 
-function html(): string {
-    return `
-        <script>${inlineScript()}</script>
-        <div class="g_id_signin" data-type="standard"></div>
-        <div id="g_id_onload" data-client_id="${env.AUTH_CLIENT}" data-callback="gSignInCb"></div>
-        <script src="https://accounts.google.com/gsi/client"></script>
-    `;
+function signInCb(response?: { credential: string | null }) {
+    response && response.credential
+        ? window.location.href = window.location.href + (window.location.href.includes("?") ? "&" : "?") + `id_token=${response.credential}`
+        : window.location.reload();
 }

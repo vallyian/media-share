@@ -1,6 +1,7 @@
 # also check .dockerignore
 
 .angular
+# .devcontainer
 # .github
 .vscode
 artifacts

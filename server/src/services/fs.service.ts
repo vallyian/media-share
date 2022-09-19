@@ -4,6 +4,8 @@ import consts from "../consts";
 
 export default {
     stat,
+    statSync,
+    secNormalize,
     readFile,
     readFileSync,
     urlPath,
@@ -13,16 +15,18 @@ export default {
 
 type Stat = "file" | "dir" | "error" | "unknown";
 
-type ItemStat = {
-    urlDir: string,
-    name: string,
+type PathLink = {
+    name: string;
+    link: string;
+}
+
+type ItemStat = PathLink & {
     size: number | string,
     isDir?: boolean
 }
 
-type PathLink = {
-    name: string;
-    link: string;
+function secNormalize(itemPath: string) {
+    return path.normalize(itemPath.replace(/(:?\.\.)+/, ""));
 }
 
 async function stat(itemPath: string): Promise<Stat> {
@@ -63,45 +67,49 @@ function readFileSync(filePaths: string[]): Buffer | undefined {
     return;
 }
 
-function urlPath(fsPath: string) {
-    return String(fsPath)
+function urlPath(fsPath: string, baseUrl: string) {
+    return `${baseUrl}${baseUrl.endsWith("/") ? "" : "/"}` + String(fsPath)
         .replace(/\\/g, "/")
-        .replace(new RegExp(`^${consts.mediaDir}/`), "")
+        .replace(new RegExp(`^${consts.mediaDir}(:?/|$)`), "")
         .replace(/\/$/, "")
         .split("/").map(u => encodeURIComponent(u))
         .join("/");
 }
 
-async function readDir(dirPath: string, sort: "asc" | "desc" = "asc"): Promise<ItemStat[]> {
+async function readDir(dirPath: string, baseUrl: string, sort: "asc" | "desc" = "asc"): Promise<ItemStat[]> {
     if (await stat(dirPath) !== "dir") throw Error(`path "${dirPath}" not a dir or not found`);
 
     const items = await fs.promises.readdir(dirPath);
     const stats = await Promise.all(items.map(item => fs.promises.stat(path.join(dirPath, item))));
-    const urlDir = urlPath(dirPath);
+    const linkPrefix = urlPath(dirPath, baseUrl);
 
     const order = sort === "asc" ? -1 : 1;
 
     return stats.map((stat, statIndex) => {
         const isDir = stat.isDirectory();
+        const name = <string>items[statIndex];
         return (<ItemStat>{
-            urlDir,
-            name: items[statIndex],
+            name,
+            link: `${linkPrefix}${linkPrefix.endsWith("/") ? "" : "/"}${encodeURIComponent(name)}`,
             size: isDir ? "" : size(stat.size),
             isDir: isDir || undefined
         });
     }).sort((a, b) => sorter(a, b, order));
 }
 
-function pathLinks(mediaPath: string): PathLink[] {
+function pathLinks(mediaPath: string, baseUrl: string): PathLink[] {
     const parts = mediaPath.split(path.sep);
 
     const pills = [];
 
     let link = "";
-    pills.push({ name: <string>parts.shift(), link: "/" });
+    pills.push({ name: <string>parts.shift(), link: baseUrl });
     for (const name of parts) {
         link += `/${encodeURIComponent(name)}`;
-        pills.push({ name, link });
+        pills.push({
+            name,
+            link: `${baseUrl}${link}`
+        });
     }
 
     return pills;

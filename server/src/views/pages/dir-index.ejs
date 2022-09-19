@@ -12,10 +12,7 @@
             <% items.forEach(item=> { %>
             <tr>
                 <td>
-                    <a class="<% if (item.isDir) { %>text-dark<% } %>" href="<%- item.urlDir === ''
-                        ? encodeURIComponent(item.name)
-                        : (item.urlDir + '/' + encodeURIComponent(item.name))
-                    %>">
+                    <a class="<% if (item.isDir) { %>text-dark<% } %>" href="<%- item.link %>">
                         <span class="text-warning"><% if (item.isDir) { %><%- include(`../icons/folder`); %><% } %></span>
                         <%=item.name%>
                     </a>

@@ -10,14 +10,14 @@ type AccessTokenPayload = Pick<IdTokenPayload, "email">;
 
 async function authMiddleware(req: Request, res: Response, next: NextFunction) {
     const accessTokenCookieName = "access_token";
-    // TODO: logic to find used adapter
-    const adapter: IdTokenAdapter = app.app.get("idTokenAdapters")["google"];
+    // TODO: selection page for ID provider (sync to all cluster workers)
+    const idTokenAdapter: IdTokenAdapter = app.app.get("idTokenAdapters")["google"];
 
     const accessToken = req.signedCookies[accessTokenCookieName];
     if (accessToken)
         return Promise.resolve()
             .then(() => getAccessTokenPayload(accessToken))
-            .then((/* accessTokenPayload; populate req.user if required */) => next())
+            .then((/* accessTokenPayload */) => /* populate req.user if required */ next())
             .catch(err => {
                 err.status = 403;
                 return next(err);
@@ -26,17 +26,20 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
     const idToken = typeof req.query["id_token"] === "string" ? <string>req.query["id_token"] : "";
     if (idToken)
         return Promise.resolve()
-            .then(() => getIdTokenPayload(idToken, adapter))
+            .then(() => getIdTokenPayload(idToken, idTokenAdapter))
             .then(idToken => getAccessToken(idToken))
             .then(accessToken => res
                 .cookie(accessTokenCookieName, accessToken, { secure: true, signed: true, httpOnly: true, sameSite: true })
-                .redirect(typeof req.query["redirect"] === "string" ? new URL(req.query["redirect"], `${req.protocol}://${req.get("host")}`).href : "/"))
+                .redirect(req.path))
             .catch(err => {
                 err.status = 403;
                 return next(err);
             });
 
-    return res.setHeader("Content-type", "text/html").status(401).end(adapter.html);
+    return res.render("index", {
+        baseUrl: req.baseUrl,
+        html: idTokenAdapter.html
+    });
 }
 
 async function getIdTokenPayload(idToken: string, adapter: IdTokenAdapter) {

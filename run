@@ -10,19 +10,7 @@ npm_audit_level="${NPM_AUDIT_LEVEL:-low}"
 trivy_severity="${TRIVY_SEVERITY:-UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL}"
 artifacts_dir="${PWD}/artifacts"
 
-main() { case "${1}" in
-    "semver"  ) semver  ;;
-    "build"   ) build   ;;
-    "test"    ) test    ;;
-    "scan"    ) scan    ;;
-    "results" ) results ;;
-    "push"    ) push    ;;
-
-    *) term "USAGE:   ./run   semver | build | test | results | scan | push"
-esac }
 term() { echo "\033[0;31m${1}\033[0m"; exit 1; }
-
-####################################################################################################
 
 semver() {
     [ "${new_version}" != "" ] || term "semver can only run in CI"
@@ -40,16 +28,16 @@ build() {
     rm -rf artifacts
 
     docker buildx build \
-        `[ ${github_sha} = "" ] || echo --pull` \
+        $([ "${github_sha}" = "" ] || echo --pull) \
         --target export \
         --output=type=local,dest=artifacts \
         .
 
     docker buildx build \
+        $([ "${github_sha}" = "" ] || echo --pull) \
         -t ${docker_username}/${docker_repo}:${semver} \
         --build-arg "NPM_AUDIT_LEVEL=${npm_audit_level}" \
         --build-arg "SEMVER=${semver}" \
-        `[ ${github_sha} = "" ] || echo --pull` \
         --output=type=docker \
         .
 
@@ -117,7 +105,6 @@ scan() {
         --pull always \
         -v /var/run/docker.sock:/var/run/docker.sock \
         -v ${HOME}/.trivy/cache:/root/.cache \
-        -v ${PWD}:/config \
         aquasec/trivy \
             image \
                 --exit-code=1 \
@@ -153,4 +140,55 @@ push() {
         .
 }
 
-main "$@"
+dev() {
+    [ -f "./server/.env" ] && export $(echo $(cat "./server/.env" | sed 's/#.*//g'| xargs) | envsubst)
+    [ -d "${MEDIA_SHARE_DIR}" ] || term "missing env var MEDIA_SHARE_DIR"
+    [ -d "${MEDIA_CERTS_DIR}" ] || term "missing env var MEDIA_CERTS_DIR"
+    [ "${AUTH_CLIENT}" = "" ] && term "missing env var AUTH_CLIENT"
+    [ "${AUTH_EMAILS}" = "" ] && term "missing env var AUTH_EMAILS"
+    build
+    docker stop media-share-0.0.0 > /dev/null || echo "container not running"
+    docker stop media-share-0.0.0 > /dev/null || echo "container not found"
+
+    docker run --name media-share-0.0.0 --rm \
+        -p "127.0.0.1:58081:58082" \
+        -v "${MEDIA_SHARE_DIR}:/home/node/app/media" \
+        -v "${MEDIA_CERTS_DIR}/cert.crt:/run/secrets/cert.crt:ro" \
+        -v "${MEDIA_CERTS_DIR}/cert.key:/run/secrets/cert.key:ro" \
+        -e "NODE_ENV=development" \
+        -e "AUTH_CLIENT" \
+        -e "AUTH_EMAILS" \
+        -e "COOKIE_PASS" \
+        -e "TOKEN_KEY" \
+        vallyian/media-share:0.0.0
+}
+
+prod() {
+    [ -d "${MEDIA_SHARE_DIR}" ] || term "missing env var MEDIA_SHARE_DIR"
+    [ -d "${MEDIA_CERTS_DIR}" ] || term "missing env var MEDIA_CERTS_DIR"
+    build
+    docker stop media-share-latest > /dev/null || echo "container not running"
+    docker stop media-share-latest > /dev/null || echo "container not found"
+
+    docker run --name media-share --pull always --restart=always -d \
+        -p "127.0.0.1:58080:58082" \
+        -v "${MEDIA_SHARE_DIR}:/home/node/app/media" \
+        -v "${MEDIA_CERTS_DIR}/cert.crt:/run/secrets/cert.crt:ro" \
+        -v "${MEDIA_CERTS_DIR}/cert.key:/run/secrets/cert.key:ro" \
+        -e "AUTH_CLIENT=" `# required` \
+        -e "AUTH_EMAILS=" `# required` \
+        vallyian/media-share:latest
+}
+
+case "${1}" in
+    "semver"  ) semver  ;;
+    "build"   ) build   ;;
+    "test"    ) test    ;;
+    "scan"    ) scan    ;;
+    "results" ) results ;;
+    "push"    ) push    ;;
+    "dev"     ) dev     ;;
+    "prod"    ) prod    ;;
+
+    *) term "USAGE:   ./run   semver | build | test | results | scan | push | dev | prod"
+esac

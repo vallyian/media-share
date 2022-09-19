@@ -28,7 +28,7 @@ async function subtitleFileMiddleware(req: express.Request, res: express.Respons
 
     const videoExtension = consts.supportedVideos.filter(v => v === `.${String(req.query["video"])}`)[0];
 
-    const subtitlePath = path.join(consts.mediaDir, path.normalize(decodeURIComponent(req.path)));
+    const subtitlePath = path.join(consts.mediaDir, fsService.secNormalize(decodeURIComponent(req.path)));
     if (await fsService.stat(subtitlePath) !== "file") {
         const err: AppError = Error("not found");
         err.status = 404;

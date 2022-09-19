@@ -42,7 +42,7 @@ ENV SEMVER=${SEMVER}
 USER node
 COPY --chown=node:node --from=prod-deps /home/node/app/node_modules node_modules
 COPY --chown=node:node artifacts/runtime/ ./
-# VOLUME [ "/home/node/app/media", "/run/secrets/cert.crt", "/run/secrets/cert.key", "/run/secrets/.env"]
+# VOLUME [ "/home/node/app/media", "/run/secrets/cert.crt", "/run/secrets/cert.key"]
 HEALTHCHECK --interval=30s --timeout=1s --start-period=5s --retries=1 \
     CMD if [ -f "/run/secrets/cert.crt" ] && [ -f "/run/secrets/cert.key" ]; then \
             if [ ! "$(wget -O /dev/null --no-check-certificate --server-response https://localhost:58082/health 2>&1 | awk '/^  HTTP/{print $2}')" = "200" ]; then exit 1; fi \
