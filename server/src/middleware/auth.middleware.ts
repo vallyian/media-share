@@ -36,7 +36,7 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
                 return next(err);
             });
 
-    return res.render("index", {
+    return res.status(401).render("index", {
         baseUrl: req.baseUrl,
         html: idTokenAdapter.html
     });
