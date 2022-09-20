@@ -42,7 +42,7 @@ async function viewData(videoPath: string, baseUrl: string): Promise<Record<stri
     const subtitles = files.filter(s => consts.supportedSubtitlesRx.test(s.name) && fileNameNoExtRx.test(s.name));
     const subParams = (name: string) => /\.vtt$/i.test(name) ? "static=true" : /\.sub$/i.test(name) ? `video=${ext.replace(".", "")}` : "";
     return {
-        pills: pathLinks.length >= 2 ? pathLinks.splice(pathLinks.length - 2, 2) : pathLinks,
+        cd: pathLinks.splice(pathLinks.length - 2, 1)[0]?.link,
         urlPath: `${urlPath}?static=true`,
         subtitles: subtitles.map(({ name }) => ({ name, path: `${linkPrefix}/${name}?${subParams(name)}` })),
         mimeType: ext.replace(/^\./, "video/"),

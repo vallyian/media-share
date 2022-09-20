@@ -5,20 +5,19 @@
     video { outline: none; width: 100%; height: 100%; }
     video::cue { color:yellow; background-color: rgba(0,0,0,0.25); font-size: 3rem !important; }
     .video { position: fixed; left: 0; right: 0; top: 0; bottom: 0; }
-    .video-b { bottom: 2rem; }
+    .controls { position: fixed; width: 100%; font-size: 2rem; z-index: 999; font-family: monospace; }
 </style>
 
-<%- include(`../partials/pills`, { pills, dark: true }); %>
-
-<div class="video <% if (prev || next) { %>video-b<% } %>">
+<div class="video">
+    <div class="controls opacity-75">
+        <a href="<%- cd %>">x</a>
+        <% if (prev) { %><a class="ps-2" href="<%- prev %>"><</a><% } %>
+        <% if (next) { %><a id="next-media" class="next ps-2" href="<%- next %>">></a><% } %>
+    </div>
     <video controls autoplay preload="metadata">
         <source type="<%- mimeType %>" src="<%- urlPath %>" />
         <% subtitles.forEach((subtitle, index) => { %>
             <track src="<%- subtitle.path %>" kind="subtitles" label="<%- subtitle.name %>" <% if (index === 0) { %>default<% } %> />
         <% }); %>
     </video>
-    <div class="opacity-50 text-center">
-        <% if (prev) { %><a class="pe-1" href="<%- prev %>"><< prev</a><% } %>
-        <% if (next) { %><a id="next-media" class="ps-1" href="<%- next %>">next >></a><% } %>
-    </div>
 </div>
