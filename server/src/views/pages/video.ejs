@@ -7,8 +7,12 @@
         text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
         background-color: transparent;
     }
-    @media screen and (min-width: 576px) { video::cue { font-size: 2rem !important; } }
-    @media screen and (min-width: 768px) { video::cue { font-size: 3rem !important; } }
+    .media-w-xs video::cue,
+    .media-w-sm video::cue { font-size: 2rem !important; }
+    .media-w-md video::cue { font-size: 3rem !important; }
+    .media-w-lg video::cue,
+    .media-w-xl video::cue,
+    .media-w-xxl video::cue { font-size: 4rem !important; }
     .header { z-index: 999; }
     .fullscreen .header { z-index: -999; }
 </style>
