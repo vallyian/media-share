@@ -10,8 +10,8 @@ import { IdTokenAdapter } from "./@types/Auth";
 import consts from "./consts";
 import env from "./env";
 import infrastructure from "./infrastructure";
-import healthMiddleware from "./middleware/health.middleware";
-import faviconMiddleware from "./middleware/favicon.middleware";
+import healthRoute from "./routes/health.route";
+import faviconRoute from "./routes/favicon.route";
 import authMiddlewareFactory from "./middleware/auth.middleware";
 import videoFileMiddleware from "./middleware/video-file.middleware";
 import subtitleFileMiddleware from "./middleware/subtitle-file.middleware";
@@ -54,8 +54,8 @@ async function initApp(di = infrastructure) {
     app.use(env.PROXY_LOCATION, (proxiedApp => {
         proxiedApp.set("view engine", "ejs");
         proxiedApp.set("views", env.NODE_ENV === "development" && fsService.statSync("src") === "dir" ? path.join("src", "views") : "views");
-        proxiedApp.use("/health", healthMiddleware);
-        proxiedApp.use("/favicon.ico", faviconMiddleware);
+        proxiedApp.use("/health", healthRoute);
+        proxiedApp.use("/favicon.ico", faviconRoute);
         proxiedApp.use(express.static(path.join(proxiedApp.get("views"), "scripts")));
         proxiedApp.use(cookieParser(env.COOKIE_PASS), authMiddlewareFactory());
         proxiedApp.use(videoFileMiddleware);
