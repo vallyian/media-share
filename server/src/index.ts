@@ -43,7 +43,7 @@ function clusterWorker(expressAppFactory: () => Promise<Application>) {
             const server = cert && key
                 ? https.createServer({ cert, key }, app)
                 : app;
-            server.listen(env.PORT,"0.0.0.0", () => console.info(`service (worker process ${process.pid}) is online`));
+            server.listen(env.PORT, () => console.info(`service (worker process ${process.pid}) is online`));
         })
         .catch(err => {
             console.error("Critical", err);
