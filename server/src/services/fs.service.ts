@@ -98,12 +98,12 @@ async function readDir(dirPath: string, baseUrl: string, sort: "asc" | "desc" = 
 }
 
 function pathLinks(mediaPath: string, baseUrl: string): PathLink[] {
-    const parts = mediaPath.split(path.sep);
+    const parts = mediaPath.split(path.sep).filter(p => !!p);
 
     const pills = [];
 
     let link = "";
-    pills.push({ name: <string>parts.shift(), link: baseUrl });
+    pills.push({ name: <string>parts.shift(), link: baseUrl || "/" });
     for (const name of parts) {
         link += `/${encodeURIComponent(name)}`;
         pills.push({

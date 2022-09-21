@@ -1,18 +1,13 @@
 <style>
-    .nav { padding: .5rem; font-size: 1rem; }
-    .nav a { padding-left: .25rem; padding-right: .25rem; border-right: 1px solid gray; white-space: nowrap; }
-    .nav span { padding-left: .25rem; white-space: nowrap; }
-    .nav.opacity-75 a { border-right-color: #333; }
-    .nav.opacity-75 span { color: #333; }
-    @media screen and (max-width: 450px) { .nav { font-size: .75rem; } }
+    @media screen and (max-width: 575.98px) { .nav { font-size: .75rem; } }
 </style>
 
-<div class="nav sticky-top <% if (locals.dark) { %>opacity-75<% } else { %>bg-light<% } %>">
+<div class="nav sticky-top p-2 bg-light">
     <% pills.forEach((pill, index) => { %>
         <% if (index < pills.length - 1) { %>
-            <a href="<%- pill.link %>"><%- pill.name %></a>
+            <a class="ps-1 pe-1 text-nowrap border-end" href="<%- pill.link %>"><%- pill.name %></a>
         <% } else { %>
-            <span><%- pill.name %></span>
+            <span class="ps-1 text-nowrap text-dark"><%- pill.name %></span>
         <% } %>
     <% }); %>
 </div>

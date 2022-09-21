@@ -32,7 +32,8 @@ async function viewData(videoPath: string, baseUrl: string): Promise<Record<stri
     const dir = path.dirname(videoPath);
     const file = path.basename(videoPath);
     const ext = path.extname(videoPath);
-    const fileNameNoExtRx = new RegExp("^" + file.replace(new RegExp(`${ext}$`, "i"), ""), "i");
+    const fileNameNoExt = file.replace(new RegExp(`${ext}$`, "i"), "");
+    const fileNameNoExtRx = new RegExp(`^${fileNameNoExt}`, "i");
     const files = await fsService.readDir(dir, baseUrl);
     const videos = files.filter(s => consts.supportedVideosRx.test(s.name));
     const videoIndex = videos.findIndex(s => s.name === file);
@@ -42,11 +43,12 @@ async function viewData(videoPath: string, baseUrl: string): Promise<Record<stri
     const subtitles = files.filter(s => consts.supportedSubtitlesRx.test(s.name) && fileNameNoExtRx.test(s.name));
     const subParams = (name: string) => /\.vtt$/i.test(name) ? "static=true" : /\.sub$/i.test(name) ? `video=${ext.replace(".", "")}` : "";
     return {
-        cd: pathLinks.splice(pathLinks.length - 2, 1)[0]?.link,
+        cd: pathLinks.length >= 2 ? pathLinks.splice(pathLinks.length - 2, 1)[0]?.link : "/",
+        title: fileNameNoExt,
         urlPath: `${urlPath}?static=true`,
         subtitles: subtitles.map(({ name }) => ({ name, path: `${linkPrefix}/${name}?${subParams(name)}` })),
         mimeType: ext.replace(/^\./, "video/"),
-        prev: videos[videoIndex - 1]?.name ? `${linkPrefix}/${<string>videos[videoIndex - 1]?.name}` : "",
-        next: videos[videoIndex + 1]?.name ? `${linkPrefix}/${<string>videos[videoIndex + 1]?.name}` : ""
+        prev: videos[videoIndex - 1]?.name ? `${linkPrefix}/${<string>videos[videoIndex - 1]?.name}?t=0` : "",
+        next: videos[videoIndex + 1]?.name ? `${linkPrefix}/${<string>videos[videoIndex + 1]?.name}?t=0` : ""
     };
 }

@@ -1,23 +1,27 @@
 <script src="<%- baseUrl %><%= baseUrl.endsWith('/') ? '' : '/' %>video.js" async defer></script>
 
 <style>
-    body { background-color: black; }
-    video { outline: none; width: 100%; height: 100%; }
-    video::cue { color:yellow; background-color: rgba(0,0,0,0.25); font-size: 3rem !important; }
-    .video { position: fixed; left: 0; right: 0; top: 0; bottom: 0; }
-    .controls { position: fixed; width: 100%; font-size: 2rem; z-index: 999; font-family: monospace; }
+    video { width: 100%; height: 100%; }
+    video::cue {
+        color:yellow;
+        text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+        background-color: transparent;
+    }
+    @media screen and (min-width: 576px) { video::cue { font-size: 2rem !important; } }
+    @media screen and (min-width: 768px) { video::cue { font-size: 3rem !important; } }
+    .header { z-index: 999; }
 </style>
 
-<div class="video">
-    <div class="controls opacity-75">
-        <a href="<%- cd %>">x</a>
-        <% if (prev) { %><a class="ps-2" href="<%- prev %>"><</a><% } %>
-        <% if (next) { %><a id="next-media" class="next ps-2" href="<%- next %>">></a><% } %>
-    </div>
-    <video controls autoplay preload="metadata">
-        <source type="<%- mimeType %>" src="<%- urlPath %>" />
-        <% subtitles.forEach((subtitle, index) => { %>
-            <track src="<%- subtitle.path %>" kind="subtitles" label="<%- subtitle.name %>" <% if (index === 0) { %>default<% } %> />
-        <% }); %>
-    </video>
+<div class="header opacity-75 position-fixed d-inline-flex align-items-center">
+    <a class="btn border-0 text-danger" href="<%- cd %>"><%- include(`../icons/x-lg`); %></a>
+    <% if (prev) { %><a class="btn border-0 text-light" href="<%- prev %>"><%- include(`../icons/caret-left`); %></a><% } %>
+    <% if (next) { %><a class="btn border-0 text-light" id="next-media" href="<%- next %>"><%- include(`../icons/caret-right`); %></a><% } %>
+    <span class="text-nowrap overflow-hidden text-light ps-2"><%= title %></span>
 </div>
+
+<video controls autoplay preload="metadata" class="bg-dark position-fixed">
+    <source type="<%- mimeType %>" src="<%- urlPath %>" />
+    <% subtitles.forEach((subtitle, index) => { %>
+        <track src="<%- subtitle.path %>" kind="subtitles" label="<%- subtitle.name %>" <% if (index === 0) { %>default<% } %> />
+    <% }); %>
+</video>
