@@ -12,6 +12,7 @@ import env from "./env";
 import infrastructure from "./infrastructure";
 import healthRoute from "./routes/health.route";
 import faviconRoute from "./routes/favicon.route";
+import mediaSyncRoute from "./routes/media-sync.route";
 import authMiddlewareFactory from "./middleware/auth.middleware";
 import videoFileMiddleware from "./middleware/video-file.middleware";
 import subtitleFileMiddleware from "./middleware/subtitle-file.middleware";
@@ -54,10 +55,11 @@ async function initApp(di = infrastructure) {
     app.use(env.PROXY_LOCATION, (proxiedApp => {
         proxiedApp.set("view engine", "ejs");
         proxiedApp.set("views", env.NODE_ENV === "development" && fsService.statSync("src") === "dir" ? path.join("src", "views") : "views");
-        proxiedApp.use("/health", healthRoute);
-        proxiedApp.use("/favicon.ico", faviconRoute);
+        proxiedApp.get("/health", healthRoute);
+        proxiedApp.get("/favicon.ico", faviconRoute);
         proxiedApp.use(express.static(path.join(proxiedApp.get("views"), "scripts")));
         proxiedApp.use(cookieParser(env.COOKIE_PASS), authMiddlewareFactory());
+        proxiedApp.post("/api/media-sync", mediaSyncRoute);
         proxiedApp.use(videoFileMiddleware);
         proxiedApp.use(subtitleFileMiddleware);
         proxiedApp.use(express.static(consts.mediaDir, { dotfiles: "allow" }));

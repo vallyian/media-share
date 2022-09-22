@@ -4,6 +4,7 @@ import consts from "../consts";
 
 export default {
     stat,
+    statRelative,
     statSync,
     secNormalize,
     readFile,
@@ -27,6 +28,13 @@ type ItemStat = PathLink & {
 
 function secNormalize(itemPath: string) {
     return path.normalize(itemPath.replace(/(:?\.\.)+/, ""));
+}
+
+async function statRelative(relativeItemPath: string): Promise<Stat> {
+    if (typeof relativeItemPath !== "string" || relativeItemPath === "")
+        return "error";
+    const itemPath = path.join(consts.mediaDir, relativeItemPath);
+    return stat(itemPath);
 }
 
 async function stat(itemPath: string): Promise<Stat> {

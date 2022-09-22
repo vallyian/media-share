@@ -1,5 +1,6 @@
-import { NextFunction, Request, Response } from "express";
+import { NextFunction, Response } from "express";
 import { IdTokenAdapter, IdTokenPayload } from "../@types/Auth";
+import { AppRequest } from "../@types/AppRequest";
 import env from "../env";
 import app from "../app";
 import cryptoService from "../services/crypto.service";
@@ -8,7 +9,7 @@ export default () => authMiddleware;
 
 type AccessTokenPayload = Pick<IdTokenPayload, "email">;
 
-async function authMiddleware(req: Request, res: Response, next: NextFunction) {
+async function authMiddleware(req: AppRequest, res: Response, next: NextFunction) {
     const accessTokenCookieName = "access_token";
     // TODO: selection page for ID provider (sync to all cluster workers)
     const idTokenAdapter: IdTokenAdapter = app.app.get("idTokenAdapters")["google"];
@@ -17,7 +18,10 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
     if (accessToken)
         return Promise.resolve()
             .then(() => getAccessTokenPayload(accessToken))
-            .then((/* accessTokenPayload */) => /* populate req.user if required */ next())
+            .then((accessTokenPayload) => {
+                req.user = accessTokenPayload.email;
+                return next();
+            })
             .catch(err => {
                 err.status = 403;
                 return next(err);

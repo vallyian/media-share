@@ -31,9 +31,17 @@ window.addEventListener("load", () => {
         },
         save(remove) {
             const all = currentTime.value;
-            remove || video.currentTime === 0
-                ? delete all[currentTime.key]
-                : all[currentTime.key] = video.currentTime;
+            if (remove || video.currentTime === 0) {
+                delete all[currentTime.key];
+            } else {
+                all[currentTime.key] = video.currentTime;
+
+                // try {
+                //     const req = new XMLHttpRequest();
+                //     req.open("POST", "/api/media-sync");
+                //     req.send();
+                // } catch (_) { /* */ }
+            }
             localStorage.setItem("currentTime", JSON.stringify(all));
         }
     };
