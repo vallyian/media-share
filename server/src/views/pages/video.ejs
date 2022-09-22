@@ -1,7 +1,7 @@
 <script src="<%- baseUrl %><%= baseUrl.endsWith('/') ? '' : '/' %>video.js" async defer></script>
 
 <style>
-    video { width: 100%; height: 100%; }
+    video { width: 100%; height: 100%; background-color: #000; }
     video::cue {
         color:yellow;
         text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
@@ -24,7 +24,7 @@
     <span class="text-nowrap overflow-hidden text-light ps-2"><%= title %></span>
 </div>
 
-<video controls autoplay preload="metadata" class="bg-dark position-fixed">
+<video controls autoplay preload="metadata" class="position-fixed">
     <source type="<%- mimeType %>" src="<%- urlPath %>" />
     <% subtitles.forEach((subtitle, index) => { %>
         <track src="<%- subtitle.path %>" kind="subtitles" label="<%- subtitle.name %>" <% if (index === 0) { %>default<% } %> />
