@@ -5,14 +5,14 @@ import child_process from "node:child_process";
 import express from "express";
 import jschardet from "jschardet";
 import { AppError } from "../@types/AppError";
-import consts from "../consts";
+import config from "../config";
 import fsService from "../services/fs.service";
 
 export default subtitleFileMiddleware;
 
 const ffmpegPath = path.join("node_modules", "ffmpeg-static", os.platform() === "win32" ? "ffmpeg.exe" : "ffmpeg");
 
-const converters = consts.supportedSubtitles.reduce((con, ext) => {
+const converters = config.supportedSubtitles.reduce((con, ext) => {
     switch (ext) {
         case ".sub": con[ext] = subToVtt; break;
         case ".srt": con[ext] = srtToVtt; break;
@@ -23,12 +23,12 @@ const converters = consts.supportedSubtitles.reduce((con, ext) => {
 
 async function subtitleFileMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
     const converter = converters[path.extname(req.path).toLowerCase()];
-    if (!consts.supportedSubtitlesRx.test(req.path) || req.query["static"] === "true" || !converter)
+    if (!config.supportedSubtitlesRx.test(req.path) || req.query["static"] === "true" || !converter)
         return next();
 
-    const videoExtension = consts.supportedVideos.filter(v => v === `.${String(req.query["video"])}`)[0];
+    const videoExtension = config.supportedVideos.filter(v => v === `.${String(req.query["video"])}`)[0];
 
-    const subtitlePath = path.join(consts.mediaDir, fsService.secNormalize(decodeURIComponent(req.path)));
+    const subtitlePath = path.join(config.mediaDir, fsService.secNormalize(decodeURIComponent(req.path)));
     if (await fsService.stat(subtitlePath) !== "file") {
         const err: AppError = Error("not found");
         err.status = 404;

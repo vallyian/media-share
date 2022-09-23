@@ -1,18 +1,26 @@
 import { NextFunction, Response } from "express";
 import { IdTokenAdapter, IdTokenPayload } from "../@types/Auth";
 import { AppRequest } from "../@types/AppRequest";
-import env from "../env";
-import app from "../app";
-import cryptoService from "../services/crypto.service";
+import config from "../config";
+import { CryptoAdapter } from "../@types/CryptoAdapter";
 
-export default () => authMiddleware;
+let idTokenAdapters: Record<string, IdTokenAdapter>;
+let cryptoAdapter: CryptoAdapter;
+
+export default function authMiddlewareFactory(_idTokenAdapters: Record<string, IdTokenAdapter>, _cryptoAdapter: CryptoAdapter) {
+    idTokenAdapters = _idTokenAdapters;
+    cryptoAdapter = _cryptoAdapter;
+
+    return authMiddleware;
+}
 
 type AccessTokenPayload = Pick<IdTokenPayload, "email">;
 
 async function authMiddleware(req: AppRequest, res: Response, next: NextFunction) {
     const accessTokenCookieName = "access_token";
     // TODO: selection page for ID provider (sync to all cluster workers)
-    const idTokenAdapter: IdTokenAdapter = app.app.get("idTokenAdapters")["google"];
+    const idTokenAdapter = idTokenAdapters["google"];
+    if (!idTokenAdapter) return next(Error("invalid id token provider"));
 
     const accessToken = req.signedCookies[accessTokenCookieName];
     if (accessToken)
@@ -47,10 +55,10 @@ async function authMiddleware(req: AppRequest, res: Response, next: NextFunction
 }
 
 async function getIdTokenPayload(idToken: string, adapter: IdTokenAdapter) {
-    const payload = await adapter.getIdTokenPayload(idToken, env.AUTH_CLIENT);
+    const payload = await adapter.getIdTokenPayload(idToken, config.AUTH_CLIENT);
     if (!payload?.email) return Promise.reject("id token email missing");
     if (!payload.email_verified) return Promise.reject("id token email not verified");
-    if (!env.AUTH_EMAILS.includes(payload?.email)) return Promise.reject("email not authorized");
+    if (!config.AUTH_EMAILS.includes(payload?.email)) return Promise.reject("email not authorized");
     return <IdTokenPayload>payload;
 }
 
@@ -59,17 +67,17 @@ async function getAccessToken(idToken: IdTokenPayload): Promise<string> {
         email: idToken.email
     };
     const accessTokenString = JSON.stringify(accessTokenPayload);
-    const accessTokenEncrypted = await cryptoService.encrypt(accessTokenString);
+    const accessTokenEncrypted = await cryptoAdapter.encrypt(accessTokenString);
     return accessTokenEncrypted;
 }
 
 function getAccessTokenPayload(accessToken: string): Promise<AccessTokenPayload> {
     return Promise.resolve()
-        .then(() => cryptoService.decrypt(accessToken))
+        .then(() => cryptoAdapter.decrypt(accessToken))
         .then(decrypted => <AccessTokenPayload>JSON.parse(decrypted))
         .then(token => {
             if (!token.email) return Promise.reject("invalid access token email");
-            if (!env.AUTH_EMAILS.includes(token.email)) return Promise.reject("email not authorized");
+            if (!config.AUTH_EMAILS.includes(token.email)) return Promise.reject("email not authorized");
             return token;
         });
 }

@@ -1,12 +1,27 @@
 import cluster, { Worker } from "node:cluster";
 import https from "node:https";
 import { Application } from "express";
-import env from "./env";
-import app from "./app";
+import { IdTokenAdapter } from "./@types/Auth";
+import { CryptoAdapter } from "./@types/CryptoAdapter";
+import * as config from "./config";
+import initApp from "./app";
+import googleIdTokenAdapter from "./adapters/g-id-token.adapter";
+import cryptoAdapterInit from "./adapters/crypto.adapter";
 import processHelper from "./helpers/process.helper";
 import fsService from "./services/fs.service";
 
-serve(app.initApp).catch((err: Error) => processHelper.exit("Generic", err));
+serve(() => initApp(infrastructure())).catch((err: Error) => processHelper.exit("Generic", err));
+
+function infrastructure() {
+    const cryptoAdapter: CryptoAdapter = cryptoAdapterInit(config.default.TOKEN_KEY);
+    const idTokenAdapters: Record<string, IdTokenAdapter> = {
+        google: googleIdTokenAdapter(cryptoAdapter.sha256, config.default.AUTH_CLIENT)
+    };
+
+    config.init(() => cryptoAdapter.randomString(256));
+
+    return { cryptoAdapter, idTokenAdapters };
+}
 
 async function serve(expressAppFactory: () => Promise<Application>) {
     process.on("uncaughtException", err => processHelper.exit("UncaughtException", err));
@@ -22,11 +37,11 @@ function clusterPrimary() {
     const { cert, key } = getCert();
     cert || console.warn("Warning", "no cert file found");
     key || console.warn("Warning", "no cert key file found");
-    console.info(`${cert && key ? "[secure]" : "[insecure]"} ${env.NODE_ENV} server (main process ${process.pid}) starting on port ${env.PORT}`);
+    console.info(`${cert && key ? "[secure]" : "[insecure]"} ${config.default.NODE_ENV} server (main process ${process.pid}) starting on port ${config.default.PORT}`);
 
     const workers = new Array<Worker>();
-    const fork = () => workers.push(cluster.fork(env));
-    new Array(env.CLUSTES).fill(null).map(fork);
+    const fork = () => workers.push(cluster.fork(config));
+    new Array(config.default.CLUSTES).fill(null).map(fork);
     cluster.on("exit", (worker, code, signal) => {
         const workerId = workers.findIndex(w => w.id === worker.id);
         if (workerId >= 0) workers.splice(workerId, 1);
@@ -43,7 +58,7 @@ function clusterWorker(expressAppFactory: () => Promise<Application>) {
             const server = cert && key
                 ? https.createServer({ cert, key }, app)
                 : app;
-            server.listen(env.PORT, () => console.info(`service (worker process ${process.pid}) is online`));
+            server.listen(config.default.PORT, () => console.info(`service (worker process ${process.pid}) is online`));
         })
         .catch(err => {
             console.error("Critical", err);

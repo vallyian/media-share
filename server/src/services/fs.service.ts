@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import consts from "../consts";
+import config from "../config";
 
 export default {
     stat,
@@ -33,7 +33,7 @@ function secNormalize(itemPath: string) {
 async function statRelative(relativeItemPath: string): Promise<Stat> {
     if (typeof relativeItemPath !== "string" || relativeItemPath === "")
         return "error";
-    const itemPath = path.join(consts.mediaDir, relativeItemPath);
+    const itemPath = path.join(config.mediaDir, relativeItemPath);
     return stat(itemPath);
 }
 
@@ -78,7 +78,7 @@ function readFileSync(filePaths: string[]): Buffer | undefined {
 function urlPath(fsPath: string, baseUrl: string) {
     return `${baseUrl}${baseUrl.endsWith("/") ? "" : "/"}` + String(fsPath)
         .replace(/\\/g, "/")
-        .replace(new RegExp(`^${consts.mediaDir}(:?/|$)`), "")
+        .replace(new RegExp(`^${config.mediaDir}(:?/|$)`), "")
         .replace(/\/$/, "")
         .split("/").map(u => encodeURIComponent(u))
         .join("/");

@@ -1,6 +1,6 @@
 import express from "express";
 import { AppError } from "../@types/AppError";
-import env from "../env";
+import config from "../config";
 
 export default errorMiddleware;
 
@@ -30,7 +30,7 @@ function errorMiddleware(err: AppError, req: express.Request, res: express.Respo
 
     return res
         .status(errJson.status)
-        .send(env.NODE_ENV === "development"
+        .send(config.NODE_ENV === "development"
             ? err.stack || err.message
             : err.message);
 }
