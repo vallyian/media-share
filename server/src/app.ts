@@ -40,7 +40,7 @@ export default async function initApp(infrastructure: {
             connectSrc: ["'self'", ...(csp.flatMap(c => c.connectSrc || []))],
             frameSrc: ["'self'", ...(csp.flatMap(c => c.frameSrc || []))],
         }
-    }))((<IdTokenAdapter[]>Object.values(app.get("idTokenAdapters"))).map(a => a.csp)));
+    }))(Object.values(infrastructure.idTokenAdapters).map(a => a.csp)));
 
     app.use(compression());
 

@@ -8,6 +8,8 @@ export function init(_cookiePass: () => string) {
     cookiePass = _cookiePass;
 }
 
+tryLoadEnvFile();
+
 export default Object.freeze({
     AUTH_CLIENT: env("AUTH_CLIENT").string(v => !!v),
     AUTH_EMAILS: env("AUTH_EMAILS").list(v => v.split(",").map(s => s.trim()).filter(s => !!s), v => v.includes("@")),
@@ -46,13 +48,13 @@ function validate(key: string, val?: string, def?: () => unknown) {
     };
 }
 
-(function tryLoadEnvFile() {
+function tryLoadEnvFile() {
     try {
         const envFile = fsService.readFileSync([".env"]);
         if (envFile)
             Object.entries(dotenv.parse(envFile)).forEach(([k, v]) => process.env[k] = process.env[k] || v);
     } catch (_err) { /* */ }
-})();
+}
 
 function err(key: string) {
     return processHelper.exit("Environment", `config key ${key} invalid`);
