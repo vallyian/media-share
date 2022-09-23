@@ -6,8 +6,8 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import compression from "compression";
 
-import { IdTokenAdapter } from "./@types/Auth";
-import { CryptoAdapter } from "./@types/CryptoAdapter";
+import { IdTokenSPI } from "./@types/IdTokenSPI";
+import { CryptoSPI } from "./@types/CryptoSPI";
 import config from "./config";
 import healthRoute from "./routes/health.route";
 import faviconRoute from "./routes/favicon.route";
@@ -21,8 +21,8 @@ import errorMiddleware from "./middleware/error.middleware";
 import fsService from "./services/fs.service";
 
 export default async function initApp(infrastructure: {
-    idTokenAdapters: Record<string, IdTokenAdapter>,
-    cryptoAdapter: CryptoAdapter
+    idTokenAdapters: Record<string, IdTokenSPI>,
+    cryptoAdapter: CryptoSPI
 }) {
     const app: express.Application = express();
 

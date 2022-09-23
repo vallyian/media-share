@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 
-let CIPHER_KEY: string;
-let CIPHER_ALGORITHM: string;
+let _cipherKey: string;
+let _cipherAlgorithm: string;
 
 /**
  * Init adapter
@@ -9,8 +9,8 @@ let CIPHER_ALGORITHM: string;
  * @param cipherAlgorithm see `openssl list -cipher-algorithms`
  */
 export default function init(cipherKey: string, cipherAlgorithm?: string) {
-    CIPHER_KEY = cipherKey || randomString(32);
-    CIPHER_ALGORITHM = cipherAlgorithm || "aes-256-ctr";
+    _cipherKey = cipherKey || randomString(32);
+    _cipherAlgorithm = cipherAlgorithm || "aes-256-ctr";
 
     return {
         randomString,
@@ -34,9 +34,9 @@ function encrypt(input: string) {
         .then(() => input || Promise.reject("invalid input arg"))
         .then(() => {
             iv = Buffer.from(crypto.randomBytes(16));
-            return Buffer.from(CIPHER_KEY, "base64url");
+            return Buffer.from(_cipherKey, "base64url");
         })
-        .then(key => crypto.createCipheriv(CIPHER_ALGORITHM, key, iv))
+        .then(key => crypto.createCipheriv(_cipherAlgorithm, key, iv))
         .then(cipher => Buffer.concat([cipher.update(input), cipher.final()]))
         .then(encrypted => `${iv.toString("base64url")}:${encrypted.toString("base64url")}`);
 }
@@ -50,8 +50,8 @@ function decrypt(input: string) {
             const parts = input.split(":");
             iv = Buffer.from(<string>parts[0], "base64url");
             encrypted = Buffer.from(<string>parts[1], "base64url");
-            return Buffer.from(CIPHER_KEY, "base64url");
+            return Buffer.from(_cipherKey, "base64url");
         })
-        .then(key => crypto.createDecipheriv(CIPHER_ALGORITHM, key, iv))
+        .then(key => crypto.createDecipheriv(_cipherAlgorithm, key, iv))
         .then(decipher => Buffer.concat([decipher.update(encrypted), decipher.final()]).toString());
 }

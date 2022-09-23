@@ -1,8 +1,6 @@
 import cluster, { Worker } from "node:cluster";
 import https from "node:https";
 import { Application } from "express";
-import { IdTokenAdapter } from "./@types/Auth";
-import { CryptoAdapter } from "./@types/CryptoAdapter";
 import * as config from "./config";
 import initApp from "./app";
 import googleIdTokenAdapter from "./adapters/g-id-token.adapter";
@@ -13,8 +11,8 @@ import fsService from "./services/fs.service";
 serve(() => initApp(infrastructure())).catch((err: Error) => processHelper.exit("Generic", err));
 
 function infrastructure() {
-    const cryptoAdapter: CryptoAdapter = cryptoAdapterInit(config.default.TOKEN_KEY);
-    const idTokenAdapters: Record<string, IdTokenAdapter> = {
+    const cryptoAdapter = cryptoAdapterInit(config.default.TOKEN_KEY);
+    const idTokenAdapters = {
         google: googleIdTokenAdapter(cryptoAdapter.sha256, config.default.AUTH_CLIENT)
     };
 
