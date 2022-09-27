@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>
+            <% if(locals.title) { %>
+                <%= title %>
+            <% } else { %>
+                Media-share
+            <% } %>
+        </title>
+        <base href="<%= baseUrl %>" />
+        <link rel="icon" type="image/svg+xml" href="<%= baseUrl %><%= baseUrl.endsWith('/') ? '' : '/' %>favicon.ico" />
+        <link rel="stylesheet" href="<%= baseUrl %><%= baseUrl.endsWith('/') ? '' : '/' %>bootstrap.min.css" />
+        <style>
+            a { text-decoration: none; }
+        </style>
+    </head>
+
+    <body>
+        <% if(locals.page) { %>
+            <%- include(`pages/${page}`); %>
+        <% } else if(locals.html) { %>
+            <%- html %>
+        <% } else { %>
+            400 - Bad request
+        <% } %>
+    </body>
+
+    <script src="<%- baseUrl %><%= baseUrl.endsWith('/') ? '' : '/' %>index.js" async defer></script>
+</html>

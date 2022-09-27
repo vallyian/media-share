@@ -1,61 +1,48 @@
-import os from "node:os";
-import dotenv from "dotenv";
-import processHelper from "./helpers/process.helper";
-import fsService from "./services/fs.service";
+export class Config {
+    readonly NODE_ENV: string;
+    readonly authClient: string;
+    readonly authEmails: string[];
+    readonly tokenKey: string;
+    readonly cookieSecret: string;
+    readonly clusters: number;
+    readonly port: number;
+    readonly proxyLocation: string;
+    readonly rateLimitMinutes: number;
+    readonly rateLimitCounter: number;
 
-let cookiePass: (() => string) | undefined;
-export function init(_cookiePass: () => string) {
-    cookiePass = _cookiePass;
-}
+    readonly mediaDir = "media";
+    readonly supportedVideos = ["mp4"];
+    readonly supportedSubtitles = ["srt", "sub"];
 
-tryLoadEnvFile();
+    constructor(
+        env: Record<string, string | undefined>,
+        exit: (key: string) => never,
+        clustersFactory: () => number
+    ) {
+        this.authClient = string("MEDIA_SHARE__AuthClient");
+        this.authEmails = stringArray("MEDIA_SHARE__AuthEmails", v => v.split(",").map(s => s.trim()).filter(s => s.includes("@")));
+        this.tokenKey = string("MEDIA_SHARE__TokenKey");
+        this.cookieSecret = string("MEDIA_SHARE__CookieSecret");
+        this.port = number("MEDIA_SHARE__Port", 58082, n => n > 0 && n < 65536);
+        this.rateLimitMinutes = number("MEDIA_SHARE__RateLimitMinutes", 5, n => n > 0 && n < 24 * 60);
+        this.proxyLocation = string("MEDIA_SHARE__ProxyLocation", "/");
+        this.NODE_ENV = string("NODE_ENV", "production");
+        this.clusters = this.NODE_ENV === "development" ? 1 : clustersFactory();
+        this.rateLimitCounter = Math.ceil(this.rateLimitMinutes * 60 * 5 / this.clusters);
 
-export default Object.freeze({
-    AUTH_CLIENT: env("AUTH_CLIENT").string(v => !!v),
-    AUTH_EMAILS: env("AUTH_EMAILS").list(v => v.split(",").map(s => s.trim()).filter(s => !!s), v => v.includes("@")),
-    NODE_ENV: env("NODE_ENV", () => "production").val,
-    PORT: env("PORT", () => 58082).number(v => v > 0 && v <= 65536),
-    COOKIE_PASS: env("COOKIE_PASS", cookiePass).val,
-    TOKEN_KEY: env("TOKEN_KEY").val,
-    PROXY_LOCATION: env("PROXY_LOCATION", () => "/").val,
-    CLUSTES: env("NODE_ENV").val === "development" ? 1 : os.cpus().length,
-    RATE_LIMIT_MINUTES: env("RATE_LIMIT_MINUTES", () => 5).number(v => v > 0 && v <= 24 * 60),
-    RATE_LIMIT_COUNTER: Math.ceil(+env("RATE_LIMIT_MINUTES", () => 5).val * 60 * 5 / (env("NODE_ENV").val === "development" ? 1 : os.cpus().length)),
-
-    mediaDir: "media",
-    supportedVideos: [".mp4"],
-    get supportedVideosRx() { return new RegExp("(:?" + this.supportedVideos.map((e: string) => `\\${e}`).join("|") + ")$", "i"); },
-    supportedSubtitles: [".srt", ".sub"],
-    get supportedSubtitlesRx() { return new RegExp("(:?" + this.supportedSubtitles.map((e: string) => `\\${e}`).join("|") + ")$", "i"); },
-});
-
-function env(key: string, def?: () => unknown) { return validate(key, process.env[key], def); }
-
-function validate(key: string, val?: string, def?: () => unknown) {
-    const valOrEmpty = typeof val !== "undefined" ? String(val).trim() : "";
-    const defVal = def instanceof Function ? String(def()).trim() : "";
-    return {
-        val: valOrEmpty || defVal,
-        string: (validator: (v: string) => boolean) => validator(valOrEmpty) ? valOrEmpty : validator(defVal) ? defVal : err(key),
-        number: (validator: (v: number) => boolean) => validator(+valOrEmpty) ? +valOrEmpty : validator(+defVal) ? +defVal : err(key),
-        list: (transformer: (v: string) => string[], validator: (v: string) => boolean) => {
-            const vals = transformer(valOrEmpty);
-            if (vals.length && vals.every(validator)) return vals;
-            const defVals = transformer(defVal);
-            if (defVals.length && defVals.every(validator)) return defVals;
-            return err(key);
+        function string(key: string, def?: string, fun?: (val: string) => boolean): string {
+            const val = env[key] !== undefined ? env[key] : def;
+            return (typeof val === "string" && (!fun || fun(val))) ? val : exit(key);
         }
-    };
-}
 
-function tryLoadEnvFile() {
-    try {
-        const envFile = fsService.readFileSync([".env"]);
-        if (envFile)
-            Object.entries(dotenv.parse(envFile)).forEach(([k, v]) => process.env[k] = process.env[k] || v);
-    } catch (_err) { /* */ }
-}
+        function number(key: string, def?: number, fun?: (val: number) => boolean): number {
+            const val = env[key] !== undefined ? env[key] : def;
+            return (typeof val === "number" && (!fun || fun(val))) ? val : exit(key);
+        }
 
-function err(key: string) {
-    return processHelper.exit("Environment", `config key ${key} invalid`);
+        function stringArray(key: string, tf: (val: string) => string[], fun?: (val: string[]) => boolean): string[] {
+            const val = env[key] !== undefined ? tf(<string>env[key]) : undefined;
+            return (val instanceof Array && (!fun || fun(val))) ? val : exit("");
+        }
+    }
 }

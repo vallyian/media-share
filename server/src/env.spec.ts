@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires -- project is set to module but tests are commonjs */
 
-import fsService from "./services/fs.service";
+import fsService from "./domain/services/media-access.service";
 
 describe("env", () => {
     const validFormatClientId = "test.apps.googleusercontent.com";

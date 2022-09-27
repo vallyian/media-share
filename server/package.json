@@ -24,7 +24,7 @@
         "lint": "tsc --noEmit --project tsconfig.app.json && eslint src/** --fix || echo 'fail' > ../artifacts/npm-lint.fail",
         "prebuild": "node -e \"fs.rmSync('bin', { recursive: true, force: true })\" && npm run ci",
         "build": "tsc --noEmitOnError --listEmittedFIles --project tsconfig.app.json",
-        "postbuild": "node -e \"fs.cpSync('src/views', 'bin/views', { recursive: true, force: true })\"",
+        "postbuild": "node -e \"fs.cpSync('src/service/views', 'bin/views', { recursive: true, force: true })\"",
         "pretest": "node -e \"['../artifacts/unit-tests', '../artifacts/npm-test.fail'].forEach(i => fs.rmSync(i, { recursive: true, force: true }))\" && npm run ci",
         "test": "ts-node --project tsconfig.spec.json test.ts || echo 'fail' > ../artifacts/npm-test.fail",
         "prestart": "npm run prebuild",
@@ -33,7 +33,6 @@
     "dependencies": {
         "compression": "^1.7.4",
         "cookie-parser": "^1.4.6",
-        "dotenv": "^16.0.1",
         "ejs": "^3.1.8",
         "express": "^4.18.1",
         "express-rate-limit": "^6.5.1",
