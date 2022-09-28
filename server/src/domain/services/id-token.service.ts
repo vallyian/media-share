@@ -11,7 +11,12 @@ export class IdTokenService implements IdTokenAPI {
     }
 
     csp() {
-        return Object.values(this.idTokenAdapters).map(a => a.csp);
+        const policies = Object.values(this.idTokenAdapters).map(a => a.csp);
+        return {
+            scriptSrcElem: policies.flatMap(p => p.scriptSrcElem || []),
+            connectSrc: policies.flatMap(p => p.connectSrc || []),
+            frameSrc: policies.flatMap(p => p.frameSrc || []),
+        };
     }
 
     private getAdapter(provider: string) {

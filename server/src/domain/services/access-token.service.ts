@@ -1,6 +1,7 @@
-import { AccessTokenAPI, AccessToken } from "../ports/API/AccessToken.API";
+import { AccessTokenAPI } from "../ports/API/AccessToken.API";
 import { IdTokenSPI } from "../ports/SPI/IdToken.SPI";
 import { CryptoSPI } from "../ports/SPI/Crypto.SPI";
+import { AccessToken } from "../objects/AccessToken";
 
 export class AccessTokenService implements AccessTokenAPI {
     constructor(
@@ -12,14 +13,14 @@ export class AccessTokenService implements AccessTokenAPI {
         }
     ) { }
 
-    async getAccessToken(accessToken: string): Promise<AccessToken> {
+    async getAccessToken(accessToken: string) {
         const decryptedAccessToken = await this.cryptoAdapter.decrypt(accessToken);
-        const accessTokenPayload = <AccessToken>JSON.parse(decryptedAccessToken);
+        const accessTokenPayload = <Partial<AccessToken>>JSON.parse(decryptedAccessToken);
         if (!accessTokenPayload.email)
             return Promise.reject("invalid access token email");
         if (!this.config.authEmails.includes(accessTokenPayload.email))
             return Promise.reject("email not authorized");
-        return accessTokenPayload;
+        return <AccessToken>accessTokenPayload;
     }
 
     async createAccessToken(idToken: string, provider: string) {

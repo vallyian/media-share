@@ -1,4 +1,4 @@
-import { ContentSecurityPolicy } from "../SPI/IdToken.SPI";
+import { ContentSecurityPolicy } from "../../objects/ContentSecurityPolicy";
 
 export interface IdTokenAPI {
     /**
@@ -8,7 +8,7 @@ export interface IdTokenAPI {
     html(provider: string): Promise<string>;
 
     /**
-     * Get external provider CSP to allow requests in browser
+     * Get CSP exceptions from all configured external providers to allow requests in browser
      */
-    csp(): ContentSecurityPolicy[];
+    csp(): ContentSecurityPolicy;
 }

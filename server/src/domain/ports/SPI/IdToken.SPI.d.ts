@@ -1,34 +1,23 @@
-export {
-    IdTokenSPI,
-
-    IdToken,
-    ContentSecurityPolicy
-};
-
-interface IdTokenSPI {
+export interface IdTokenSPI {
     /**
      * Get validated token paylod from JWT string
      */
-    getIdTokenPayload: (idToken: string, clientId: string) => Promise<undefined | IdToken>;
+    getIdTokenPayload: (idToken: string, clientId: string) => Promise<undefined | {
+        email?: string;
+        email_verified?: boolean;
+    }>;
 
     /**
      * Set CSP values to allow requests in browser
      */
-    csp: ContentSecurityPolicy;
+    csp: {
+        scriptSrcElem?: string[];
+        connectSrc?: string[];
+        frameSrc?: string[];
+    };
 
     /**
      * Set html for render signin details
      */
     html: string;
-}
-
-interface IdToken {
-    email?: string;
-    email_verified?: boolean;
-}
-
-interface ContentSecurityPolicy {
-    scriptSrcElem?: string[];
-    connectSrc?: string[];
-    frameSrc?: string[];
 }

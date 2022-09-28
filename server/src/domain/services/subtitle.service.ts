@@ -13,7 +13,7 @@ export class SubtitleService implements SubtitleAPI {
     ) { }
 
     /** @inheritdoc */
-    convert(subtitlePath: string, videoExtension?: string): Promise<string> {
+    convert(subtitlePath: string, videoExtension?: string) {
         switch (this.mediaAccessService.parsePath(subtitlePath).extension) {
             case "sub": return this.subToVtt(subtitlePath, videoExtension);
             case "srt": return this.srtToVtt(subtitlePath);

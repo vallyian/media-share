@@ -15,7 +15,7 @@ export class VideoProcessorAdapter implements VideoProcessorSPI {
     }
 
     /** @inheritdoc */
-    async getFps(videoPath: string): Promise<number> {
+    async getFps(videoPath: string) {
         if (!fs.existsSync(videoPath))
             throw Error(`video file "${videoPath}" not found`);
 

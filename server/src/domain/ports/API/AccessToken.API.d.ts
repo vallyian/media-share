@@ -1,10 +1,6 @@
-export {
-    AccessTokenAPI,
+import { AccessToken } from "../../objects/AccessToken";
 
-    AccessToken
-};
-
-interface AccessTokenAPI {
+export interface AccessTokenAPI {
     /**
      * Get decrypted access token payload
      * @param accessToken
@@ -19,6 +15,4 @@ interface AccessTokenAPI {
     createAccessToken(idToken: string, provider: string): Promise<string>;
 }
 
-interface AccessToken {
-    email: string;
-}
+

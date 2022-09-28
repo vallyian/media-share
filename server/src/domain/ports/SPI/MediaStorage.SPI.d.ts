@@ -1,11 +1,4 @@
-export {
-    MediaStorageSPI,
-
-    MediaType,
-    MediaStat
-};
-
-interface MediaStorageSPI {
+export interface MediaStorageSPI {
     /**
      * Join path segments using platform specific separator
      * @param parts
@@ -16,7 +9,11 @@ interface MediaStorageSPI {
      * Get list of directory items
      * @param dirPath
      */
-    readDir(dirPath: string): Promise<MediaStat[]>;
+    readDir(dirPath: string): Promise<Array<{
+        name: string;
+        size: number;
+        isDir: boolean;
+    }>>;
 
     /**
      * Read raw file as buffer
@@ -28,14 +25,5 @@ interface MediaStorageSPI {
      * Get item type
      * @param itemPath
      */
-    type(itemPath: string): Promise<MediaType>;
+    type(itemPath: string): Promise<"file" | "dir" | "error" | "unknown">;
 }
-
-type MediaType = "file" | "dir" | "error" | "unknown";
-
-interface MediaStat {
-    name: string;
-    size: number;
-    isDir: boolean;
-}
-

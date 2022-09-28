@@ -1,13 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
-import { MediaStorageSPI, MediaStat, MediaType } from "../domain/ports/SPI/MediaStorage.SPI";
+import { MediaStorageSPI } from "../domain/ports/SPI/MediaStorage.SPI";
 
 export class NodeFsAdapter implements MediaStorageSPI {
     /** @inheritdoc */
     join = (...parts: string[]) => path.join(...parts);
 
     /** @inheritdoc */
-    async readDir(dirPath: string): Promise<MediaStat[]> {
+    async readDir(dirPath: string) {
         if (await this.type(dirPath) !== "dir")
             throw Error(`path "${dirPath}" not a dir or not found`);
 
@@ -22,7 +22,7 @@ export class NodeFsAdapter implements MediaStorageSPI {
     }
 
     /** @inheritdoc */
-    async readFile(filePath: string): Promise<Buffer> {
+    async readFile(filePath: string) {
         if (await this.type(filePath) !== "file")
             throw Error(`path "${filePath}" not a file or not found`);
         const data = await fs.promises.readFile(filePath);
@@ -30,7 +30,7 @@ export class NodeFsAdapter implements MediaStorageSPI {
     }
 
     /** @inheritdoc */
-    async type(itemPath: string): Promise<MediaType> {
+    async type(itemPath: string) {
         if (typeof itemPath !== "string" || itemPath === "")
             return "error";
         try {

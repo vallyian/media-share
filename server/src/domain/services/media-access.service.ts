@@ -1,5 +1,8 @@
-import { MediaAccessAPI, MediaType, MediaStat, PathLink, ParsedPath } from "../ports/API/MediaAccess.API";
+import { MediaAccessAPI } from "../ports/API/MediaAccess.API";
 import { MediaStorageSPI } from "../ports/SPI/MediaStorage.SPI";
+import { PathLink } from "../objects/PathLink";
+import { MediaStat } from "../objects/MediaStat";
+import { MediaType } from "../objects/MediaType";
 import { Domain } from "..";
 
 export class MediaAccessService implements MediaAccessAPI {
@@ -11,7 +14,7 @@ export class MediaAccessService implements MediaAccessAPI {
     ) { }
 
     /** @inheritdoc */
-    parsePath(insecurePath: string): ParsedPath {
+    parsePath(insecurePath: string) {
         const securePathSegments = this.getSecurePathSegments(insecurePath);
         const secureMediaPath = this.mediaStorageAdapter.join(this.config.mediaDir, ...securePathSegments);
         const secureParentDir = this.mediaStorageAdapter.join(...securePathSegments.slice(0, -1));
@@ -28,18 +31,18 @@ export class MediaAccessService implements MediaAccessAPI {
     }
 
     /** @inheritdoc */
-    async type(insecurePath: string): Promise<MediaType> {
+    async type(insecurePath: string) {
         if (typeof insecurePath !== "string" || insecurePath === "")
-            return "error";
+            return <MediaType>"error";
 
         const secureMediaPath = this.getSecureMediaPath(insecurePath);
 
         return this.mediaStorageAdapter.type(secureMediaPath)
-            .catch(() => "error");
+            .catch(() => <MediaType>"error");
     }
 
     /** @inheritdoc */
-    async listDir(insecurePath: string, baseUrl?: string): Promise<MediaStat[]> {
+    async listDir(insecurePath: string, baseUrl?: string) {
         if (typeof insecurePath !== "string" || insecurePath === "")
             throw Error("invalid item path");
 
@@ -62,7 +65,7 @@ export class MediaAccessService implements MediaAccessAPI {
     }
 
     /** @inheritdoc */
-    async getFile(insecurePath: string): Promise<Buffer> {
+    async getFile(insecurePath: string) {
         if (typeof insecurePath !== "string" || insecurePath === "")
             throw Error("invalid item path");
 
@@ -78,21 +81,21 @@ export class MediaAccessService implements MediaAccessAPI {
     }
 
     /** @inheritdoc */
-    supportedVideoExtension(insecurePath: string): string | undefined {
+    supportedVideoExtension(insecurePath: string) {
         const extension = this.parsePath(insecurePath).extension;
         const isSupported = Domain.supportedVideos.includes(extension);
         return isSupported ? extension : undefined;
     }
 
     /** @inheritdoc */
-    supportedSubtitleExtension(insecurePath: string): string | undefined {
+    supportedSubtitleExtension(insecurePath: string) {
         const extension = this.parsePath(insecurePath).extension;
         const isSupported = Domain.supportedSubtitles.includes(extension);
         return isSupported ? extension : undefined;
     }
 
     /** @inheritdoc */
-    pathLinks(insecurePath: string, baseUrl?: string): PathLink[] {
+    pathLinks(insecurePath: string, baseUrl?: string) {
         if (typeof insecurePath !== "string" || insecurePath === "")
             throw Error("invalid item path");
 
@@ -113,7 +116,7 @@ export class MediaAccessService implements MediaAccessAPI {
     }
 
     /** @inheritdoc */
-    getSecureUrl(insecurePath: string, baseUrl?: string): string {
+    getSecureUrl(insecurePath: string, baseUrl?: string) {
         const secureUrl = this.getSecurePathSegments(insecurePath, baseUrl)
             .map(u => encodeURIComponent(u))
             .join("/");

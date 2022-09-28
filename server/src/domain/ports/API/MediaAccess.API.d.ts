@@ -1,15 +1,9 @@
-import { MediaType } from "../SPI/MediaStorage.SPI";
+import { MediaStat } from "../../objects/MediaStat";
+import { MediaType } from "../../objects/MediaType";
+import { ParsedPath } from "../../objects/ParsedPath";
+import { PathLink } from "../../objects/PathLink";
 
-export {
-    MediaAccessAPI,
-
-    MediaStat,
-    MediaType,
-    PathLink,
-    ParsedPath
-};
-
-interface MediaAccessAPI {
+export interface MediaAccessAPI {
     /**
      * Parse path, return secure path info (or empty strings)
      * @param insecurePath
@@ -60,23 +54,4 @@ interface MediaAccessAPI {
      * @param baseUrl proxy base URL
      */
     getSecureUrl(insecurePath: string, baseUrl?: string): string;
-}
-
-interface PathLink {
-    name: string;
-    link: string;
-}
-
-interface MediaStat {
-    name: string;
-    size: string;
-    link: string;
-    isDir: boolean;
-}
-
-interface ParsedPath {
-    mediaPath: string;
-    parent: string;
-    name: string;
-    extension: string;
 }

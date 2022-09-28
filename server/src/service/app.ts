@@ -46,9 +46,9 @@ export class App {
         app.use((csp => helmet.contentSecurityPolicy({
             directives: {
                 defaultSrc: ["'self'"],
-                scriptSrcElem: ["'self'", ...(csp.flatMap(c => c.scriptSrcElem || []))],
-                connectSrc: ["'self'", ...(csp.flatMap(c => c.connectSrc || []))],
-                frameSrc: ["'self'", ...(csp.flatMap(c => c.frameSrc || []))],
+                scriptSrcElem: ["'self'"].concat(csp.scriptSrcElem),
+                connectSrc: ["'self'"].concat(csp.connectSrc),
+                frameSrc: ["'self'"].concat(csp.frameSrc),
             }
         }))(this.domain.idTokenService.csp()));
         app.use(compression());
