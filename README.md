@@ -34,8 +34,8 @@ fast media share web server with a very basic UI
 #    openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -out server/certs/cert.crt -keyout server/certs/cert.key
 
 # required
-export AUTH_CLIENT="" # reqired, see https://console.cloud.google.com/apis/credentials
-export AUTH_EMAILS="" # required, comma separated list of authorized emails
+export MEDIA_SHARE__AuthClient="" # reqired, see https://console.cloud.google.com/apis/credentials
+export MEDIA_SHARE__AuthEmails="" # required, comma separated list of authorized emails
 
 export DEBUG="*" # optional
 npm --prefix server start
@@ -52,8 +52,8 @@ docker run --name media-share-0.0.0 --rm \
     -v "${HOME}/media:/home/node/app/media" \
     -v "${HOME}/certs/cert.crt:/run/secrets/cert.crt:ro" \
     -v "${HOME}/certs/cert.key:/run/secrets/cert.key:ro" \
-    -e "AUTH_CLIENT=" `# required` \
-    -e "AUTH_EMAILS=" `# required` \
+    -e "MEDIA_SHARE__AuthClient=" `# required` \
+    -e "MEDIA_SHARE__AuthEmails=" `# required` \
     vallyian/media-share:0.0.0
 ```
 
@@ -68,8 +68,8 @@ docker run --name media-share --pull always --restart=always -d \
     -v "${HOME}/media:/home/node/app/media" \
     -v "${HOME}/certs/cert.crt:/run/secrets/cert.crt:ro" \
     -v "${HOME}/certs/cert.key:/run/secrets/cert.key:ro" \
-    -e "AUTH_CLIENT=" `# required` \
-    -e "AUTH_EMAILS=" `# required` \
+    -e "MEDIA_SHARE__AuthClient=" `# required` \
+    -e "MEDIA_SHARE__AuthEmails=" `# required` \
     vallyian/media-share:latest
 ```
 

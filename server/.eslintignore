@@ -2,7 +2,7 @@
 # certs
 # media
 # node_modules
-src/views
+src/service/views
 # .eslintrc.json
 # package*.json
 # tsconfig*.json

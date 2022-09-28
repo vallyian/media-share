@@ -1,59 +1,75 @@
-import cluster, { Worker } from "node:cluster";
-import https from "node:https";
-import { Application } from "express";
-import env from "./env";
-import app from "./app";
-import processHelper from "./helpers/process.helper";
-import fsService from "./services/fs.service";
+import os from "node:os";
+import fs from "node:fs";
+import crypto from "node:crypto";
+import { Domain } from "./domain";
+import { GoogleIdTokenAdapter } from "./adapters/google-id-token.adapter";
+import { NodeCryptoAdapter } from "./adapters/node-crypto.adapter";
+import { NodeFsAdapter } from "./adapters/node-fs.adapter";
+import { Service } from "./service";
+import { Config } from "./config";
+import { TextEncodingAdapter } from "./adapters/text-encoding.adapter";
+import { VideoProcessorAdapter } from "./adapters/video-processor.adapter";
+import { ConsoleWriterAdapter } from "./adapters/console-writer.adapter";
 
-serve(app.initApp).catch((err: Error) => processHelper.exit("Generic", err));
-
-async function serve(expressAppFactory: () => Promise<Application>) {
-    process.on("uncaughtException", err => processHelper.exit("UncaughtException", err));
-    process.on("unhandledRejection", (reason, promise) => processHelper.exit("UnhandledRejection", reason, promise));
-
-    if (cluster.isPrimary)
-        clusterPrimary();
-    else
-        await clusterWorker(expressAppFactory);
+/* eslint-disable no-restricted-globals */
+if (require.main === module) {
+    // called from CLI; exec runner
+    const runner = runnerFactory();
+    void runner();
+} else {
+    // imported as module; export runner
+    module.exports = runnerFactory;
 }
 
-function clusterPrimary() {
-    const { cert, key } = getCert();
-    cert || console.warn("Warning", "no cert file found");
-    key || console.warn("Warning", "no cert key file found");
-    console.info(`${cert && key ? "[secure]" : "[insecure]"} ${env.NODE_ENV} server (main process ${process.pid}) starting on port ${env.PORT}`);
+function runnerFactory() {
+    const { logger, terminator, config, certificate, domain } = infrastructure();
+    const service = new Service(logger, terminator, config, certificate, domain);
+    return () => service.serve().catch(err => terminator("Generic", err));
+}
 
-    const workers = new Array<Worker>();
-    const fork = () => workers.push(cluster.fork(env));
-    new Array(env.CLUSTES).fill(null).map(fork);
-    cluster.on("exit", (worker, code, signal) => {
-        const workerId = workers.findIndex(w => w.id === worker.id);
-        if (workerId >= 0) workers.splice(workerId, 1);
-        console.error("Error", `worker ${worker.process.pid} exited; ${JSON.stringify({ code, signal })}`);
-        fork();
+function infrastructure() {
+    const logger = Object.freeze({
+        info: console.info,
+        warn: console.warn,
+        error: console.error
     });
-}
 
-function clusterWorker(expressAppFactory: () => Promise<Application>) {
-    return Promise.resolve()
-        .then(() => expressAppFactory())
-        .then(app => {
-            const { cert, key } = getCert();
-            const server = cert && key
-                ? https.createServer({ cert, key }, app)
-                : app;
-            server.listen(env.PORT, () => console.info(`service (worker process ${process.pid}) is online`));
-        })
-        .catch(err => {
-            console.error("Critical", err);
-            processHelper.exit("WorkerStartup");
-        });
-}
+    const terminator = (codes => (code: keyof typeof codes, ...error: unknown[]): never => {
+        if (error) logger.error("Critical", ...error);
+        // eslint-disable-next-line no-restricted-syntax
+        process.exit(codes[code]);
+    })({
+        Generic: 1,
+        UncaughtException: 2,
+        UnhandledRejection: 3,
+        Config: 4,
+        /* primary */
+        InitFunction: 101,
+        /* workers */
+        WorkerStartup: 201,
+    });
 
-function getCert(): { cert: Buffer | undefined, key: Buffer | undefined } {
-    return {
-        cert: fsService.readFileSync(["certs/cert.crt", "/run/secrets/cert.crt"]),
-        key: fsService.readFileSync(["certs/cert.key", "/run/secrets/cert.key"])
-    };
+    const config = new Config(
+        process.env,
+        (key: string) => terminator("Config", `config key ${key} invalid`),
+        (length: number) => crypto.randomBytes(length).toString("base64"),
+        () => os.cpus().length
+    );
+
+    const certificate = (file => ({
+        cert: file("certs/cert.crt") || file("/run/secrets/cert.crt"),
+        key: file("certs/cert.key") || file("/run/secrets/cert.key")
+    }))((path: string) => fs.existsSync(path) && fs.statSync(path).isFile() ? fs.readFileSync(path) : undefined);
+
+    const domain = new Domain(
+        new ConsoleWriterAdapter(),
+        { google: new GoogleIdTokenAdapter(config.authClient) },
+        new NodeCryptoAdapter(config.tokenKey),
+        new NodeFsAdapter(),
+        new TextEncodingAdapter(),
+        new VideoProcessorAdapter(),
+        config
+    );
+
+    return { logger, terminator, config, certificate, domain };
 }

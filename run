@@ -61,14 +61,14 @@ test() {
     local container_logs="${smoke_test_dir}/container-logs.txt"
     local test_failed=""
 
-    echo "removing smoke test data..."
+    echo "removing smoke test data ------------------------------------------------------------------------------------"
     rm -rf "${smoke_test_dir}"
 
-    echo "creating media test data..."
+    echo "creating media test data ------------------------------------------------------------------------------------"
     mkdir -p "${media_test_dir}"
     echo "test file" > "${media_test_dir}/test-file"
 
-    echo "creating test self-signed certs..."
+    echo "creating test self-signed certs -----------------------------------------------------------------------------"
     mkdir -p "${media_certs_dir}"
     openssl req -new -newkey rsa:4096 -days 1 -nodes -x509 \
         -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=127.0.0.1" \
@@ -76,24 +76,27 @@ test() {
 
     chmod -R 777 "${smoke_test_dir}"
 
-    echo "starting service..."
+    echo "starting service --------------------------------------------------------------------------------------------"
     (docker stop ${container} > /dev/null 2>&1 && docker rm ${container} > /dev/null 2>&1) || echo "container ${container} not running"
     docker run --name ${container} --rm \
         -p "58081:58082" \
         -v "${media_share_dir}:/home/node/app/media" \
         -v "${media_certs_dir}/cert.crt:/run/secrets/cert.crt:ro" \
         -v "${media_certs_dir}/cert.key:/run/secrets/cert.key:ro" \
-        -e "AUTH_CLIENT=test.apps.googleusercontent.com" \
-        -e "AUTH_EMAILS=test@gmail.com" \
+        -e "MEDIA_SHARE__AuthClient=test.apps.googleusercontent.com" \
+        -e "MEDIA_SHARE__AuthEmails=test@gmail.com" \
         -e "DEBUG=*" \
         ${docker_username}/${docker_repo}:${semver} &
 
+    echo "waiting for service health ----------------------------------------------------------------------------------"
     if timeout 30s sh -c 'while [ "$(curl --insecure https://localhost:58081/health)" != "healthy" ]; do sleep 5; done'; then
+        echo "running dir test --------------------------------------------------------------------------------------------"
         local requestId=1
         test_result "/test-dir" "${smoke_test_dir}/curl-${requestId}.txt" || test_failed="${test_failed}${requestId},"
         local test_result_code=$?
         [ "${test_result_code}" = "0" ] || test_failed="${test_failed}${requestId},"
 
+        echo "running file test -------------------------------------------------------------------------------------------"
         local requestId=2
         test_result "/test-dir/test-file" "${smoke_test_dir}/curl-${requestId}.txt" || test_failed="${test_failed}${requestId},"
         local test_result_code=$?
@@ -150,11 +153,10 @@ push() {
 }
 
 dev() {
-    [ -f "./server/.env" ] && export $(echo $(cat "./server/.env" | sed 's/#.*//g'| xargs) | envsubst)
     [ "${MEDIA_SHARE_DIR}" = "" ] && term "missing env var MEDIA_SHARE_DIR"
     [ -d "${MEDIA_SHARE_DIR}" ] || term "dir \"${MEDIA_SHARE_DIR}\" not found"
-    [ "${AUTH_CLIENT}" = "" ] && term "missing env var AUTH_CLIENT"
-    [ "${AUTH_EMAILS}" = "" ] && term "missing env var AUTH_EMAILS"
+    [ "${MEDIA_SHARE__AuthClient}" = "" ] && term "missing env var MEDIA_SHARE__AuthClient"
+    [ "${MEDIA_SHARE__AuthEmails}" = "" ] && term "missing env var MEDIA_SHARE__AuthEmails"
 
     build
 
@@ -167,10 +169,10 @@ dev() {
         $([ "${MEDIA_CERTS_DIR}" != "" ] && [ -d "${MEDIA_CERTS_DIR}" ] && echo -v "${MEDIA_CERTS_DIR}/cert.crt:/run/secrets/cert.crt:ro") \
         $([ "${MEDIA_CERTS_DIR}" != "" ] && [ -d "${MEDIA_CERTS_DIR}" ] && echo -v "${MEDIA_CERTS_DIR}/cert.key:/run/secrets/cert.key:ro") \
         -e "NODE_ENV=development" \
-        -e "AUTH_CLIENT" \
-        -e "AUTH_EMAILS" \
-        -e "COOKIE_PASS" \
-        -e "TOKEN_KEY" \
+        -e "MEDIA_SHARE__AuthClient" \
+        -e "MEDIA_SHARE__AuthEmails" \
+        -e "MEDIA_SHARE__TokenKey" \
+        -e "MEDIA_SHARE__CookieSecret" \
         ${docker_username}/${docker_repo}:${semver}
 }
 
@@ -179,6 +181,8 @@ prod() {
     [ -d "${MEDIA_SHARE_DIR}" ] || term "dir \"${MEDIA_SHARE_DIR}\" not found"
     [ "${MEDIA_CERTS_DIR}" = "" ] && term "missing env var MEDIA_CERTS_DIR"
     [ -d "${MEDIA_CERTS_DIR}" ] || term "dir \"${MEDIA_CERTS_DIR}\" not found"
+    [ -f "${MEDIA_CERTS_DIR}/cert.crt" ] || term "file \"${MEDIA_CERTS_DIR}/cert.crt\" not found"
+    [ -f "${MEDIA_CERTS_DIR}/cert.key" ] || term "file \"${MEDIA_CERTS_DIR}/cert.key\" not found"
 
     build
 
@@ -191,8 +195,8 @@ prod() {
         -v "${MEDIA_SHARE_DIR}:/home/node/app/media" \
         -v "${MEDIA_CERTS_DIR}/cert.crt:/run/secrets/cert.crt:ro" \
         -v "${MEDIA_CERTS_DIR}/cert.key:/run/secrets/cert.key:ro" \
-        -e "AUTH_CLIENT" \
-        -e "AUTH_EMAILS" \
+        -e "MEDIA_SHARE__AuthClient" \
+        -e "MEDIA_SHARE__AuthEmails" \
         ${docker_username}/${docker_repo}:${semver}
 }
 
