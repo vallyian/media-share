@@ -4,6 +4,7 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import compression from "compression";
 
+import { Logger } from "../@types/Logger";
 import { Domain } from "../domain";
 
 import { HealthRoute } from "./routes/health.route";
@@ -21,6 +22,7 @@ export class App {
     readonly app: Application;
 
     constructor(
+        private readonly logger: Logger,
         private readonly domain: Domain,
         private readonly config: {
             NODE_ENV: string,
@@ -28,9 +30,7 @@ export class App {
             rateLimitCounter: number,
             proxyLocation: string,
             cookieSecret: string,
-            mediaDir: string,
-            supportedVideos: string[],
-            supportedSubtitles: string[]
+            mediaDir: string
         }
     ) {
         this.app = this.createApp();
@@ -55,7 +55,7 @@ export class App {
         this.setViews(app);
         app.use(this.config.proxyLocation, this.createProxiedApp());
         app.use((req, res, next) => new NotFoundMiddleware().handler(req, res, next));
-        app.use((err: Error, req: Request, res: Response, next: NextFunction) => new ErrorMiddleware(this.config).handler(err, req, res, next));
+        app.use((err: Error, req: Request, res: Response, next: NextFunction) => new ErrorMiddleware(this.logger, this.config).handler(err, req, res, next));
         return app;
     }
 
@@ -68,9 +68,9 @@ export class App {
         app.use(express.static(`${app.get("views")}/scripts`));
         app.use(cookieParser(this.config.cookieSecret));
         app.use((req, res, next) => new AuthMiddleware(this.domain.idTokenService, this.domain.accessTokenService).handler(req, res, next));
-        app.post("/api/media-sync", (req, res) => new MediaSyncRoute(this.domain.mediaAccessService).handler(req, res));
+        app.post("/api/media-sync", (req, res, next) => new MediaSyncRoute(this.domain.mediaAccessService).handler(req, res, next));
         app.use((req, res, next) => new DirIndexMiddleware(this.domain.mediaAccessService).handler(req, res, next));
-        app.use((req, res, next) => new VideoFileMiddleware(this.domain.mediaAccessService, this.config).handler(req, res, next));
+        app.use((req, res, next) => new VideoFileMiddleware(this.domain.mediaAccessService).handler(req, res, next));
         app.use((req, res, next) => new SubtitleFileMiddleware(this.domain.mediaAccessService, this.domain.subtitleService).handler(req, res, next));
         app.use(express.static(this.config.mediaDir, { dotfiles: "allow" }));
         return app;

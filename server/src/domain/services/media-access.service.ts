@@ -1,13 +1,12 @@
-import { MediaStorageSPI } from "../ports/SPI/MediaStorage.SPI";
 import { MediaAccessAPI, MediaType, MediaStat, PathLink, ParsedPath } from "../ports/API/MediaAccess.API";
+import { MediaStorageSPI } from "../ports/SPI/MediaStorage.SPI";
+import { Domain } from "..";
 
 export class MediaAccessService implements MediaAccessAPI {
     constructor(
         private mediaStorageAdapter: MediaStorageSPI,
         private readonly config: {
             mediaDir: string,
-            supportedVideos: string[],
-            supportedSubtitles: string[]
         }
     ) { }
 
@@ -81,14 +80,14 @@ export class MediaAccessService implements MediaAccessAPI {
     /** @inheritdoc */
     supportedVideoExtension(insecurePath: string): string | undefined {
         const extension = this.parsePath(insecurePath).extension;
-        const isSupported = this.config.supportedVideos.includes(extension);
+        const isSupported = Domain.supportedVideos.includes(extension);
         return isSupported ? extension : undefined;
     }
 
     /** @inheritdoc */
     supportedSubtitleExtension(insecurePath: string): string | undefined {
         const extension = this.parsePath(insecurePath).extension;
-        const isSupported = this.config.supportedSubtitles.includes(extension);
+        const isSupported = Domain.supportedSubtitles.includes(extension);
         return isSupported ? extension : undefined;
     }
 

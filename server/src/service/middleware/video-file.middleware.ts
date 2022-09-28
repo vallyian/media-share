@@ -1,15 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import { AppError } from "../../@types/AppError";
+import { Domain } from "../../domain";
 import { MediaAccessAPI } from "../../domain/ports/API/MediaAccess.API";
 
 export class VideoFileMiddleware {
     constructor(
-        private readonly mediaAccessService: MediaAccessAPI,
-        private readonly config: {
-            supportedVideos: string[],
-            supportedSubtitles: string[],
-            mediaDir: string
-        }
+        private readonly mediaAccessService: MediaAccessAPI
     ) { }
 
     async handler(req: Request, res: Response, next: NextFunction) {
@@ -37,8 +33,8 @@ export class VideoFileMiddleware {
         const { parent, name, extension } = this.mediaAccessService.parsePath(videoPath);
         if (!parent || !name || !extension)
             throw Error("video file path invalid");
-        const supportedVideosRx = new RegExp("(:?" + this.config.supportedVideos.map((e: string) => `\\.${e}`).join("|") + ")$", "i");
-        const supportedSubtitlesRx = new RegExp("(:?" + this.config.supportedSubtitles.map((e: string) => `\\.${e}`).join("|") + ")$", "i");
+        const supportedVideosRx = new RegExp("(:?" + Domain.supportedVideos.map((e: string) => `\\.${e}`).join("|") + ")$", "i");
+        const supportedSubtitlesRx = new RegExp("(:?" + Domain.supportedSubtitles.map((e: string) => `\\.${e}`).join("|") + ")$", "i");
         const fileNameNoExt = name.replace(`.${extension}`, "");
         const fileNameNoExtRx = new RegExp(`^${fileNameNoExt}`, "i");
         const files = await this.mediaAccessService.listDir(parent, baseUrl);

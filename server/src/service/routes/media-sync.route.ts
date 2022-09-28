@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { MediaAccessAPI } from "../../domain/ports/API/MediaAccess.API";
 
 export class MediaSyncRoute {
@@ -6,7 +6,7 @@ export class MediaSyncRoute {
         private mediaAccessService: MediaAccessAPI
     ) { }
 
-    async handler(req: Request, res: Response) {
+    async handler(req: Request, res: Response, next: NextFunction) {
         let filePath = "";
         return Promise.resolve()
             .then(() => filePath = decodeURIComponent(new URL(req.get("referer") || "").pathname))
@@ -15,8 +15,9 @@ export class MediaSyncRoute {
             .then(() => void 0) // TODO: cluster safe media-sync in memory storage
             .then(() => res.status(200).end())
             .catch(err => {
-                console.error(err);
-                res.status(400).end();
+                err = err instanceof Error ? err : Error(err);
+                err.status = 400;
+                next(err);
             });
     }
 }

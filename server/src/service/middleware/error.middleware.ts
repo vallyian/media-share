@@ -1,8 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import { AppError } from "../../@types/AppError";
+import { Logger } from "../../@types/Logger";
 
 export class ErrorMiddleware {
     constructor(
+        private readonly logger: Logger,
         private readonly config: {
             NODE_ENV: string
         }
@@ -34,7 +36,7 @@ export class ErrorMiddleware {
                     return req.headers;
                 })()
             };
-            console.error(errJson);
+            this.logger.error(errJson);
         }
 
         res.status(status);

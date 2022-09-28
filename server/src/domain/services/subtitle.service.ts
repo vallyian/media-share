@@ -1,10 +1,12 @@
+import { SubtitleAPI } from "../ports/API/SubtitleAPI";
+import { LogWriterSPI } from "../ports/SPI/LogWriter.SPI";
 import { TextEncodingSPI } from "../ports/SPI/TextEncoding.SPI";
 import { VideoProcessorSPI } from "../ports/SPI/VideoProcessor.SPI";
-import { SubtitleAPI } from "../ports/API/SubtitleAPI";
 import { MediaAccessAPI } from "../ports/API/MediaAccess.API";
 
 export class SubtitleService implements SubtitleAPI {
     constructor(
+        private readonly logWriterAdapter: LogWriterSPI,
         private readonly textEncodingAdapter: TextEncodingSPI,
         private readonly videoProcessorAdapter: VideoProcessorSPI,
         private readonly mediaAccessService: MediaAccessAPI,
@@ -96,7 +98,7 @@ export class SubtitleService implements SubtitleAPI {
         const videoPathType = await this.mediaAccessService.type(videoPath);
         const fps = videoPathType === "file"
             ? await this.videoProcessorAdapter.getFps(mediaPath).catch(err => {
-                console.error(err);
+                this.logWriterAdapter.error(err);
                 return 25; /* default */
             })
             : defaultFps;

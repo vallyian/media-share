@@ -1,6 +1,6 @@
+import { AccessTokenAPI, AccessToken } from "../ports/API/AccessToken.API";
 import { IdTokenSPI } from "../ports/SPI/IdToken.SPI";
 import { CryptoSPI } from "../ports/SPI/Crypto.SPI";
-import { AccessToken, AccessTokenAPI } from "../ports/API/AccessToken.API";
 
 export class AccessTokenService implements AccessTokenAPI {
     constructor(

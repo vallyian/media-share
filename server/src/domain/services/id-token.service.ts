@@ -1,5 +1,5 @@
-import { IdTokenSPI } from "../ports/SPI/IdToken.SPI";
 import { IdTokenAPI } from "../ports/API/IdToken.API";
+import { IdTokenSPI } from "../ports/SPI/IdToken.SPI";
 
 export class IdTokenService implements IdTokenAPI {
     constructor(

@@ -11,13 +11,13 @@ export class Service {
     private readonly app: App;
 
     constructor(
-        private readonly config: Config,
         private readonly logger: Logger,
-        private readonly domain: Domain,
+        private readonly terminator: Terminator,
+        private readonly config: Config,
         private readonly certificate: Certificate,
-        private readonly terminator: Terminator
+        private readonly domain: Domain
     ) {
-        this.app = new App(this.domain, this.config);
+        this.app = new App(this.logger, this.domain, this.config);
     }
 
     serve(): Promise<void> {
