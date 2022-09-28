@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import express, { Application, Request, Response, NextFunction } from "express";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
@@ -78,6 +79,6 @@ export class App {
 
     private setViews(app: express.Application) {
         app.set("view engine", "ejs");
-        app.set("views", this.config.NODE_ENV === "development" ? "src/service/views" : "views");
+        app.set("views", fs.existsSync("src/service/views") ? "src/service/views" : "service/views");
     }
 }

@@ -44,7 +44,7 @@ function infrastructure() {
         UnhandledRejection: 3,
         Config: 4,
         /* primary */
-        InitFunction: 102,
+        InitFunction: 101,
         /* workers */
         WorkerStartup: 201,
     });
@@ -59,7 +59,7 @@ function infrastructure() {
     const certificate = (file => ({
         cert: file("certs/cert.crt") || file("/run/secrets/cert.crt"),
         key: file("certs/cert.key") || file("/run/secrets/cert.key")
-    }))((path: string) => fs.statSync(path).isFile() ? fs.readFileSync(path) : undefined);
+    }))((path: string) => fs.existsSync(path) && fs.statSync(path).isFile() ? fs.readFileSync(path) : undefined);
 
     const domain = new Domain(
         new ConsoleWriterAdapter(),
