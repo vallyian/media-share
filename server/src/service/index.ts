@@ -37,7 +37,7 @@ export class Service {
         this.logger.info(`${cert && key ? "[secure]" : "[insecure]"} ${this.config.NODE_ENV} server (main process ${process.pid}) starting on port ${this.config.port}`);
 
         const workers = new Array<Worker>();
-        const fork = () => workers.push(cluster.fork(this.config));
+        const fork = () => workers.push(cluster.fork(this.config.clusterSharedEnv));
         new Array(this.config.clusters).fill(null).map(fork);
         cluster.on("exit", (worker, code, signal) => {
             const workerId = workers.findIndex(w => w.id === worker.id);

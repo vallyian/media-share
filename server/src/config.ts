@@ -49,4 +49,11 @@ export class Config {
             };
         }
     }
+
+    get clusterSharedEnv() {
+        return {
+            "MEDIA_SHARE__TokenKey": this.tokenKey,
+            "MEDIA_SHARE__CookieSecret": this.cookieSecret
+        };
+    }
 }
