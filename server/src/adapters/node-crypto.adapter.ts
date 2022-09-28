@@ -3,25 +3,13 @@ import { CryptoSPI } from "../domain/ports/SPI/Crypto.SPI";
 
 export class NodeCryptoAdapter implements CryptoSPI {
     /**
-     * @param cipherKey 32 bit base64 string
-     * @param cipherAlgorithm see `openssl list -cipher-algorithms`
+     * @param cipherKey 32 bit base64 string; if not provided, a unique one will be generated
+     * @param cipherAlgorithm see `openssl list -cipher-algorithms`; if not provided, "aes-256-ctr" will be used
      */
     constructor(
         private readonly cipherKey: string,
         private readonly cipherAlgorithm = "aes-256-ctr"
-    ) {
-        this.cipherKey = cipherKey || this.randomString(32);
-    }
-
-    /** @inheritdoc */
-    randomString(length = 32) {
-        return crypto.randomBytes(length).toString("base64url");
-    }
-
-    /** @inheritdoc */
-    sha256(input: string) {
-        return crypto.createHash("sha256").update(input).digest("base64");
-    }
+    ) { }
 
     /** @inheritdoc */
     encrypt(input: string) {
@@ -30,9 +18,9 @@ export class NodeCryptoAdapter implements CryptoSPI {
             .then(() => input || Promise.reject("invalid input arg"))
             .then(() => {
                 iv = Buffer.from(crypto.randomBytes(16));
-                return Buffer.from(this.cipherKey, "base64url");
+                return Buffer.from(<string>this.cipherKey, "base64url");
             })
-            .then(key => crypto.createCipheriv(this.cipherAlgorithm, key, iv))
+            .then(key => crypto.createCipheriv(<string>this.cipherAlgorithm, key, iv))
             .then(cipher => Buffer.concat([cipher.update(input), cipher.final()]))
             .then(encrypted => `${iv.toString("base64url")}:${encrypted.toString("base64url")}`);
     }
@@ -47,9 +35,9 @@ export class NodeCryptoAdapter implements CryptoSPI {
                 const parts = input.split(":");
                 iv = Buffer.from(<string>parts[0], "base64url");
                 encrypted = Buffer.from(<string>parts[1], "base64url");
-                return Buffer.from(this.cipherKey, "base64url");
+                return Buffer.from(<string>this.cipherKey, "base64url");
             })
-            .then(key => crypto.createDecipheriv(this.cipherAlgorithm, key, iv))
+            .then(key => crypto.createDecipheriv(<string>this.cipherAlgorithm, key, iv))
             .then(decipher => Buffer.concat([decipher.update(encrypted), decipher.final()]).toString());
     }
 }

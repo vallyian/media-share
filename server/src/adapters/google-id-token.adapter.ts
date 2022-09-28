@@ -1,13 +1,12 @@
+import crypto from "node:crypto";
 import * as gAuthLib from "google-auth-library";
 import { IdTokenSPI } from "../domain/ports/SPI/IdToken.SPI";
 
 export class GoogleIdTokenAdapter implements IdTokenSPI {
     /**
-     * @param sha256 Function to calc SHA256 hash
      * @param authClient Client identifier
      */
     constructor(
-        private readonly sha256: (input: string) => string,
         private readonly authClient: string
     ) { }
 
@@ -24,8 +23,9 @@ export class GoogleIdTokenAdapter implements IdTokenSPI {
 
     /** @inheritdoc */
     get csp() {
+        const sha = crypto.createHash("sha256").update(this.signInCb().toString()).digest("base64");
         return {
-            scriptSrcElem: ["https://accounts.google.com/gsi/client", `'sha256-${this.sha256(this.signInCb().toString())}'`],
+            scriptSrcElem: ["https://accounts.google.com/gsi/client", `'sha256-${sha}'`],
             connectSrc: ["https://accounts.google.com/"],
             frameSrc: ["https://accounts.google.com/"]
         };

@@ -7,6 +7,7 @@ import { App } from "./app";
 import { Config } from "../config";
 import { Domain } from "../domain";
 
+/* eslint-disable no-restricted-globals */
 export class Service {
     private readonly app: App;
 

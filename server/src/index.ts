@@ -1,5 +1,6 @@
 import os from "node:os";
 import fs from "node:fs";
+import crypto from "node:crypto";
 import { Domain } from "./domain";
 import { GoogleIdTokenAdapter } from "./adapters/google-id-token.adapter";
 import { NodeCryptoAdapter } from "./adapters/node-crypto.adapter";
@@ -10,6 +11,7 @@ import { TextEncodingAdapter } from "./adapters/text-encoding.adapter";
 import { VideoProcessorAdapter } from "./adapters/video-processor.adapter";
 import { ConsoleWriterAdapter } from "./adapters/console-writer.adapter";
 
+/* eslint-disable no-restricted-globals */
 if (require.main === module) {
     // called from CLI; exec runner
     const runner = runnerFactory();
@@ -32,49 +34,42 @@ function infrastructure() {
         error: console.error
     });
 
-    const terminator = (() => {
-        const ExitCode = {
-            Generic: 1,
-            UncaughtException: 2,
-            UnhandledRejection: 3,
-            Config: 4,
-            /* primary */
-            InitFunction: 102,
-            /* workers */
-            WorkerStartup: 201,
-        };
-        return (code: keyof typeof ExitCode, ...error: unknown[]): never => {
-            if (error) logger.error("Critical", ...error);
-            // eslint-disable-next-line no-restricted-syntax
-            process.exit(ExitCode[code]);
-        };
-    })();
+    const terminator = (codes => (code: keyof typeof codes, ...error: unknown[]): never => {
+        if (error) logger.error("Critical", ...error);
+        // eslint-disable-next-line no-restricted-syntax
+        process.exit(codes[code]);
+    })({
+        Generic: 1,
+        UncaughtException: 2,
+        UnhandledRejection: 3,
+        Config: 4,
+        /* primary */
+        InitFunction: 102,
+        /* workers */
+        WorkerStartup: 201,
+    });
 
     const config = new Config(
         process.env,
         (key: string) => terminator("Config", `config key ${key} invalid`),
+        (length: number) => crypto.randomBytes(length).toString("base64"),
         () => os.cpus().length
     );
 
-    const certificate = (() => {
-        const readFileSync = (filePath: string) => fs.statSync(filePath).isFile() ? fs.readFileSync(filePath) : undefined;
-        return {
-            cert: readFileSync("certs/cert.crt") || readFileSync("/run/secrets/cert.crt"),
-            key: readFileSync("certs/cert.key") || readFileSync("/run/secrets/cert.key")
-        };
-    })();
+    const certificate = (file => ({
+        cert: file("certs/cert.crt") || file("/run/secrets/cert.crt"),
+        key: file("certs/cert.key") || file("/run/secrets/cert.key")
+    }))((path: string) => fs.statSync(path).isFile() ? fs.readFileSync(path) : undefined);
 
-    const domain = (() => {
-        const logWriterAdapter = new ConsoleWriterAdapter();
-        const cryptoAdapter = new NodeCryptoAdapter(config.tokenKey);
-        const idTokenAdapters = {
-            google: new GoogleIdTokenAdapter(cryptoAdapter.sha256, config.authClient)
-        };
-        const mediaStorageAdapter = new NodeFsAdapter();
-        const textEncodingAdapter = new TextEncodingAdapter();
-        const videoProcessorAdapter = new VideoProcessorAdapter();
-        return new Domain(logWriterAdapter, idTokenAdapters, cryptoAdapter, mediaStorageAdapter, textEncodingAdapter, videoProcessorAdapter, config);
-    })();
+    const domain = new Domain(
+        new ConsoleWriterAdapter(),
+        { google: new GoogleIdTokenAdapter(config.authClient) },
+        new NodeCryptoAdapter(config.tokenKey),
+        new NodeFsAdapter(),
+        new TextEncodingAdapter(),
+        new VideoProcessorAdapter(),
+        config
+    );
 
     return { logger, terminator, config, certificate, domain };
 }
