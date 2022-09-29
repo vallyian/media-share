@@ -7,57 +7,41 @@ window.addEventListener("load", () => {
         return;
     }
 
-    const currentTime = {
-        key: decodeURIComponent(location.pathname).replace(/\/+/g, "/"),
-        interval: undefined,
-        get value() {
-            return JSON.parse(localStorage.getItem("currentTime") || "{}");
-        },
-        init(cb) {
-            const requested = +(q => q ? q[1] : -1)(location.search.replace(/^\?/, "").split("&").map(q => q.split("=")).find(([q]) => q === "t"));
-            if (requested !== 0) {
-                const saved = currentTime.value[currentTime.key];
-                if (requested > 0) video.currentTime = requested;
-                else if (saved > 0) video.currentTime = saved;
-            }
-            cb();
-        },
-        startInterval() {
-            currentTime.clearInterval();
-            currentTime.interval = setInterval(() => currentTime.save(), 5000);
-        },
-        clearInterval() {
-            currentTime.save();
-            clearInterval(currentTime.interval);
-        },
-        save(remove) {
-            const all = currentTime.value;
-            if (remove || video.currentTime === 0) {
-                delete all[currentTime.key];
-            } else {
-                all[currentTime.key] = video.currentTime;
+    const url = decodeURIComponent(location.pathname).replace(/\/+/g, "/");
+    let interval;
 
-                // try {
-                //     const req = new XMLHttpRequest();
-                //     req.open("POST", "/api/media-sync");
-                //     req.send();
-                // } catch (_) { /* */ }
-            }
-            localStorage.setItem("currentTime", JSON.stringify(all));
-        }
-    };
+    function saveTime() {
+        localStorage.setItem("time", JSON.stringify({ url, time: video.currentTime || 0 }));
+        // try {
+        //     const req = new XMLHttpRequest();
+        //     req.open("POST", "/api/media-sync");
+        //     req.send();
+        // } catch (_) { /* */ }
+    }
 
-    currentTime.init(() => {
-        video.addEventListener("click", () => video.paused ? video.play() : video.pause());
-        video.addEventListener("seeked", () => currentTime.save());
-        video.addEventListener("play", () => currentTime.startInterval());
-        video.addEventListener("pause", () => currentTime.clearInterval());
-        video.addEventListener("ended", () => {
-            currentTime.save(true);
-            const nextMedia = document.getElementById("next-media");
-            if (nextMedia)
-                nextMedia.click();
-        });
+    function playNext(id) {
+        document.querySelector(`[data-${id}-media]`)?.click();
+    }
+
+    if (video.querySelector("source")?.getAttribute("type")?.startsWith("audio"))
+        document.querySelector(".playlist")?.classList.remove("d-none");
+    document.querySelector("[data-prev-btn]")?.addEventListener("click", () => playNext("prev"));
+    document.querySelector("[data-next-btn]")?.addEventListener("click", () => playNext("next"));
+
+    const t = JSON.parse(localStorage.getItem("time") || "{}");
+    const time = t.url === url ? t.time : 0;
+    if (isFinite(time) && time > 0) video.currentTime = time;
+
+    video.addEventListener("click", () => video.paused ? video.play() : video.pause());
+    video.addEventListener("seeked", () => saveTime());
+    video.addEventListener("play", () => {
+        clearInterval(interval);
+        saveTime();
+        interval = setInterval(() => saveTime(), 5000);
     });
-
+    video.addEventListener("pause", () => {
+        clearInterval(interval);
+        saveTime();
+    });
+    video.addEventListener("ended", () => playNext("next"));
 }, { passive: true });

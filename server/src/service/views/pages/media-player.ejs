@@ -15,14 +15,30 @@
     .media-w-xxl video::cue { font-size: 4rem !important; }
     .header { z-index: 999; }
     .fullscreen .header { z-index: -999; }
+    .playlist { z-index: 999; top: 50%; left: 50%; transform: translate(-50%, -50%); list-style: none; }
 </style>
 
 <div class="header opacity-75 position-fixed d-inline-flex align-items-center">
     <a class="btn border-0 text-danger" href="<%- cd %>"><%- include(`../icons/x-lg`); %></a>
-    <% if (prev) { %><a class="btn border-0 text-light" href="<%- prev %>"><%- include(`../icons/caret-left`); %></a><% } %>
-    <% if (next) { %><a class="btn border-0 text-light" id="next-media" href="<%- next %>"><%- include(`../icons/caret-right`); %></a><% } %>
+    <% if (playlist.find(p => p.list === "prev")) { %><span data-prev-btn class="btn border-0 text-light"><%- include(`../icons/caret-left`); %></span><% } %>
+    <% if (playlist.find(p => p.list === "next")) { %><span data-next-btn class="btn border-0 text-light"><%- include(`../icons/caret-right`); %></span><% } %>
     <span class="text-nowrap overflow-hidden text-light ps-2"><%= title %></span>
 </div>
+
+<ul class="position-fixed overflow-hidden d-none playlist">
+    <% playlist.forEach((media, index) => { %>
+        <li class="text-nowrap">
+            <% if(media.list == "current") { %>
+                <%- index+1 %>. <%- media.name %>
+            <% } else { %>
+               <a href="<%- media.link %>"
+                    <% if (media.list == "prev") { %>data-prev-media<% } %>
+                    <% if (media.list == "next") { %>data-next-media<% } %>
+                ><%- index+1 %>. <%- media.name %></a>
+            <% } %>
+        </li>
+    <% }); %>
+</ul>
 
 <video controls autoplay preload="metadata" class="position-fixed">
     <source type="<%- mimeType %>" src="<%- urlPath %>" />

@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import { AppError } from "../../@types/AppError";
 import { Domain } from "../../domain";
+import { MediaStat } from "../../domain/objects/MediaStat";
 import { MediaAccessAPI } from "../../domain/ports/API/MediaAccess.API";
+
+type Playlist = MediaStat & { list: "prev" | "current" | "next" | undefined }
 
 export class MediaPlayerFileMiddleware {
     constructor(
@@ -37,23 +40,25 @@ export class MediaPlayerFileMiddleware {
             throw Error("media file path invalid");
         const title = name.replace(`.${extension}`, "");
         const files = await this.mediaAccessService.listDir(parent, baseUrl);
-        const avFiles = (() => {
+        const playlist = <Playlist[]>(() => {
             const supportedAudioVideosRx = new RegExp("(:?" + Domain.supportedAudios.concat(Domain.supportedVideos).map((e: string) => `\\.${e}`).join("|") + ")$", "i");
-            return files.filter(s => supportedAudioVideosRx.test(s.name));
+            const list = files.filter(s => supportedAudioVideosRx.test(s.name));
+            const index = list.findIndex(s => s.name === name);
+            if (index !== -1) {
+                if (list[index - 1]) (<Playlist>list[index - 1]).list = "prev";
+                (<Playlist>list[index]).list = "current";
+                if (list[index + 1]) (<Playlist>list[index + 1]).list = "next";
+            }
+            return list;
         })();
-        const avIndex = avFiles.findIndex(s => s.name === name);
         const pathLinks = this.mediaAccessService.pathLinks(videoPath, baseUrl);
         const cd = pathLinks.length >= 2
             ? pathLinks.splice(pathLinks.length - 2, 1)[0]?.link
             : "";
         const urlPath = "/" + this.mediaAccessService.getSecureUrl(videoPath, baseUrl) + "?static=true";
         const subtitles = (() => {
-            if (Domain.supportedAudios.includes(extension))
-                return [];
-            const subParams = (name: string) => /\.vtt$/i.test(name)
-                ? "static=true"
-                : /\.sub$/i.test(name)
-                    ? `video=${extension}`
+            const subParams = (name: string) => /\.vtt$/i.test(name) ? "static=true"
+                : /\.sub$/i.test(name) && Domain.supportedVideos.includes(extension) ? `video=${extension}`
                     : "";
             const supportedSubtitlesRx = new RegExp("(:?" + Domain.supportedSubtitles.map((e: string) => `\\.${e}`).join("|") + ")$", "i");
             const fileNameNoExtRx = new RegExp(`^${title}`, "i");
@@ -63,8 +68,6 @@ export class MediaPlayerFileMiddleware {
         const mimeType = Domain.supportedAudios.includes(extension)
             ? `audio/${extension}`
             : `video/${extension}`;
-        const prev = avFiles[avIndex - 1]?.name ? `${<string>avFiles[avIndex - 1]?.link}?t=0` : "";
-        const next = avFiles[avIndex + 1]?.name ? `${<string>avFiles[avIndex + 1]?.link}?t=0` : "";
-        return { cd, title, urlPath, subtitles, mimeType, prev, next };
+        return { cd, title, urlPath, subtitles, mimeType, playlist };
     }
 }
