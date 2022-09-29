@@ -56,7 +56,6 @@ export class MediaAccessService implements MediaAccessAPI {
         const linkMediaStats = mediaStats
             .map(s => ({
                 ...s,
-                size: this.size(s.size),
                 link: `${secureUrl ? "/" : ""}${secureUrl}/${encodeURIComponent(s.name)}`
             }))
             .sort((a, b) => this.sort(a, b));
@@ -78,6 +77,13 @@ export class MediaAccessService implements MediaAccessAPI {
         const file = this.mediaStorageAdapter.readFile(securePath);
 
         return file;
+    }
+
+    /** @inheritdoc */
+    supportedAudioExtension(insecurePath: string) {
+        const extension = this.parsePath(insecurePath).extension;
+        const isSupported = Domain.supportedAudios.includes(extension);
+        return isSupported ? extension : undefined;
     }
 
     /** @inheritdoc */
@@ -140,18 +146,6 @@ export class MediaAccessService implements MediaAccessAPI {
         const arr = (insecurePathPrefix ? getSecureSegments(insecurePathPrefix) : [])
             .concat(getSecureSegments(insecurePath));
         return arr;
-    }
-
-    private size(value: number): string {
-        switch (true) {
-            case value < 1000: return `${value} bytes`;
-            case value < 1000000: return `${Math.round(value / 100) / 10} kb`;
-            case value < 1000000000: return `${Math.round(value / 100000) / 10} mb`;
-            case value < 1000000000000: return `${Math.round(value / 100000000) / 10} gb`;
-            case value < 1000000000000000: return `${Math.round(value / 100000000) / 10} tb`;
-
-            default: return String(value);
-        }
     }
 
     private sort(a: MediaStat, b: MediaStat, order: "asc" | "desc" = "asc"): number {

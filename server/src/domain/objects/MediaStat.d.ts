@@ -1,6 +1,7 @@
 export interface MediaStat {
     name: string;
-    size: string;
+    size: number;
+    time: number;
     link: string;
     isDir: boolean;
 }

@@ -2,6 +2,7 @@
 window.addEventListener("load", () => {
     const video = window.document.getElementsByTagName("video")[0];
     if (!video) {
+        // eslint-disable-next-line no-restricted-globals
         console.error("no video element found");
         return;
     }
@@ -47,6 +48,7 @@ window.addEventListener("load", () => {
     };
 
     currentTime.init(() => {
+        video.addEventListener("click", () => video.paused ? video.play() : video.pause());
         video.addEventListener("seeked", () => currentTime.save());
         video.addEventListener("play", () => currentTime.startInterval());
         video.addEventListener("pause", () => currentTime.clearInterval());

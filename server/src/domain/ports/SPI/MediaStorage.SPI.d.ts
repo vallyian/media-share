@@ -12,6 +12,7 @@ export interface MediaStorageSPI {
     readDir(dirPath: string): Promise<Array<{
         name: string;
         size: number;
+        time: number;
         isDir: boolean;
     }>>;
 

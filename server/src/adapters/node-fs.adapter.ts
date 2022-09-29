@@ -17,6 +17,7 @@ export class NodeFsAdapter implements MediaStorageSPI {
         return stats.map((stat, index) => ({
             name: <string>items[index],
             size: stat.size,
+            time: Math.max(stat.ctimeMs, stat.mtimeMs),
             isDir: stat.isDirectory()
         }));
     }

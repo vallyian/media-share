@@ -30,6 +30,12 @@ export interface MediaAccessAPI {
     getFile(insecurePath: string): Promise<Buffer>;
 
     /**
+     * Get audio file extension if supported
+     * @param insecurePath
+     */
+    supportedAudioExtension(insecurePath: string): string | undefined;
+
+    /**
      * Get video file extension if supported
      * @param insecurePath
      */

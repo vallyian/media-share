@@ -26,6 +26,7 @@ export class Domain {
 
     static readonly supportedVideos = ["mp4"];
     static readonly supportedSubtitles = ["srt", "sub"];
+    static readonly supportedAudios = ["mp3"];
 
     constructor(
         logWriterAdapter: LogWriterSPI,

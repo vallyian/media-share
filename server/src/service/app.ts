@@ -13,7 +13,7 @@ import { FaviconRoute } from "./routes/favicon.route";
 import { MediaSyncRoute } from "./routes/media-sync.route";
 
 import { AuthMiddleware } from "./middleware/auth.middleware";
-import { VideoFileMiddleware } from "./middleware/video-file.middleware";
+import { MediaPlayerFileMiddleware } from "./middleware/media-player.middleware";
 import { SubtitleFileMiddleware } from "./middleware/subtitle-file.middleware";
 import { DirIndexMiddleware } from "./middleware/dir-index.middleware";
 import { NotFoundMiddleware } from "./middleware/not-found.middleware";
@@ -71,7 +71,7 @@ export class App {
         app.use((req, res, next) => new AuthMiddleware(this.domain.idTokenService, this.domain.accessTokenService).handler(req, res, next));
         app.post("/api/media-sync", (req, res, next) => new MediaSyncRoute(this.domain.mediaAccessService).handler(req, res, next));
         app.use((req, res, next) => new DirIndexMiddleware(this.domain.mediaAccessService).handler(req, res, next));
-        app.use((req, res, next) => new VideoFileMiddleware(this.domain.mediaAccessService).handler(req, res, next));
+        app.use((req, res, next) => new MediaPlayerFileMiddleware(this.domain.mediaAccessService).handler(req, res, next));
         app.use((req, res, next) => new SubtitleFileMiddleware(this.domain.mediaAccessService, this.domain.subtitleService).handler(req, res, next));
         app.use(express.static(this.config.mediaDir, { dotfiles: "allow" }));
         return app;
