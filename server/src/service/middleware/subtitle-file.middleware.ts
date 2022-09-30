@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from "express";
-import { AppError } from "../../@types/AppError";
 import { MediaAccessAPI } from "../../domain/ports/API/MediaAccess.API";
 import { SubtitleAPI } from "../../domain/ports/API/SubtitleAPI";
 
@@ -15,7 +14,7 @@ export class SubtitleFileMiddleware {
 
         const type = await this.mediaAccessService.type(req.path).catch(() => "error");
         if (type !== "file") {
-            const err: AppError = Error("not found");
+            const err = Error("not found");
             err.status = 404;
             return next(err);
         }

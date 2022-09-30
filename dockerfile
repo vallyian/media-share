@@ -8,7 +8,6 @@ COPY server/tsconfig*.json ./
 RUN npm run build
 COPY server/test.ts .
 RUN npm test
-# TODO: fix lint in docker
 COPY server/.eslintignore server/.eslintrc.json ./
 RUN npm run lint
 

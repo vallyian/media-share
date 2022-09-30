@@ -128,7 +128,7 @@ results() {
     local errors=""
 
     [ ! -f ${artifacts_dir}/npm-test.fail    ] || errors="npm test failed\n${errors}"
-    # [ ! -f ${artifacts_dir}/npm-lint.fail    ] || errors="npm lint failed\n${errors}"
+    [ ! -f ${artifacts_dir}/npm-lint.fail    ] || errors="npm lint failed\n${errors}"
     [   -f ${artifacts_dir}/unit-tests/*.xml ] || errors="npm test results not found\n${errors}"
 
     [ "${errors}" = "" ] || term "${errors}"

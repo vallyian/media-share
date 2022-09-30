@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from "express";
-import { AppError } from "../../@types/AppError";
 import { Logger } from "../../@types/Logger";
 
 export class ErrorMiddleware {
@@ -11,7 +10,7 @@ export class ErrorMiddleware {
     ) { }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- last arg required by express to correctly interpret as error middleware
-    handler(err: AppError, req: Request, res: Response, _next: NextFunction) {
+    handler(err: Error, req: Request, res: Response, _next: NextFunction) {
         const status = err.status || 500;
         const url = req.url;
         const safeErr = {

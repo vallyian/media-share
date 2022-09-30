@@ -1,5 +1,4 @@
-import { NextFunction, Response } from "express";
-import { AppRequest } from "../../@types/AppRequest";
+import { NextFunction, Request, Response } from "express";
 import { AccessTokenAPI } from "../../domain/ports/API/AccessToken.API";
 import { IdTokenAPI } from "../../domain/ports/API/IdToken.API";
 
@@ -11,7 +10,7 @@ export class AuthMiddleware {
         private readonly accessTokenService: AccessTokenAPI
     ) { }
 
-    async handler(req: AppRequest, res: Response, next: NextFunction) {
+    async handler(req: Request, res: Response, next: NextFunction) {
         // TODO: selection page for ID provider (sync to all cluster workers)
         const idTokenProvider = "google";
 
@@ -26,7 +25,7 @@ export class AuthMiddleware {
         return this.loginHandler(idTokenProvider, req, res, next);
     }
 
-    private accessTokenHandler(accessToken: string, req: AppRequest, next: NextFunction) {
+    private accessTokenHandler(accessToken: string, req: Request, next: NextFunction) {
         return Promise.resolve()
             .then(() => this.accessTokenService.getAccessToken(accessToken))
             .then(token => {
@@ -40,7 +39,7 @@ export class AuthMiddleware {
             });
     }
 
-    private idTokenHandler(idToken: string, idTokenProvider: string, req: AppRequest, res: Response, next: NextFunction) {
+    private idTokenHandler(idToken: string, idTokenProvider: string, req: Request, res: Response, next: NextFunction) {
         return Promise.resolve()
             .then(() => this.accessTokenService.createAccessToken(idToken, idTokenProvider))
             .then(accessToken => res
@@ -53,7 +52,7 @@ export class AuthMiddleware {
             });
     }
 
-    private loginHandler(idTokenProvider: string, req: AppRequest, res: Response, next: NextFunction) {
+    private loginHandler(idTokenProvider: string, req: Request, res: Response, next: NextFunction) {
         return Promise.resolve()
             .then(() => this.idTokenService.html(idTokenProvider))
             .then(html => res.status(401).render("index", {
