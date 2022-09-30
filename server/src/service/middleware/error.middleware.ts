@@ -14,37 +14,27 @@ export class ErrorMiddleware {
     handler(err: AppError, req: Request, res: Response, _next: NextFunction) {
         const status = err.status || 500;
         const url = req.url;
+        const safeErr = {
+            message: err.message || "internal server error",
+            status,
+            stack: (err.stack || "")
+                .replace(err.message, "")
+                .split(/\n/g)
+                .filter(l => !!l.trim() && !/(?:(?:\/|\\)node_modules(?:\/|\\)|\(node:internal\/)/.test(l)),
+            hostname: req.hostname,
+            method: req.method,
+            url: req.url,
+            headers: (() => {
+                ["authorization", "cookie"].forEach(h => req.headers[h] && delete req.headers[h] && (req.headers[`${h}`] = "omitted"));
+                return req.headers;
+            })()
+        };
 
-        if (!url.endsWith(".map")) {
-            const errJson = {
-                message: err.message || "internal server error",
-                status,
-                render: err.render,
-                stack: (err.stack || "").split(/\n/g).filter(l => !!l.trim()).filter(l => !/(?:(?:\/|\\)node_modules(?:\/|\\)|\(node:internal\/)/.test(l)),
-                hostname: req.hostname,
-                method: req.method,
-                url: req.url,
-                headers: (() => {
-                    if (req.headers.authorization) {
-                        delete req.headers.authorization;
-                        req.headers["x-authorization-omitted"] = "...";
-                    }
-                    if (req.headers.cookie) {
-                        delete req.headers.cookie;
-                        req.headers["x-cookie-omitted"] = "...";
-                    }
-                    return req.headers;
-                })()
-            };
-            this.logger.error(errJson);
-        }
+        if (!url.endsWith(".map"))
+            this.logger.error(safeErr);
 
-        res.status(status);
-
-        err.render
-            ? res.render(err.render.page, err.render.locals)
-            : res.send(this.config.NODE_ENV === "development"
-                ? err.stack || err.message
-                : err.message);
+        res.status(status)
+            .header("Content-Type", "text/plain")
+            .send(this.config.NODE_ENV !== "development" ? safeErr.message : [safeErr.message, "", ...safeErr.stack].join("\n"));
     }
 }

@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from "express";
-import { AppError } from "../../@types/AppError";
 import { Domain } from "../../domain";
 import { MediaStat } from "../../domain/objects/MediaStat";
 import { MediaAccessAPI } from "../../domain/ports/API/MediaAccess.API";
@@ -14,27 +13,27 @@ export class MediaPlayerFileMiddleware {
     async handler(req: Request, res: Response, next: NextFunction) {
         if (req.query["static"] === "true")
             return next();
-        if (!this.mediaAccessService.supportedAudioExtension(req.path) && !this.mediaAccessService.supportedVideoExtension(req.path))
-            return next();
+
+        if (
+            !this.mediaAccessService.supportedAudioExtension(req.path) &&
+            !this.mediaAccessService.supportedVideoExtension(req.path)
+        ) return next();
 
         const type = await this.mediaAccessService.type(req.path).catch(() => "error");
-        if (type !== "file") {
-            const err: AppError = Error("not found");
-            err.status = 404;
-            return next(err);
-        }
+        if (type !== "dir")
+            return next();
 
         return Promise.resolve()
             .then(() => this.viewData(req.path, req.baseUrl))
             .then(data => res.render("index", {
-                baseUrl: req.baseUrl,
                 page: "media-player",
-                ...data
+                ...data,
+                baseUrl: req.baseUrl
             }))
             .catch(err => next(err));
     }
 
-    private async viewData(videoPath: string, baseUrl: string): Promise<Record<string, unknown>> {
+    private async viewData(videoPath: string, baseUrl: string) {
         const { parent, name, extension } = this.mediaAccessService.parsePath(videoPath);
         if (!parent || !name || !extension)
             throw Error("media file path invalid");

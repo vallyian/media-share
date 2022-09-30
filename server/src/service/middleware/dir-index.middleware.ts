@@ -7,20 +7,23 @@ export class DirIndexMiddleware {
     ) { }
 
     async handler(req: Request, res: Response, next: NextFunction) {
-        return Promise.resolve()
-            .then(async () => {
-                const type = await this.mediaAccessService.type(req.path);
-                if (type !== "dir")
-                    return next();
+        const type = await this.mediaAccessService.type(req.path).catch(() => "error");
+        if (type !== "dir")
+            return next();
 
-                const items = await this.mediaAccessService.listDir(req.path, req.baseUrl);
-                return res.render("index", {
-                    baseUrl: req.baseUrl,
-                    page: "dir-index",
-                    pills: this.mediaAccessService.pathLinks(req.path, req.baseUrl),
-                    items
-                });
-            })
+        return Promise.resolve()
+            .then(() => this.viewData(req.path, req.baseUrl))
+            .then(data => res.render("index", {
+                page: "dir-index",
+                ...data,
+                baseUrl: req.baseUrl
+            }))
             .catch(err => next(err));
+    }
+
+    private async viewData(dirPath: string, baseUrl: string) {
+        const items = await this.mediaAccessService.listDir(dirPath, baseUrl);
+        const pills = this.mediaAccessService.pathLinks(dirPath, baseUrl);
+        return { items, pills };
     }
 }
