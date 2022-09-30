@@ -30,8 +30,7 @@ RUN npm audit --omit=dev --audit-level="${NPM_AUDIT_LEVEL}" && \
 
 
 FROM node:gallium-alpine3.16
-RUN apk add zlib=1.2.12-r3 && echo "temp fix for CVE-2022-37434 ###########################################################" && \
-    apk add tini && \
+RUN apk add tini && \
     mkdir -p /home/node/app/media && \
     touch /home/node/app/media/_no_media_volume_mounted_ && \
     chown -R node:node /home/node/app
