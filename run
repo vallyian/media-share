@@ -53,70 +53,51 @@ smoke_result() {
 smoke() {
     local container=${docker_username}-${docker_repo}-${semver}-smoke-test
     local smoke_test_dir="${artifacts_dir}/smoke-test"
-    local media_share_dir="${smoke_test_dir}/media"
-    local media_test_dir="${media_share_dir}/test-dir"
+    local media_dir="${smoke_test_dir}/media"
+    local media_test_dir="${media_dir}/test-dir"
     local container_logs="${smoke_test_dir}/container-logs.txt"
     local test_failed=""
+    local test_id=0
 
-    echo "removing smoke test data ------------------------------------------------------------------------------------"
     rm -rf "${smoke_test_dir}"
-
-    echo "creating media test data ------------------------------------------------------------------------------------"
     mkdir -p "${media_test_dir}"
     echo "test file" > "${media_test_dir}/test-file"
-
     chmod -R 777 "${smoke_test_dir}"
 
-    echo "starting service without auth -------------------------------------------------------------------------------"
     (docker stop ${container} > /dev/null 2>&1 && docker rm ${container} > /dev/null 2>&1) || echo "container ${container} not running"
     docker run --name ${container} --rm \
         -p "58081:58082" \
-        -v "${media_share_dir}:/home/node/app/media" \
+        -v "${media_dir}:/home/node/app/media" \
         -e "DEBUG=*" \
         ${docker_username}/${docker_repo}:${semver} &
 
-    echo "waiting for service health ----------------------------------------------------------------------------------"
     if timeout 30s sh -c 'while [ "$(curl --insecure http://localhost:58081/health)" != "healthy" ]; do sleep 5; done'; then
-        echo "running dir test --------------------------------------------------------------------------------------------"
-        local requestId=1
-        smoke_result "/test-dir" "200 OK" "${smoke_test_dir}/curl-${requestId}.txt" || test_failed="${test_failed}${requestId},"
-        local test_result_code=$?
-        [ "${test_result_code}" = "0" ] || test_failed="${test_failed}${requestId},"
+        test_id=$((test_id + 1))
+        smoke_result "/test-dir" "200 OK" "${smoke_test_dir}/curl-${test_id}.txt" || test_failed+="${test_id},"
+        local test_result_code=$? && [ "${test_result_code}" = "0" ] || test_failed+="${test_id},"
 
-        echo "running file test -------------------------------------------------------------------------------------------"
-        local requestId=2
-        smoke_result "/test-dir/test-file" "200 OK" "${smoke_test_dir}/curl-${requestId}.txt" || test_failed="${test_failed}${requestId},"
-        local test_result_code=$?
-        [ "${test_result_code}" = "0" ] || test_failed="${test_failed}${requestId},"
-    else
-        echo "FAIL: GET /health - does not contain 'healthy'"
+        test_id=$((test_id + 1))
+        smoke_result "/test-dir/test-file" "200 OK" "${smoke_test_dir}/curl-${test_id}.txt" || test_failed+="${test_id},"
+        local test_result_code=$? && [ "${test_result_code}" = "0" ] || test_failed+="${test_id},"
     fi
 
-    echo "starting service --------------------------------------------------------------------------------------------"
     (docker stop ${container} > /dev/null 2>&1 && docker rm ${container} > /dev/null 2>&1) || echo "container ${container} not running"
     docker run --name ${container} --rm \
         -p "58081:58082" \
-        -v "${media_share_dir}:/home/node/app/media" \
+        -v "${media_dir}:/home/node/app/media" \
         -e "MEDIA_SHARE__AuthClient=test.apps.googleusercontent.com" \
         -e "MEDIA_SHARE__AuthEmails=test@gmail.com" \
         -e "DEBUG=*" \
         ${docker_username}/${docker_repo}:${semver} &
 
-    echo "waiting for service health ----------------------------------------------------------------------------------"
     if timeout 30s sh -c 'while [ "$(curl --insecure http://localhost:58081/health)" != "healthy" ]; do sleep 5; done'; then
-        echo "running dir test --------------------------------------------------------------------------------------------"
-        local requestId=3
-        smoke_result "/test-dir" "401 Unauthorized" "${smoke_test_dir}/curl-${requestId}.txt" || test_failed="${test_failed}${requestId},"
-        local test_result_code=$?
-        [ "${test_result_code}" = "0" ] || test_failed="${test_failed}${requestId},"
+        test_id=$((test_id + 1))
+        smoke_result "/test-dir" "401 Unauthorized" "${smoke_test_dir}/curl-${test_id}.txt" || test_failed+="${test_id},"
+        local test_result_code=$? && [ "${test_result_code}" = "0" ] || test_failed+="${test_id},"
 
-        echo "running file test -------------------------------------------------------------------------------------------"
-        local requestId=4
-        smoke_result "/test-dir/test-file" "401 Unauthorized" "${smoke_test_dir}/curl-${requestId}.txt" || test_failed="${test_failed}${requestId},"
-        local test_result_code=$?
-        [ "${test_result_code}" = "0" ] || test_failed="${test_failed}${requestId},"
-    else
-        echo "FAIL: GET /health - does not contain 'healthy'"
+        test_id=$((test_id + 1))
+        smoke_result "/test-dir/test-file" "401 Unauthorized" "${smoke_test_dir}/curl-${test_id}.txt" || test_failed+="${test_id},"
+        local test_result_code=$? && [ "${test_result_code}" = "0" ] || test_failed+="${test_id},"
     fi
 
     docker logs ${container} > "${container_logs}" 2>&1 || echo "docker logs cmd failed"
@@ -166,52 +147,11 @@ push() {
         .
 }
 
-dev() {
-    [ "${MEDIA_SHARE_DIR}" = "" ] && term "missing env var MEDIA_SHARE_DIR"
-    [ -d "${MEDIA_SHARE_DIR}" ] || term "dir \"${MEDIA_SHARE_DIR}\" not found"
-    [ "${MEDIA_SHARE__AuthClient}" = "" ] && term "missing env var MEDIA_SHARE__AuthClient"
-    [ "${MEDIA_SHARE__AuthEmails}" = "" ] && term "missing env var MEDIA_SHARE__AuthEmails"
-
-    build
-
-    local container=${docker_repo}-${semver}
-
-    docker stop ${container} > /dev/null && docker rm ${container} > /dev/null || echo "container ${container} not running"
-    docker run --name ${container} --rm \
-        -p "127.0.0.1:58081:58082" \
-        -v "${MEDIA_SHARE_DIR}:/home/node/app/media" \
-        $([ "${MEDIA_CERTS_DIR}" != "" ] && [ -d "${MEDIA_CERTS_DIR}" ] && echo -v "${MEDIA_CERTS_DIR}/cert.crt:/run/secrets/cert.crt:ro") \
-        $([ "${MEDIA_CERTS_DIR}" != "" ] && [ -d "${MEDIA_CERTS_DIR}" ] && echo -v "${MEDIA_CERTS_DIR}/cert.key:/run/secrets/cert.key:ro") \
-        -e "NODE_ENV=development" \
-        -e "MEDIA_SHARE__AuthClient" \
-        -e "MEDIA_SHARE__AuthEmails" \
-        -e "MEDIA_SHARE__TokenKey" \
-        -e "MEDIA_SHARE__CookieSecret" \
-        ${docker_username}/${docker_repo}:${semver}
-}
-
-prod() {
-    [ "${MEDIA_SHARE_DIR}" = "" ] && term "missing env var MEDIA_SHARE_DIR"
-    [ -d "${MEDIA_SHARE_DIR}" ] || term "dir \"${MEDIA_SHARE_DIR}\" not found"
-    [ "${MEDIA_CERTS_DIR}" = "" ] && term "missing env var MEDIA_CERTS_DIR"
-    [ -d "${MEDIA_CERTS_DIR}" ] || term "dir \"${MEDIA_CERTS_DIR}\" not found"
-    [ -f "${MEDIA_CERTS_DIR}/cert.crt" ] || term "file \"${MEDIA_CERTS_DIR}/cert.crt\" not found"
-    [ -f "${MEDIA_CERTS_DIR}/cert.key" ] || term "file \"${MEDIA_CERTS_DIR}/cert.key\" not found"
-
-    build
-
-    semver=latest
-    local container=${docker_repo}-${semver}
-
-    docker stop ${container} > /dev/null && docker rm ${container} > /dev/null || echo "container ${container} not running"
-    docker run --name ${docker_repo} --pull always --restart=always -d \
-        -p "127.0.0.1:58080:58082" \
-        -v "${MEDIA_SHARE_DIR}:/home/node/app/media" \
-        -v "${MEDIA_CERTS_DIR}/cert.crt:/run/secrets/cert.crt:ro" \
-        -v "${MEDIA_CERTS_DIR}/cert.key:/run/secrets/cert.key:ro" \
-        -e "MEDIA_SHARE__AuthClient" \
-        -e "MEDIA_SHARE__AuthEmails" \
-        ${docker_username}/${docker_repo}:${semver}
+ci() {
+    ./run build
+    ./run smoke
+    ./run scan
+    ./run results
 }
 
 case "${1}" in
@@ -221,8 +161,7 @@ case "${1}" in
     "scan"    ) scan    ;;
     "results" ) results ;;
     "push"    ) push    ;;
-    "dev"     ) dev     ;;
-    "prod"    ) prod    ;;
+    "ci"      ) ci      ;;
 
-    *) term "USAGE:   ./run   semver | build | smoke | results | scan | push | dev | prod"
+    *) term "USAGE:   ./run   semver | build | smoke | results | scan | push | ci"
 esac
