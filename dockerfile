@@ -20,26 +20,33 @@ COPY --from=build /home/node/artifacts/*.fail /
 
 
 
-FROM node:gallium-alpine3.16 AS prod-deps
+FROM node:gallium-alpine3.16 AS prod-base
 WORKDIR /home/node/app
+ARG NODE_ENV=production
+ENV NODE_ENV=${NODE_ENV}
+ARG SEMVER
+ENV SEMVER=${SEMVER}
+
+
+
+FROM prod-base AS prod-deps
 COPY server/package*.json ./
 ARG NPM_AUDIT_LEVEL
 RUN npm audit --omit=dev --audit-level="${NPM_AUDIT_LEVEL}" && \
-    NODE_ENV=production npm ci --omit=dev
+    npm ci --omit=dev
 
 
+COPY --from=build /home/node/artifacts/unit-tests /unit-tests
+COPY --from=build /home/node/artifacts/*.fail /
 
-FROM node:gallium-alpine3.16
+FROM prod-base
 RUN apk add tini && \
     mkdir -p /home/node/app/media && \
-    touch /home/node/app/media/_no_media_volume_mounted_ && \
     chown -R node:node /home/node/app
-WORKDIR /home/node/app
-ARG SEMVER
-ENV SEMVER=${SEMVER}
+COPY --chown=node:node                  README.md                     media
+COPY --chown=node:node --from=prod-deps /home/node/app/node_modules   node_modules
+COPY --chown=node:node --from=build     /home/node/server/bin         ./
 USER node
-COPY --chown=node:node --from=prod-deps /home/node/app/node_modules node_modules
-COPY --chown=node:node artifacts/runtime/ ./
 # VOLUME [ "/home/node/app/media", "/run/secrets/cert.crt", "/run/secrets/cert.key"]
 HEALTHCHECK --interval=30s --timeout=1s --start-period=5s --retries=1 \
     CMD if [ -f "/run/secrets/cert.crt" ] && [ -f "/run/secrets/cert.key" ]; then \

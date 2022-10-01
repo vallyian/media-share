@@ -21,56 +21,58 @@ fast media share web server with a very basic UI
 
 ## Run
 
-**Security warning**: Only expose shared volumes that don't contain sensitive data !!!  
-**Security warning**: Only expose this outside `127.0.0.1` if you understand the risks !!!  
+### Security warnings
 
-* local folders
+* only expose shared volumes that don't contain sensitive data !!!  
+* only expose this outside `127.0.0.1` if you understand the risks !!!  
+* use TLS certificates in prod
 
-```sh
-# required: create (or symlink) ./media dir'
+Example self-signed cert (for development testing)
+`openssl req -new -newkey rsa:4096 -out cert.crt -keyout cert.key -days 365 -nodes -x509 -subj "/C=CC/ST=ST/L=L/O=O/CN=127.0.0.1"`
 
-# required: create (or symlink) ./server/certs/cert.crt and ./server/certs/cert.key files
-#    mkdir -p server/certs
-#    openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -out server/certs/cert.crt -keyout server/certs/cert.key
-
-# required
-export MEDIA_SHARE__AuthClient="" # reqired, see https://console.cloud.google.com/apis/credentials
-export MEDIA_SHARE__AuthEmails="" # required, comma separated list of authorized emails
-
-export DEBUG="*" # optional
-npm --prefix server start
-```
-
-=> [http://localhost:58082/](http://localhost:58082/)
-
-* local image
+### Environment
 
 ```sh
-(docker stop media-share-0.0.0 || echo "not running") && \
-docker run --name media-share-0.0.0 --rm \
-    -p "127.0.0.1:58081:58082" \
-    -v "${HOME}/media:/home/node/app/media" \
-    -v "${HOME}/certs/cert.crt:/run/secrets/cert.crt:ro" \
-    -v "${HOME}/certs/cert.key:/run/secrets/cert.key:ro" \
-    -e "MEDIA_SHARE__AuthClient=" `# required` \
-    -e "MEDIA_SHARE__AuthEmails=" `# required` \
-    vallyian/media-share:0.0.0
+# see server/src/config.ts for all possible env vars
+export MEDIA_SHARE__AuthClient= # optional, highly recommended, see https://console.cloud.google.com/apis/credentials
+export MEDIA_SHARE__AuthEmails= # optional, highly recommended, comma separated list of authorized emails
 ```
 
-=> [http://localhost:58081/](http://localhost:58081/)
-
-* public image
+### nodejs
 
 ```sh
-(docker stop media-share && docker rm media-share || echo "not running") && \
-docker run --name media-share --pull always --restart=always -d \
-    -p "127.0.0.1:58080:58082" \
-    -v "${HOME}/media:/home/node/app/media" \
-    -v "${HOME}/certs/cert.crt:/run/secrets/cert.crt:ro" \
-    -v "${HOME}/certs/cert.key:/run/secrets/cert.key:ro" \
-    -e "MEDIA_SHARE__AuthClient=" `# required` \
-    -e "MEDIA_SHARE__AuthEmails=" `# required` \
-    vallyian/media-share:latest
+# required: dir or symlink 'server/media' 
+npm --prefix server start `# http://localhost:58082/ `
 ```
 
-=> [http://localhost:58080/](http://localhost:58080/)
+### docker
+
+Possible docker run args
+
+```sh
+# volumes
+-v "absolute/path/to/media/dir:/home/node/app/media"    `# optional, pointless without` \
+-v "absolute/path/to/cert.crt:/run/secrets/cert.crt:ro" `# optional, highly recommended` \
+-v "absolute/path/to/cert.key:/run/secrets/cert.key:ro" `# optional, highly recommended` \
+
+# env vars (see environment section)
+-e "..." \
+```
+
+#### local image
+
+```sh
+docker run --rm \
+    -p "127.0.0.1:58081:58082" `# http://localhost:58081/ ` \
+    `# additional args` \
+vallyian/media-share:0.0.0
+```
+
+#### public image
+
+```sh
+docker run --pull always --restart=always --detach
+    -p "127.0.0.1:58080:58082" `# http://localhost:58080/ ` \
+    `# additional args` \
+vallyian/media-share:latest
+```

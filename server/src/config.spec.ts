@@ -1,227 +1,192 @@
-import crypto from "node:crypto";
 import { Config } from "./config";
 
 /* eslint-disable no-restricted-globals */
 /* eslint-disable @typescript-eslint/no-var-requires -- project is set to module but tests are commonjs */
 describe("config", () => {
-    const requiredEnv = {
-        "MEDIA_SHARE__AuthClient": "MEDIA_SHARE__AuthClient",
-        "MEDIA_SHARE__AuthEmails": "MEDIA_SHARE__AuthEmails@test.com",
-    };
     let exitSpy: jasmine.Spy<(key: string) => never>;
-    const randomStringFactory = (length: number) => crypto.randomBytes(length).toString("base64");
-    const clustersFactory = () => 42;
+    let randomStringFactorySpy: jasmine.Spy<(length: number) => string>;
+    let clustersFactorySpy: jasmine.Spy<() => number>;
+    let readFileSpy: jasmine.Spy<(path: string) => string | undefined>;
 
     beforeEach(() => {
-        exitSpy = jasmine.createSpy("exit", (key: string) => <never>key);
+        exitSpy = jasmine.createSpy("exit");
+        randomStringFactorySpy = jasmine.createSpy("randomStringFactory").and.callFake((length: number) => Buffer.from("x".repeat(length)).toString("base64"));
+        clustersFactorySpy = jasmine.createSpy("clustersFactory");
+        readFileSpy = jasmine.createSpy("readFile");
     });
 
     describe("NODE_ENV", () => {
         const envKey = "NODE_ENV";
+        const defaultEnvValue = "production";
 
         it("not set => default", () => {
-            const config = new Config({ ...requiredEnv }, exitSpy, randomStringFactory, clustersFactory);
-            expect(exitSpy).not.toHaveBeenCalled();
-            expect(config.NODE_ENV).toEqual("production");
+            const config = new Config({}, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(config.NODE_ENV).toEqual(defaultEnvValue);
         });
 
         it("value", () => {
-            const testEnvValue = "overwritten";
-            const config = new Config({ ...requiredEnv, [envKey]: testEnvValue }, exitSpy, randomStringFactory, clustersFactory);
-            expect(exitSpy).not.toHaveBeenCalled();
+            const testEnvValue = envKey;
+            const config = new Config({ [envKey]: testEnvValue }, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
             expect(config.NODE_ENV).toEqual(testEnvValue);
         });
     });
 
     describe("authClient", () => {
         const envKey = "MEDIA_SHARE__AuthClient";
+        const defaultEnvValue = "";
 
-        it("not set => exit", () => {
-            const testEnvValue = undefined;
-            new Config({ ...requiredEnv, [envKey]: testEnvValue }, exitSpy, randomStringFactory, clustersFactory);
-            expect(exitSpy).toHaveBeenCalledOnceWith(envKey);
-        });
-
-        it("invalid => exit", () => {
-            const testEnvValue = "";
-            new Config({ ...requiredEnv, [envKey]: testEnvValue }, exitSpy, randomStringFactory, clustersFactory);
-            expect(exitSpy).toHaveBeenCalledOnceWith(envKey);
+        it("not set => default", () => {
+            const config = new Config({}, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(config.authClient).toEqual(defaultEnvValue);
         });
 
         it("valid", () => {
-            const config = new Config({ ...requiredEnv }, exitSpy, randomStringFactory, clustersFactory);
-            expect(exitSpy).not.toHaveBeenCalled();
-            expect(config.authClient).toEqual(requiredEnv[envKey]);
+            const testEnvValue = envKey;
+            const config = new Config({ [envKey]: testEnvValue }, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(config.authClient).toEqual(testEnvValue);
         });
     });
 
     describe("authEmails", () => {
         const envKey = "MEDIA_SHARE__AuthEmails";
+        const defaultEnvValue = new Array<string>();
 
-        it("not set => exit", () => {
-            const testEnvValue = undefined;
-            new Config({ ...requiredEnv, [envKey]: testEnvValue }, exitSpy, randomStringFactory, clustersFactory);
-            expect(exitSpy).toHaveBeenCalledOnceWith(envKey);
+        it("not set => default", () => {
+            const config = new Config({}, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(config.authEmails).toEqual(defaultEnvValue);
         });
 
-        it("invalid (blank) => exit", () => {
-            const testEnvValue = "";
-            new Config({ ...requiredEnv, [envKey]: testEnvValue }, exitSpy, randomStringFactory, clustersFactory);
-            expect(exitSpy).toHaveBeenCalledOnceWith(envKey);
+        it("invalid => default", () => {
+            const testEnvValue = `${envKey},     ,,,  ,`;
+            const config = new Config({ [envKey]: testEnvValue }, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(config.authEmails).toEqual(defaultEnvValue);
         });
 
-        it("invalid (not email) => exit", () => {
-            const testEnvValue = "test.email.com";
-            new Config({ ...requiredEnv, [envKey]: testEnvValue }, exitSpy, randomStringFactory, clustersFactory);
-            expect(exitSpy).toHaveBeenCalledOnceWith(envKey);
-        });
-
-        it("valid (single valid value)", () => {
-            const config = new Config({ ...requiredEnv }, exitSpy, randomStringFactory, clustersFactory);
-            expect(exitSpy).not.toHaveBeenCalled();
-            expect(config.authEmails).toEqual([requiredEnv[envKey]]);
-        });
-
-        it("valid (multiple valid values)", () => {
-            const testEnvValue = `${requiredEnv[envKey]},other_id@email.com`;
-            const config = new Config({ ...requiredEnv, [envKey]: testEnvValue }, exitSpy, randomStringFactory, clustersFactory);
-            expect(exitSpy).not.toHaveBeenCalled();
+        it("valid", () => {
+            const testEnvValue = `${envKey}@email.1,${envKey}@email.2`;
+            const config = new Config({ [envKey]: testEnvValue }, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
             expect(config.authEmails).toEqual(testEnvValue.split(","));
+        });
+
+        it("valid (mixed valid and invalid values)", () => {
+            const testEnvValidValues = `${envKey}@email.1,${envKey}@email.2`;
+            const testEnvInvalidValues = `${envKey},     ,,,  ,`;
+            const testEnvValue = `${testEnvValidValues},${testEnvInvalidValues}`;
+            const config = new Config({ [envKey]: testEnvValue }, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(config.authEmails).toEqual(testEnvValidValues.split(","));
         });
     });
 
     describe("tokenKey", () => {
         const envKey = "MEDIA_SHARE__TokenKey";
+        const defaultRandomStringLength = 32;
 
         it("not set => random auto regenerated", () => {
-            const configFirst = new Config({ ...requiredEnv }, exitSpy, randomStringFactory, clustersFactory);
-            const configSecond = new Config({ ...requiredEnv }, exitSpy, randomStringFactory, clustersFactory);
-            expect(configFirst.tokenKey.length).toEqual(44);
-            expect(configSecond.tokenKey.length).toEqual(44);
-            expect(configFirst.tokenKey).not.toEqual(configSecond.tokenKey);
+            const config = new Config({}, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(randomStringFactorySpy).toHaveBeenCalledWith(defaultRandomStringLength);
+            expect(config.tokenKey.length).toBeGreaterThan(defaultRandomStringLength);
         });
 
         it("value", () => {
-            const testEnvValue = randomStringFactory(32);
-            const config = new Config({ ...requiredEnv, [envKey]: testEnvValue }, exitSpy, randomStringFactory, clustersFactory);
-            expect(exitSpy).not.toHaveBeenCalled();
+            const testEnvValue = envKey;
+            const config = new Config({ [envKey]: testEnvValue }, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
             expect(config.tokenKey).toEqual(testEnvValue);
         });
     });
 
     describe("cookieSecret", () => {
         const envKey = "MEDIA_SHARE__CookieSecret";
+        const defaultRandomStringLength = 32;
 
         it("not set => random auto regenerated", () => {
-            const configFirst = new Config({ ...requiredEnv }, exitSpy, randomStringFactory, clustersFactory);
-            const configSecond = new Config({ ...requiredEnv }, exitSpy, randomStringFactory, clustersFactory);
-            expect(configFirst.cookieSecret.length).toEqual(44);
-            expect(configSecond.cookieSecret.length).toEqual(44);
-            expect(configFirst.cookieSecret).not.toEqual(configSecond.cookieSecret);
+            const config = new Config({}, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(randomStringFactorySpy).toHaveBeenCalledWith(defaultRandomStringLength);
+            expect(config.cookieSecret.length).toBeGreaterThan(defaultRandomStringLength);
         });
 
         it("value", () => {
-            const testEnvValue = randomStringFactory(32);
-            const config = new Config({ ...requiredEnv, [envKey]: testEnvValue }, exitSpy, randomStringFactory, clustersFactory);
-            expect(exitSpy).not.toHaveBeenCalled();
+            const testEnvValue = envKey;
+            const config = new Config({ [envKey]: testEnvValue }, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
             expect(config.cookieSecret).toEqual(testEnvValue);
         });
     });
 
     describe("port", () => {
         const envKey = "MEDIA_SHARE__Port";
+        const defaultEnvValue = 58082;
 
         it("not set => default", () => {
-            const config = new Config({ ...requiredEnv }, exitSpy, randomStringFactory, clustersFactory);
-            expect(config.port).toEqual(58082);
+            const config = new Config({}, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(exitSpy).not.toHaveBeenCalled();
+            expect(config.port).toEqual(defaultEnvValue);
         });
 
         it("invalid => exit", () => {
             const testEnvValue = String(1 + 65535);
-            new Config({ ...requiredEnv, [envKey]: testEnvValue }, exitSpy, randomStringFactory, clustersFactory);
+            new Config({ [envKey]: testEnvValue }, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
             expect(exitSpy).toHaveBeenCalledOnceWith(envKey);
         });
 
         it("value", () => {
             const testEnvValue = String(42);
-            const config = new Config({ ...requiredEnv, [envKey]: testEnvValue }, exitSpy, randomStringFactory, clustersFactory);
+            const config = new Config({ [envKey]: testEnvValue }, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(exitSpy).not.toHaveBeenCalled();
             expect(config.port).toEqual(+testEnvValue);
         });
     });
 
     describe("rateLimitMinutes", () => {
         const envKey = "MEDIA_SHARE__RateLimitMinutes";
+        const defaultEnvValue = 5;
 
         it("not set => default", () => {
-            const config = new Config({ ...requiredEnv }, exitSpy, randomStringFactory, clustersFactory);
-            expect(config.rateLimitMinutes).toEqual(5);
+            const config = new Config({}, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(exitSpy).not.toHaveBeenCalled();
+            expect(config.rateLimitMinutes).toEqual(defaultEnvValue);
         });
 
         it("invalid => exit", () => {
             const testEnvValue = String(1 + 24 * 60);
-            new Config({ ...requiredEnv, [envKey]: testEnvValue }, exitSpy, randomStringFactory, clustersFactory);
+            new Config({ [envKey]: testEnvValue }, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
             expect(exitSpy).toHaveBeenCalledOnceWith(envKey);
         });
 
         it("value", () => {
             const testEnvValue = String(42);
-            const config = new Config({ ...requiredEnv, [envKey]: testEnvValue }, exitSpy, randomStringFactory, clustersFactory);
+            const config = new Config({ [envKey]: testEnvValue }, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(exitSpy).not.toHaveBeenCalled();
             expect(config.rateLimitMinutes).toEqual(+testEnvValue);
         });
     });
 
     describe("proxyLocation", () => {
         const envKey = "MEDIA_SHARE__ProxyLocation";
+        const defaultEnvValue = "/";
 
         it("not set => default", () => {
-            const config = new Config({ ...requiredEnv }, exitSpy, randomStringFactory, clustersFactory);
-            expect(config.proxyLocation).toEqual("/");
-        });
-
-        it("empty => default", () => {
-            const testEnvValue = "";
-            const config = new Config({ ...requiredEnv, [envKey]: testEnvValue }, exitSpy, randomStringFactory, clustersFactory);
-            expect(config.proxyLocation).toEqual("/");
+            const config = new Config({}, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(config.proxyLocation).toEqual(defaultEnvValue);
         });
 
         it("value", () => {
-            const testEnvValue = "MEDIA_SHARE__ProxyLocation";
-            const config = new Config({ ...requiredEnv, [envKey]: testEnvValue }, exitSpy, randomStringFactory, clustersFactory);
-            expect(config.proxyLocation).toEqual(testEnvValue);
-        });
-    });
-
-    describe("proxyLocation", () => {
-        const envKey = "MEDIA_SHARE__ProxyLocation";
-
-        it("not set => default", () => {
-            const config = new Config({ ...requiredEnv }, exitSpy, randomStringFactory, clustersFactory);
-            expect(config.proxyLocation).toEqual("/");
-        });
-
-        it("empty => default", () => {
-            const testEnvValue = "";
-            const config = new Config({ ...requiredEnv, [envKey]: testEnvValue }, exitSpy, randomStringFactory, clustersFactory);
-            expect(config.proxyLocation).toEqual("/");
-        });
-
-        it("value", () => {
-            const testEnvValue = "MEDIA_SHARE__ProxyLocation";
-            const config = new Config({ ...requiredEnv, [envKey]: testEnvValue }, exitSpy, randomStringFactory, clustersFactory);
+            const testEnvValue = envKey;
+            const config = new Config({ [envKey]: testEnvValue }, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
             expect(config.proxyLocation).toEqual(testEnvValue);
         });
     });
 
     describe("clusters", () => {
-        it("default => max", () => {
-            const config = new Config({ ...requiredEnv }, exitSpy, randomStringFactory, clustersFactory);
-            const testClusters = clustersFactory();
-            expect(testClusters).toBeGreaterThan(1);
-            expect(config.clusters).toEqual(testClusters);
+        it("not development => injected", () => {
+            const testClustersValue = 42;
+            clustersFactorySpy.and.returnValue(testClustersValue);
+            const config = new Config({}, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(clustersFactorySpy).toHaveBeenCalled();
+            expect(config.clusters).toEqual(testClustersValue);
         });
 
         it("development => 1", () => {
-            const config = new Config({ ...requiredEnv, "NODE_ENV": "development" }, exitSpy, randomStringFactory, clustersFactory);
+            const config = new Config({ "NODE_ENV": "development" }, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(clustersFactorySpy).not.toHaveBeenCalled();
             expect(config.clusters).toEqual(1);
         });
     });
@@ -229,8 +194,8 @@ describe("config", () => {
     describe("rateLimitCounter", () => {
         it("value", () => {
             const rateLimitMinutes = 42;
-            const clusters = clustersFactory();
-            const config = new Config({ ...requiredEnv, "MEDIA_SHARE__RateLimitMinutes": String(rateLimitMinutes) }, exitSpy, randomStringFactory, clustersFactory);
+            const clusters = clustersFactorySpy();
+            const config = new Config({ "MEDIA_SHARE__RateLimitMinutes": String(rateLimitMinutes) }, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
             expect(config.clusters).toEqual(clusters);
             expect(config.rateLimitMinutes).toEqual(rateLimitMinutes);
             expect(config.rateLimitCounter).toEqual(rateLimitMinutes * 60 * 5 / clusters);
@@ -239,8 +204,58 @@ describe("config", () => {
 
     describe("mediaDir", () => {
         it("value", () => {
-            const config = new Config({ ...requiredEnv }, exitSpy, randomStringFactory, clustersFactory);
+            const config = new Config({}, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
             expect(config.mediaDir).toEqual("media");
+        });
+    });
+
+    describe("certCrt", () => {
+        const defaultValue: string | undefined = undefined;
+        const firstFilePath = "/run/secrets/cert.crt";
+        const secondFilePath = "certs/cert.crt";
+
+        it("neither file exist => default", () => {
+            const config = new Config({}, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(config.certCrt).toEqual(defaultValue);
+        });
+
+        it("first file exists", () => {
+            const fileData = firstFilePath;
+            readFileSpy.and.callFake((path: string) => path === firstFilePath ? fileData : undefined);
+            const config = new Config({}, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(config.certCrt).toEqual(fileData);
+        });
+
+        it("first file does not exist but second file exists", () => {
+            const fileData = secondFilePath;
+            readFileSpy.and.callFake((path: string) => path === secondFilePath ? fileData : undefined);
+            const config = new Config({}, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(config.certCrt).toEqual(fileData);
+        });
+    });
+
+    describe("certKey", () => {
+        const defaultValue: string | undefined = undefined;
+        const firstFilePath = "/run/secrets/cert.key";
+        const secondFilePath = "certs/cert.key";
+
+        it("neither file exist => default", () => {
+            const config = new Config({}, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(config.certKey).toEqual(defaultValue);
+        });
+
+        it("first file exists", () => {
+            const fileData = firstFilePath;
+            readFileSpy.and.callFake((path: string) => path === firstFilePath ? fileData : undefined);
+            const config = new Config({}, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(config.certKey).toEqual(fileData);
+        });
+
+        it("first file does not exist but second file exists", () => {
+            const fileData = secondFilePath;
+            readFileSpy.and.callFake((path: string) => path === secondFilePath ? fileData : undefined);
+            const config = new Config({}, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(config.certKey).toEqual(fileData);
         });
     });
 });

@@ -10,7 +10,7 @@ import { Domain } from "../domain";
 
 import { HealthRoute } from "./routes/health.route";
 import { FaviconRoute } from "./routes/favicon.route";
-import { MediaSyncRoute } from "./routes/media-sync.route";
+// import { MediaSyncRoute } from "./routes/media-sync.route";
 
 import { AuthMiddleware } from "./middleware/auth.middleware";
 import { MediaPlayerFileMiddleware } from "./middleware/media-player.middleware";
@@ -27,6 +27,8 @@ export class App {
         private readonly domain: Domain,
         private readonly config: {
             NODE_ENV: string,
+            authClient: string,
+            authEmails: string[],
             rateLimitMinutes: number,
             rateLimitCounter: number,
             proxyLocation: string,
@@ -44,16 +46,16 @@ export class App {
             windowMs: this.config.rateLimitMinutes * 60 * 1000,
             max: this.config.rateLimitCounter
         }));
-        app.use((csp => helmet.contentSecurityPolicy({
-            directives: {
-                defaultSrc: ["'self'"],
-                scriptSrcElem: ["'self'"].concat(csp.scriptSrcElem),
-                connectSrc: ["'self'"].concat(csp.connectSrc),
-                frameSrc: ["'self'"].concat(csp.frameSrc),
-            }
-        }))(this.domain.idTokenService.csp()));
+        if (this.config.authClient && this.config.authEmails.length)
+            app.use((csp => helmet.contentSecurityPolicy({
+                directives: {
+                    defaultSrc: ["'self'"],
+                    scriptSrcElem: ["'self'"].concat(csp.scriptSrcElem),
+                    connectSrc: ["'self'"].concat(csp.connectSrc),
+                    frameSrc: ["'self'"].concat(csp.frameSrc),
+                }
+            }))(this.domain.idTokenService.csp()));
         app.use(compression());
-        this.setViews(app);
         app.use(this.config.proxyLocation, this.createProxiedApp());
         app.use((req, res, next) => new NotFoundMiddleware().handler(req, res, next));
         app.use((err: Error, req: Request, res: Response, next: NextFunction) => new ErrorMiddleware(this.logger, this.config).handler(err, req, res, next));
@@ -62,23 +64,20 @@ export class App {
 
     private createProxiedApp() {
         const app = express();
-        this.setViews(app);
+        app.set("view engine", "ejs");
+        app.set("views", fs.existsSync("src/service/views") ? "src/service/views" : "service/views");
         app.get("/health", (req, res) => new HealthRoute().handler(req, res));
         app.get("/favicon.ico", (req, res, next) => new FaviconRoute().handler(req, res, next));
         app.use(express.static(`${app.get("views")}/css`));
         app.use(express.static(`${app.get("views")}/scripts`));
         app.use(cookieParser(this.config.cookieSecret));
-        app.use((req, res, next) => new AuthMiddleware(this.domain.idTokenService, this.domain.accessTokenService).handler(req, res, next));
-        app.post("/api/media-sync", (req, res, next) => new MediaSyncRoute(this.domain.mediaAccessService).handler(req, res, next));
+        if (this.config.authClient && this.config.authEmails.length)
+            app.use((req, res, next) => new AuthMiddleware(this.domain.idTokenService, this.domain.accessTokenService).handler(req, res, next));
+        // app.post("/api/media-sync", (req, res, next) => new MediaSyncRoute(this.domain.mediaAccessService).handler(req, res, next));
         app.use((req, res, next) => new DirIndexMiddleware(this.domain.mediaAccessService).handler(req, res, next));
         app.use((req, res, next) => new MediaPlayerFileMiddleware(this.domain.mediaAccessService).handler(req, res, next));
         app.use((req, res, next) => new SubtitleFileMiddleware(this.domain.mediaAccessService, this.domain.subtitleService).handler(req, res, next));
         app.use(express.static(this.config.mediaDir, { dotfiles: "allow" }));
         return app;
-    }
-
-    private setViews(app: express.Application) {
-        app.set("view engine", "ejs");
-        app.set("views", fs.existsSync("src/service/views") ? "src/service/views" : "service/views");
     }
 }

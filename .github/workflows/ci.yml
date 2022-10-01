@@ -64,7 +64,7 @@ jobs:
             - name: Run smoke test
               env:
                   SEMVER: ${{needs.semver.outputs.SEMVER}}
-              run: ./run test
+              run: ./run smoke
 
             - name: Export atifacts
               uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # v3.1.0

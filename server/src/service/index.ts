@@ -1,6 +1,5 @@
 import cluster, { Worker } from "node:cluster";
 import https from "node:https";
-import { Certificate } from "../@types/Certificate";
 import { Logger } from "../@types/Logger";
 import { Terminator } from "../@types/Terminator";
 import { App } from "./app";
@@ -15,7 +14,6 @@ export class Service {
         private readonly logger: Logger,
         private readonly terminator: Terminator,
         private readonly config: Config,
-        private readonly certificate: Certificate,
         private readonly domain: Domain
     ) {
         this.app = new App(this.logger, this.domain, this.config);
@@ -31,10 +29,9 @@ export class Service {
     }
 
     private async clusterPrimary() {
-        const { cert, key } = this.certificate;
-        cert || this.logger.warn("no cert file found");
-        key || this.logger.warn("no cert key file found");
-        this.logger.info(`${cert && key ? "[secure]" : "[insecure]"} ${this.config.NODE_ENV} server (main process ${process.pid}) starting on port ${this.config.port}`);
+        this.config.certCrt || this.logger.warn("no cert file found");
+        this.config.certKey || this.logger.warn("no cert key file found");
+        this.logger.info(`${this.config.certCrt && this.config.certKey ? "[secure]" : "[insecure]"} ${this.config.NODE_ENV} server (main process ${process.pid}) starting on port ${this.config.port}`);
 
         const workers = new Array<Worker>();
         const fork = () => workers.push(cluster.fork(this.config.clusterSharedEnv));
@@ -48,9 +45,8 @@ export class Service {
     }
 
     private async clusterWorker() {
-        const { cert, key } = this.certificate;
-        const server = cert && key
-            ? https.createServer({ cert, key }, this.app.app)
+        const server = this.config.certCrt && this.config.certKey
+            ? https.createServer({ cert: this.config.certCrt, key: this.config.certKey }, this.app.app)
             : this.app.app;
         server.listen(this.config.port, () => this.logger.info(`service (worker process ${process.pid}) is online`));
     }

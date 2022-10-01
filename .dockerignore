@@ -5,9 +5,7 @@
 **/.github
 **/.vscode
 **/artifacts
-!artifacts/runtime
 **/bin
-**/certs
 **/dist
 **/media
 **/node_modules
@@ -20,3 +18,4 @@
 **/[Dd]ocker*
 **/run
 **/*.md
+!README.md

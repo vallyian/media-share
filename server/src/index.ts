@@ -22,8 +22,8 @@ if (require.main === module) {
 }
 
 function runnerFactory() {
-    const { logger, terminator, config, certificate, domain } = infrastructure();
-    const service = new Service(logger, terminator, config, certificate, domain);
+    const { logger, terminator, config, domain } = infrastructure();
+    const service = new Service(logger, terminator, config, domain);
     return () => service.serve().catch(err => terminator("Generic", err));
 }
 
@@ -53,13 +53,9 @@ function infrastructure() {
         process.env,
         (key: string) => terminator("Config", `config key ${key} invalid`),
         (length: number) => crypto.randomBytes(length).toString("base64"),
-        () => os.cpus().length
+        () => os.cpus().length,
+        (path: string) => fs.existsSync(path) && fs.statSync(path).isFile() ? fs.readFileSync(path, "utf-8") : undefined
     );
-
-    const certificate = (file => ({
-        cert: file("certs/cert.crt") || file("/run/secrets/cert.crt"),
-        key: file("certs/cert.key") || file("/run/secrets/cert.key")
-    }))((path: string) => fs.existsSync(path) && fs.statSync(path).isFile() ? fs.readFileSync(path) : undefined);
 
     const domain = new Domain(
         new ConsoleWriterAdapter(),
@@ -71,5 +67,5 @@ function infrastructure() {
         config
     );
 
-    return { logger, terminator, config, certificate, domain };
+    return { logger, terminator, config, domain };
 }

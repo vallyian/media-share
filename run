@@ -44,19 +44,16 @@ build() {
     docker image inspect ${docker_username}/${docker_repo}:${semver} > /dev/null
 }
 
-test_result() {
-    curl --insecure --verbose https://localhost:58081${1} > "${2}" 2>&1 || return 1
-    grep -Fq "GET ${1} HTTP/1.1"         "${2}" || return 2
-    grep -Fq "HTTP/1.1 401 Unauthorized" "${2}" || return 3
+smoke_result() {
+    curl --insecure --verbose http://localhost:58081${1} > "${3}" 2>&1 || return 1
+    grep -Fq "GET ${1} HTTP/1.1" "${3}" || return 2
+    grep -Fq "HTTP/1.1 ${2}"     "${3}" || return 3
     return 0
 }
-test() {
+smoke() {
     local container=${docker_username}-${docker_repo}-${semver}-smoke-test
     local smoke_test_dir="${artifacts_dir}/smoke-test"
     local media_share_dir="${smoke_test_dir}/media"
-    local media_certs_dir="${smoke_test_dir}/certs"
-    local cert_crt="${media_certs_dir}/cert.crt"
-    local cert_key="${media_certs_dir}/cert.key"
     local media_test_dir="${media_share_dir}/test-dir"
     local container_logs="${smoke_test_dir}/container-logs.txt"
     local test_failed=""
@@ -68,37 +65,54 @@ test() {
     mkdir -p "${media_test_dir}"
     echo "test file" > "${media_test_dir}/test-file"
 
-    echo "creating test self-signed certs -----------------------------------------------------------------------------"
-    mkdir -p "${media_certs_dir}"
-    openssl req -new -newkey rsa:4096 -days 1 -nodes -x509 \
-        -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=127.0.0.1" \
-        -out "${cert_crt}" -keyout "${cert_key}"
-
     chmod -R 777 "${smoke_test_dir}"
+
+    echo "starting service without auth -------------------------------------------------------------------------------"
+    (docker stop ${container} > /dev/null 2>&1 && docker rm ${container} > /dev/null 2>&1) || echo "container ${container} not running"
+    docker run --name ${container} --rm \
+        -p "58081:58082" \
+        -v "${media_share_dir}:/home/node/app/media" \
+        -e "DEBUG=*" \
+        ${docker_username}/${docker_repo}:${semver} &
+
+    echo "waiting for service health ----------------------------------------------------------------------------------"
+    if timeout 30s sh -c 'while [ "$(curl --insecure http://localhost:58081/health)" != "healthy" ]; do sleep 5; done'; then
+        echo "running dir test --------------------------------------------------------------------------------------------"
+        local requestId=1
+        smoke_result "/test-dir" "200 OK" "${smoke_test_dir}/curl-${requestId}.txt" || test_failed="${test_failed}${requestId},"
+        local test_result_code=$?
+        [ "${test_result_code}" = "0" ] || test_failed="${test_failed}${requestId},"
+
+        echo "running file test -------------------------------------------------------------------------------------------"
+        local requestId=2
+        smoke_result "/test-dir/test-file" "200 OK" "${smoke_test_dir}/curl-${requestId}.txt" || test_failed="${test_failed}${requestId},"
+        local test_result_code=$?
+        [ "${test_result_code}" = "0" ] || test_failed="${test_failed}${requestId},"
+    else
+        echo "FAIL: GET /health - does not contain 'healthy'"
+    fi
 
     echo "starting service --------------------------------------------------------------------------------------------"
     (docker stop ${container} > /dev/null 2>&1 && docker rm ${container} > /dev/null 2>&1) || echo "container ${container} not running"
     docker run --name ${container} --rm \
         -p "58081:58082" \
         -v "${media_share_dir}:/home/node/app/media" \
-        -v "${media_certs_dir}/cert.crt:/run/secrets/cert.crt:ro" \
-        -v "${media_certs_dir}/cert.key:/run/secrets/cert.key:ro" \
         -e "MEDIA_SHARE__AuthClient=test.apps.googleusercontent.com" \
         -e "MEDIA_SHARE__AuthEmails=test@gmail.com" \
         -e "DEBUG=*" \
         ${docker_username}/${docker_repo}:${semver} &
 
     echo "waiting for service health ----------------------------------------------------------------------------------"
-    if timeout 30s sh -c 'while [ "$(curl --insecure https://localhost:58081/health)" != "healthy" ]; do sleep 5; done'; then
+    if timeout 30s sh -c 'while [ "$(curl --insecure http://localhost:58081/health)" != "healthy" ]; do sleep 5; done'; then
         echo "running dir test --------------------------------------------------------------------------------------------"
-        local requestId=1
-        test_result "/test-dir" "${smoke_test_dir}/curl-${requestId}.txt" || test_failed="${test_failed}${requestId},"
+        local requestId=3
+        smoke_result "/test-dir" "401 Unauthorized" "${smoke_test_dir}/curl-${requestId}.txt" || test_failed="${test_failed}${requestId},"
         local test_result_code=$?
         [ "${test_result_code}" = "0" ] || test_failed="${test_failed}${requestId},"
 
         echo "running file test -------------------------------------------------------------------------------------------"
-        local requestId=2
-        test_result "/test-dir/test-file" "${smoke_test_dir}/curl-${requestId}.txt" || test_failed="${test_failed}${requestId},"
+        local requestId=4
+        smoke_result "/test-dir/test-file" "401 Unauthorized" "${smoke_test_dir}/curl-${requestId}.txt" || test_failed="${test_failed}${requestId},"
         local test_result_code=$?
         [ "${test_result_code}" = "0" ] || test_failed="${test_failed}${requestId},"
     else
@@ -127,9 +141,9 @@ scan() {
 results() {
     local errors=""
 
-    [ ! -f ${artifacts_dir}/npm-test.fail    ] || errors="npm test failed\n${errors}"
-    [ ! -f ${artifacts_dir}/npm-lint.fail    ] || errors="npm lint failed\n${errors}"
-    [   -f ${artifacts_dir}/unit-tests/*.xml ] || errors="npm test results not found\n${errors}"
+    [ ! -f ${artifacts_dir}/npm-test.fail    ] || errors+="npm test failed\n"
+    [ ! -f ${artifacts_dir}/npm-lint.fail    ] || errors+="npm lint failed\n"
+    [   -f ${artifacts_dir}/unit-tests/*.xml ] || errors+="npm test results not found\n"
 
     [ "${errors}" = "" ] || term "${errors}"
 }
@@ -203,12 +217,12 @@ prod() {
 case "${1}" in
     "semver"  ) semver  ;;
     "build"   ) build   ;;
-    "test"    ) test    ;;
+    "smoke"   ) smoke   ;;
     "scan"    ) scan    ;;
     "results" ) results ;;
     "push"    ) push    ;;
     "dev"     ) dev     ;;
     "prod"    ) prod    ;;
 
-    *) term "USAGE:   ./run   semver | build | test | results | scan | push | dev | prod"
+    *) term "USAGE:   ./run   semver | build | smoke | results | scan | push | dev | prod"
 esac
