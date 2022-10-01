@@ -44,5 +44,5 @@ export class NodeCryptoAdapter implements CryptoSPI {
     encrypt = (input: string) => NodeCryptoAdapter.encrypt(input, this.cipherKey, this.cipherAlgorithm, this.encoding);
 
     /** @inheritdoc */
-    decrypt = (input: string) => NodeCryptoAdapter.encrypt(input, this.cipherKey, this.cipherAlgorithm, this.encoding);
+    decrypt = (input: string) => NodeCryptoAdapter.decrypt(input, this.cipherKey, this.cipherAlgorithm, this.encoding);
 }

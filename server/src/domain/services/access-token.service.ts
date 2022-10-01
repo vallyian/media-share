@@ -31,7 +31,7 @@ export class AccessTokenService implements AccessTokenAPI {
         if (!idTokenPayload.email) return Promise.reject("id token email missing");
         if (!idTokenPayload.email_verified) return Promise.reject("id token email not verified");
         if (!this.config.authEmails.includes(idTokenPayload?.email)) return Promise.reject("email not authorized");
-        const accessToken = this.cryptoAdapter.encrypt(JSON.stringify({
+        const accessToken = await this.cryptoAdapter.encrypt(JSON.stringify({
             email: idTokenPayload.email,
         }));
         return accessToken;
