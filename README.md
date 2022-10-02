@@ -80,5 +80,6 @@ vallyian/media-share:latest
 ## TODO
 
 * selection page for ID provider (sync to all cluster workers)
+* sub - get fps - video not found - when name ends with space
 * jschardet.detectAll and return multiple subtitles if detection not 100%
 * across device sync

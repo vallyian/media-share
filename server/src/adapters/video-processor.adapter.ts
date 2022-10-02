@@ -19,17 +19,20 @@ export class VideoProcessorAdapter implements VideoProcessorSPI {
         if (!fs.existsSync(videoPath))
             throw Error(`video file "${videoPath}" not found`);
 
-        const fpsString = await new Promise<string>(ok => child_process.exec(
+        const videoInfo: string | undefined = await new Promise(ok => child_process.exec(
             `"${this.ffmpegPath}" -i "${videoPath}"`,
-            (_err, stdout, stderr) => {
-                const fps = (((`${stdout}${stderr}`.match(/Stream #.*: Video: .*, (\d+\.?\d*) fps,/gmi) || [])[0] || "").match(/, (\d+\.?\d*) fps,/) || [])[1] || "";
-                return ok(fps);
-            }
+            (_err, stdout, stderr) => ok(stdout + stderr)
         ));
+        if (!videoInfo) throw Error(`invalid video info for video "${videoPath}"`);
 
-        const fps = +fpsString;
-        if (!isFinite(fps) || fps <= 0)
-            throw Error(`invalid fps value "${fps}" in video "${videoPath}"`);
+        const videoStreamInfo = videoInfo.split("\n").filter(l => l.includes("Stream #") && l.includes(": Video: ") && l.includes(" fps,"))[0];
+        if (!videoStreamInfo) throw Error(`video strean not found in video "${videoPath}"; videoInfo: "${videoInfo}"`);
+
+        let fpsString = videoStreamInfo.split(" fps,")[0] || "";
+        fpsString = fpsString.split(", ").slice(-1)[0] || "";
+
+        const fps = fpsString ? +fpsString : 0;
+        if (!isFinite(fps) || fps <= 0) throw Error(`invalid fps value "${fpsString}" in video "${videoPath}"`);
 
         return fps;
     }
