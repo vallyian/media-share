@@ -20,7 +20,7 @@ export class MediaPlayerFileMiddleware {
         ) return next();
 
         const type = await this.mediaAccessService.type(req.path).catch(() => "error");
-        if (type !== "dir")
+        if (type !== "file")
             return next();
 
         return Promise.resolve()
