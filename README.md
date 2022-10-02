@@ -76,3 +76,9 @@ docker run --pull always --restart=always --detach
     `# additional args` \
 vallyian/media-share:latest
 ```
+
+## TODO
+
+* selection page for ID provider (sync to all cluster workers)
+* jschardet.detectAll and return multiple subtitles if detection not 100%
+* across device sync

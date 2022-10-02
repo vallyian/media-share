@@ -142,7 +142,7 @@ export class MediaAccessService implements MediaAccessAPI {
     }
 
     private getSecurePathSegments(insecurePath: string, insecurePathPrefix?: string) {
-        const getSecureSegments = (path: string) => path.split(/(?:\\|\/)/g).map(s => decodeURIComponent(s)).filter(p => !!p && p !== "." && p != "..");
+        const getSecureSegments = (path: string) => path.split(/[\\/]/g).map(s => decodeURIComponent(s)).filter(p => !!p && p !== "." && p != "..");
         const arr = (insecurePathPrefix ? getSecureSegments(insecurePathPrefix) : [])
             .concat(getSecureSegments(insecurePath));
         return arr;

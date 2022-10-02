@@ -12,11 +12,6 @@ window.addEventListener("load", () => {
 
     function saveTime() {
         localStorage.setItem("time", JSON.stringify({ url, time: video.currentTime || 0 }));
-        // try {
-        //     const req = new XMLHttpRequest();
-        //     req.open("POST", "/api/media-sync");
-        //     req.send();
-        // } catch (_) { /* */ }
     }
 
     function playNext(id) {

@@ -37,7 +37,7 @@ export class Config {
         this.mediaDir = "media";
 
         function number(key: string, def: number, validate: (val: number) => boolean): number {
-            const val = env[key] ? +<string>env[key] : def ? def : undefined;
+            const val = env[key] ? +<string>env[key] : def || undefined;
             return (typeof val === "number" && isFinite(val) && (!validate || validate(val))) ? val : exit(key);
         }
     }

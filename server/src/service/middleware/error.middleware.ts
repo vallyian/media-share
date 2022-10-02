@@ -19,7 +19,7 @@ export class ErrorMiddleware {
             stack: (err.stack || "")
                 .replace(err.message, "")
                 .split(/\n/g)
-                .filter(l => !!l.trim() && !/(?:(?:\/|\\)node_modules(?:\/|\\)|\(node:internal\/)/.test(l)),
+                .filter(l => !!l.trim() && !/[\\/]node_modules[\\/]|\(node:internal\//.test(l)),
             hostname: req.hostname,
             method: req.method,
             url: req.url,

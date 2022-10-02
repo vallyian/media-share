@@ -11,7 +11,6 @@ export class AuthMiddleware {
     ) { }
 
     async handler(req: Request, res: Response, next: NextFunction) {
-        // TODO: selection page for ID provider (sync to all cluster workers)
         const idTokenProvider = "google";
 
         const accessToken = req.signedCookies[this.accessTokenCookieName];
@@ -29,7 +28,7 @@ export class AuthMiddleware {
         return Promise.resolve()
             .then(() => this.accessTokenService.getAccessToken(accessToken))
             .then(token => {
-                req.user = <string>token.email;
+                req.user = token.email;
                 return next();
             })
             .catch(err => {

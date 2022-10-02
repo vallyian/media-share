@@ -35,7 +35,7 @@ export class Service {
 
         const workers = new Array<Worker>();
         const fork = () => workers.push(cluster.fork(this.config.clusterSharedEnv));
-        new Array(this.config.clusters).fill(null).map(fork);
+        new Array(this.config.clusters).fill(null).forEach(fork);
         cluster.on("exit", (worker, code, signal) => {
             const workerId = workers.findIndex(w => w.id === worker.id);
             if (workerId >= 0) workers.splice(workerId, 1);

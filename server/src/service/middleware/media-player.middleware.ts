@@ -56,9 +56,11 @@ export class MediaPlayerFileMiddleware {
             : "";
         const urlPath = "/" + this.mediaAccessService.getSecureUrl(videoPath, baseUrl) + "?static=true";
         const subtitles = (() => {
-            const subParams = (name: string) => /\.vtt$/i.test(name) ? "static=true"
-                : /\.sub$/i.test(name) && Domain.supportedVideos.includes(extension) ? `video=${extension}`
-                    : "";
+            const subParams = (name: string) => {
+                if (/\.vtt$/i.test(name)) return "static=true";
+                if (/\.sub$/i.test(name) && Domain.supportedVideos.includes(extension)) return `video=${extension}`;
+                return "";
+            };
             const supportedSubtitlesRx = new RegExp("(:?" + Domain.supportedSubtitles.map((e: string) => `\\.${e}`).join("|") + ")$", "i");
             const fileNameNoExtRx = new RegExp(`^${title}`, "i");
             return files.filter(s => supportedSubtitlesRx.test(s.name) && fileNameNoExtRx.test(s.name))

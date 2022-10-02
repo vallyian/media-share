@@ -22,7 +22,7 @@ export class VideoProcessorAdapter implements VideoProcessorSPI {
         const fpsString = await new Promise<string>(ok => child_process.exec(
             `"${this.ffmpegPath}" -i "${videoPath}"`,
             (_err, stdout, stderr) => {
-                const fps = (((`${stdout}${stderr}`.match(/Stream #.*: Video: .*, (\d+\.?\d{0,}) fps,/gmi) || [])[0] || "").match(/, (\d+\.?\d{0,}) fps,/) || [])[1] || "";
+                const fps = (((`${stdout}${stderr}`.match(/Stream #.*: Video: .*, (\d+\.?\d*) fps,/gmi) || [])[0] || "").match(/, (\d+\.?\d*) fps,/) || [])[1] || "";
                 return ok(fps);
             }
         ));

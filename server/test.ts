@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+/* eslint-disable no-restricted-globals */
 import Jasmine from "jasmine";
 import { SpecReporter, StacktraceOption } from "jasmine-spec-reporter";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import { JUnitXmlReporter } from "jasmine-reporters";
 
@@ -24,7 +25,7 @@ runner.addReporter(
     new JUnitXmlReporter({
         savePath: "../artifacts/unit-tests",
         consolidateAll: false,
-        filePrefix: packageJson.name.replace(/[^a-zA-Z0-9]/g, "") + "_" + new Date().toISOString().replace(/[^0-9]/g, "_")
+        filePrefix: packageJson.name.replace(/[^a-zA-Z0-9]/g, "") + "_" + new Date().toISOString().replace(/\D/g, "_")
     })
 );
 

@@ -43,9 +43,12 @@ export class GoogleIdTokenAdapter implements IdTokenSPI {
 
     private signInCb() {
         return function signInCb(response?: { credential: string | null }) {
-            response && response.credential
-                ? window.location.href = window.location.href + (window.location.href.includes("?") ? "&" : "?") + `id_token=${response.credential}`
-                : window.location.reload();
+            if (response && response.credential)
+                window.location.href = window.location.href +
+                    (window.location.href.includes("?") ? "&" : "?") +
+                    `id_token=${response.credential}`;
+            else
+                window.location.reload();
         };
     }
 }

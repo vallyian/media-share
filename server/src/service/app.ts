@@ -10,7 +10,6 @@ import { Domain } from "../domain";
 
 import { HealthRoute } from "./routes/health.route";
 import { FaviconRoute } from "./routes/favicon.route";
-// import { MediaSyncRoute } from "./routes/media-sync.route";
 
 import { AuthMiddleware } from "./middleware/auth.middleware";
 import { MediaPlayerFileMiddleware } from "./middleware/media-player.middleware";
@@ -73,7 +72,6 @@ export class App {
         app.use(cookieParser(this.config.cookieSecret));
         if (this.config.authClient && this.config.authEmails.length)
             app.use((req, res, next) => new AuthMiddleware(this.domain.idTokenService, this.domain.accessTokenService).handler(req, res, next));
-        // app.post("/api/media-sync", (req, res, next) => new MediaSyncRoute(this.domain.mediaAccessService).handler(req, res, next));
         app.use((req, res, next) => new DirIndexMiddleware(this.domain.mediaAccessService).handler(req, res, next));
         app.use((req, res, next) => new MediaPlayerFileMiddleware(this.domain.mediaAccessService).handler(req, res, next));
         app.use((req, res, next) => new SubtitleFileMiddleware(this.domain.mediaAccessService, this.domain.subtitleService).handler(req, res, next));

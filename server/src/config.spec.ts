@@ -123,8 +123,9 @@ describe("config", () => {
 
         it("invalid => exit", () => {
             const testEnvValue = String(1 + 65535);
-            new Config({ [envKey]: testEnvValue }, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            const config = new Config({ [envKey]: testEnvValue }, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
             expect(exitSpy).toHaveBeenCalledOnceWith(envKey);
+            expect(config.port).not.toBeDefined();
         });
 
         it("value", () => {
@@ -147,8 +148,9 @@ describe("config", () => {
 
         it("invalid => exit", () => {
             const testEnvValue = String(1 + 24 * 60);
-            new Config({ [envKey]: testEnvValue }, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            const config = new Config({ [envKey]: testEnvValue }, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
             expect(exitSpy).toHaveBeenCalledOnceWith(envKey);
+            expect(config.rateLimitMinutes).not.toBeDefined();
         });
 
         it("value", () => {
