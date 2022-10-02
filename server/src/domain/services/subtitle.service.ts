@@ -51,7 +51,6 @@ export class SubtitleService implements SubtitleAPI {
 
         let content = "";
         const rx = /^(\d{2}:\d{2}:\d{2}[.,]\d{2,3})(?:,|\s-->\s)(\d{2}:\d{2}:\d{2}[.,]\d{2,3})$/;
-        const time = (val?: string) => (val || "").replace(",", ".") + (/[.,]\d{2}$/.test((val || "")) ? "0" : "");
         const lines = file.split(/(\r|\n|\r\n)+/gmi).reduce((sum, l) => {
             l = l.trim();
             if (l) sum.push(l);
@@ -65,8 +64,8 @@ export class SubtitleService implements SubtitleAPI {
             const parts = line.match(rx);
             if (parts?.length !== 3) continue;
 
-            const from = time(parts[1]);
-            const to = time(parts[2]);
+            const from = this.srtTime(parts[1]);
+            const to = this.srtTime(parts[2]);
             const text = (() => {
                 let ret = (lines.shift() || "").trim().replaceAll("[br]", "\n");
                 while (lines[0] && !(rx.test(lines[0])) && !(/^\d+$/.test(lines[0])))
@@ -80,6 +79,13 @@ export class SubtitleService implements SubtitleAPI {
         return content
             ? `WEBVTT\n${content}`
             : Promise.reject(`no vtt content created from ${subtitlePath}`);
+    }
+
+    private srtTime(val?: string) {
+        if (!val) val = "";
+        val = val.replace(",", ".");
+        if (/[.,]\d{2}$/.test(val)) val += "0";
+        return val;
     }
 
     private async getFile(mediaPath: string): Promise<string> {
