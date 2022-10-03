@@ -6,6 +6,7 @@
 .vscode
 artifacts
 bin
+certs
 dist
 media
 node_modules
