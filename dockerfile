@@ -2,11 +2,16 @@ FROM node:gallium AS build
 RUN npm i -g npm@8
 WORKDIR /home/node/server
 COPY server/package*.json ./
+ARG NPM_AUDIT_LEVEL
+RUN npm audit --omit=dev --audit-level="${NPM_AUDIT_LEVEL}" && \
+    npm ci --omit=dev && \
+    mkdir -p ../artifacts && \
+    mv node_modules ../artifacts/node_modules
 RUN npm ci
 COPY server/src ./src
 COPY server/tsconfig*.json ./
 RUN npm run build
-COPY server/test.ts .
+COPY server/test.ts ./
 RUN npm test
 COPY server/.eslintignore server/.eslintrc.json ./
 RUN npm run lint
@@ -14,38 +19,23 @@ RUN npm run lint
 
 
 FROM scratch AS export
-COPY --from=build /home/node/server/bin /runtime
+COPY --from=build /home/node/server/bin /bin
 COPY --from=build /home/node/artifacts/unit-tests /unit-tests
 COPY --from=build /home/node/artifacts/*.fail /
 
 
 
-FROM node:gallium-alpine3.16 AS prod-base
-WORKDIR /home/node/app
-ARG NODE_ENV=production
-ENV NODE_ENV=${NODE_ENV}
+FROM node:gallium-alpine3.16
+WORKDIR /home/node
+RUN apk add tini && \
+    mkdir -p /home/node/media && \
+    chown -R node:node /home/node/media
+ENV NODE_ENV=production
+COPY --chown=node:node --from=build /home/node/artifacts/node_modules node_modules
+COPY --chown=node:node --from=build /home/node/server/bin             ./
+COPY --chown=node:node              README.md                         media
 ARG SEMVER
 ENV SEMVER=${SEMVER}
-
-
-
-FROM prod-base AS prod-deps
-COPY server/package*.json ./
-ARG NPM_AUDIT_LEVEL
-RUN npm audit --omit=dev --audit-level="${NPM_AUDIT_LEVEL}" && \
-    npm ci --omit=dev
-
-
-COPY --from=build /home/node/artifacts/unit-tests /unit-tests
-COPY --from=build /home/node/artifacts/*.fail /
-
-FROM prod-base
-RUN apk add tini && \
-    mkdir -p /home/node/app/media && \
-    chown -R node:node /home/node/app
-COPY --chown=node:node                  README.md                     media
-COPY --chown=node:node --from=prod-deps /home/node/app/node_modules   node_modules
-COPY --chown=node:node --from=build     /home/node/server/bin         ./
 USER node
 # VOLUME [ "/home/node/app/media", "/run/secrets/cert.crt", "/run/secrets/cert.key"]
 HEALTHCHECK --interval=30s --timeout=1s --start-period=5s --retries=1 \

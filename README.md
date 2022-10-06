@@ -51,7 +51,7 @@ Possible docker run args
 
 ```sh
 # volumes
--v "absolute/path/to/media/dir:/home/node/app/media"    `# optional, pointless without` \
+-v "absolute/path/to/media/dir:/home/node/media"        `# optional, pointless without` \
 -v "absolute/path/to/cert.crt:/run/secrets/cert.crt:ro" `# optional, highly recommended` \
 -v "absolute/path/to/cert.key:/run/secrets/cert.key:ro" `# optional, highly recommended` \
 

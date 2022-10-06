@@ -19,7 +19,9 @@
     },
     "type": "commonjs",
     "scripts": {
-        "ci": "node -e \"fs.existsSync('node_modules') || child_process.execSync('npm ci', {stdio:'inherit'})\"",
+        "preci": "node -e \"os.platform() !== (fs.existsSync('node_modules/platform') ? fs.readFileSync('node_modules/platform', 'utf-8') : '') && fs.rmSync('node_modules', { recursive: true, force: true })\"",
+        "ci": "node -e \"fs.existsSync('node_modules') || child_process.execSync('npm ci', {stdio:'inherit'}); fs.writeFileSync('node_modules/platform', os.platform(), 'utf-8')\"",
+        "postci": "node -e \"(fs.existsSync('../artifacts') || fs.mkdirSync('../artifacts'))\"",
         "prelint": "node -e \"['../artifacts/npm-lint.fail'].forEach(i => fs.rmSync(i, { recursive: true, force: true }))\" && npm run ci",
         "lint": "tsc --noEmit --project tsconfig.app.json && eslint src/** --fix || echo 'fail' > ../artifacts/npm-lint.fail",
         "prebuild": "node -e \"fs.rmSync('bin', { recursive: true, force: true })\" && npm run ci",

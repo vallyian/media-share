@@ -36,7 +36,7 @@ jobs:
                   GITHUB_MAIN: ${{ github.ref == 'refs/heads/main' }}
                   NEW_VERSION: ${{ steps.tag.outputs.new_version }}
                   GITHUB_SHA: ${{ github.sha }}
-              run: ./run semver
+              run: node run semver
 
         outputs:
             SEMVER: ${{ steps.semver.outputs.SEMVER }}
@@ -59,12 +59,12 @@ jobs:
             - name: Build, test and extract artifacts
               env:
                   SEMVER: ${{needs.semver.outputs.SEMVER}}
-              run: ./run build
+              run: node run build
 
             - name: Run smoke test
               env:
                   SEMVER: ${{needs.semver.outputs.SEMVER}}
-              run: ./run smoke
+              run: node run smoke
 
             - name: Export atifacts
               uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # v3.1.0
@@ -85,10 +85,10 @@ jobs:
               env:
                   SEMVER: ${{needs.semver.outputs.SEMVER}}
                   DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}
-              run: ./run scan
+              run: node run scan
 
             - name: Check results
-              run: ./run results
+              run: node run results
 
             - name: Sign in to Docker Hub
               uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b # v2.0.0
@@ -103,7 +103,7 @@ jobs:
                   GITHUB_MAIN: ${{ github.ref == 'refs/heads/main'}}
                   SEMVER: ${{needs.semver.outputs.SEMVER}}
                   DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}
-              run: ./run push
+              run: node run push
 
     codeql:
         name: CodeQL analysis
@@ -123,7 +123,7 @@ jobs:
                   languages: "javascript"
 
             - name: Build javascript
-              run: npm --prefix server run build
+              run: node run build
 
             - name: Perform CodeQL Analysis
               uses: github/codeql-action/analyze@2ca79b6fa8d3ec278944088b4aa5f46912db5d63 # v2.1.18
