@@ -40,18 +40,24 @@ async function build() {
     fs.rmSync("artifacts", { recursive: true, force: true });
     fs.mkdirSync("artifacts", { recursive: true });
 
-    await execAsync([`docker`, `buildx`, `build`, `--output="type=local,dest=${artifactsDir}"`, `--target="export"`,
+    await execAsync("docker", ["buildx", "build",
         ghSha === "" ? "" : "--pull",
-        `--build-arg="NPM_AUDIT_LEVEL=${npmAuditLevel}"`,
-        "."]);
+        "--target", "export",
+        "--build-arg", `NPM_AUDIT_LEVEL=${npmAuditLevel}`,
+        "--output", `type=local,dest=${artifactsDir}`,
+        "."
+    ]);
 
-    await execAsync([`docker`, `buildx`, `build`, `--output="type=docker"`,
+    await execAsync("docker", ["buildx", "build",
+
         ghSha === "" ? "" : "--pull",
-        `--tag="${dockerUser}/${dockerRepo}:${semver}"`,
-        `--build-arg="SEMVER=${semver}"`,
-        "."]);
+        "--tag", `${dockerUser}/${dockerRepo}:${semver}`,
+        "--build-arg", `SEMVER=${semver}`,
+        "--output", "type=docker",
+        "."
+    ]);
 
-    await execAsync([`docker`, `image`, `inspect`, `${dockerUser}/${dockerRepo}:${semver}`], { stdout: false });
+    await execAsync("docker", ["image", "inspect", `${dockerUser}/${dockerRepo}:${semver}`], { stdout: false });
 
     console.log("build success");
 }
@@ -94,12 +100,12 @@ async function smoke() {
 }
 
 function startTestServer(container, testMediaDir, authClient = "", authEmails = "") {
-    exec([
-        `docker run --name ${container} --detach`,
-        `-p="58081:58082"`,
-        `-v="${testMediaDir}:/home/node/media"`,
-        `-e="MEDIA_SHARE__AuthClient=${authClient}"`,
-        `-e="MEDIA_SHARE__AuthEmails=${authEmails}"`,
+    exec("docker", ["run",
+        "--name", container, "--detach",
+        "-p", "58081:58082",
+        "-v", `${testMediaDir}:/home/node/media`,
+        "-e", `MEDIA_SHARE__AuthClient=${authClient}`,
+        "-e", `MEDIA_SHARE__AuthEmails=${authEmails}`,
         `${dockerUser}/${dockerRepo}:${semver}`
     ]);
 
@@ -118,7 +124,7 @@ function startTestServer(container, testMediaDir, authClient = "", authEmails = 
             console.error({ server: { err } });
             return false;
         });
-};
+}
 
 function smokeTestCase(testCaseId, url, status, body) {
     return httpRequest(`http://localhost:58081${url}`)
@@ -130,20 +136,20 @@ function smokeTestCase(testCaseId, url, status, body) {
 }
 
 async function stopTestServer(container) {
-    await execAsync(`docker container stop ${container}`, { stdout: false, stderr: false }).catch(() => void 0);
-    await execAsync(`docker container rm ${container}`, { stdout: false, stderr: false }).catch(() => void 0);
-    await execAsync(`docker container inspect ${container}`, { stdout: false, stderr: false }).catch(() => void 0);
+    await execAsync("docker", ["container", "stop", container], { stdout: false, stderr: false }).catch(() => void 0);
+    await execAsync("docker", ["container", "rm", container], { stdout: false, stderr: false }).catch(() => void 0);
+    await execAsync("docker", ["container", "inspect", container], { stdout: false, stderr: false }).catch(() => void 0);
 }
 
 async function scan() {
-    await execAsync([
-        `docker run --rm --pull="always"`,
-        `-v="/var/run/docker.sock:/var/run/docker.sock"`,
-        `-v="${home}/.trivy/cache:/root/.cache"`,
-        `aquasec/trivy`,
-        `image`,
-        `--exit-code=1`,
-        `--severity="${trivySeverity}"`,
+    await execAsync("docker", ["run",
+        "--rm", "--pull", "always",
+        "-v", "/var/run/docker.sock:/var/run/docker.sock",
+        "-v", `${home}/.trivy/cache:/root/.cache`,
+        "aquasec/trivy",
+        "image",
+        "--exit-code", 1,
+        "--severity", trivySeverity,
         `${dockerUser}/${dockerRepo}:${semver}`
     ]);
     console.log("scan success");
@@ -161,13 +167,14 @@ function results() {
 
 async function push() {
     if (semver === "0.0.0") term("push can only run in CI");
-    await execAsync([
-        `docker buildx build --pull --output="type=registry"`,
-        isGhMain === "true" ? `--tag="${dockerUser}/${dockerRepo}:latest"` : "",
-        `--tag="${dockerUser}/${dockerRepo}:${semver}"`,
-        `--build-arg="SEMVER=${semver}"`,
-        `--platform="linux/amd64,linux/arm64/v8"`,
-        `.`
+    await execAsync("docker", ["buildx", "build",
+        "--pull",
+        "--output", "type=registry",
+        ...(isGhMain === "true" ? ["--tag", `${dockerUser}/${dockerRepo}:latest`] : []),
+        "--tag", `${dockerUser}/${dockerRepo}:${semver}`,
+        "--build-arg", `SEMVER=${semver}`,
+        "--platform", "linux/amd64,linux/arm64/v8",
+        "."
     ]);
     console.log("push success");
 }
@@ -190,12 +197,12 @@ function httpRequest(url) {
     }).on("error", err => reject(err)));
 }
 
-function execAsync(cmd, options = { stdout: true, stderr: true }) {
-    return new Promise((ok, reject) => exec(cmd, options).on("exit", code => code ? reject() : ok()));
+function execAsync(cmd, args, options = { stdout: true, stderr: true }) {
+    return new Promise((ok, reject) => exec(cmd, args, options).on("exit", code => code ? reject(code) : ok()));
 }
 
-function exec(cmd, options = { stdout: true, stderr: true }) {
-    const child = childProcess.exec(cmd instanceof Array ? cmd.join(" ") : cmd, { shell: false });
+function exec(cmd, args, options = { stdout: true, stderr: true }) {
+    const child = childProcess.spawn(cmd, (args || []).filter(c => c && !!(String(c).trim())), { shell: false, cwd: process.cwd() });
     if (options && options.stdout) child.stdout.pipe(process.stdout);
     if (options && options.stderr) child.stderr.pipe(process.stderr);
     return child;
