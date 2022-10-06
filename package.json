@@ -1,0 +1,25 @@
+{
+    "name": "@media-share/~",
+    "version": "0.0.0",
+    "private": true,
+    "license": "ISC",
+    "description": "media-share",
+    "keywords": [
+        "media-share"
+    ],
+    "author": "vallyian@gmail.com",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/vallyian/media-share.git"
+    },
+    "engines": {
+        "node": ">=16 <17",
+        "npm": ">=8 <9"
+    },
+    "scripts": {
+        "build": "npm --prefix server run build",
+        "lint": "npm --prefix server run lint",
+        "test": "npm --prefix server test",
+        "start": "npm --prefix server start"
+    }
+}
