@@ -6,16 +6,15 @@
 .vscode
 artifacts
 bin
+certs
 dist
 media
 node_modules
 
-# .dockerignore
-# .editorconfig
-.env
-# .gitattributes
-# .gitignore
-# [Dd]ocker*
-# run
-# *.md
-# !README.md
+# /.dockerignore
+# /.editorconfig
+# /.gitattributes
+# /.gitignore
+# /dockerfile
+# /package.json
+# /run.js
