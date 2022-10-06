@@ -15,7 +15,6 @@ const home = process.env["USERPROFILE"] || process.env["HOME"];
 const artifactsDir = path.normalize(`${process.cwd()}/artifacts`);
 
 (fn => fn[process.argv[2]] ? fn[process.argv[2]]() : term(`USAGE:   ./run   ${Object.keys(fn).join(" | ")}`))({
-    semver: calcSemver,
     build,
     smoke,
     scan,
@@ -23,18 +22,6 @@ const artifactsDir = path.normalize(`${process.cwd()}/artifacts`);
     push,
     ci
 });
-
-function calcSemver() {
-    if (newVersion === "") term("semver can only run in CI");
-
-    if (isGhMain === "true") {
-        console.log(`::set-output name=SEMVER::${newVersion}`);
-        console.log(`SEMVER: ${newVersion}`);
-    } else {
-        console.log(`::set-output name=SEMVER::${newVersion}-${ghSha}`);
-        console.log(`SEMVER: ${newVersion}-${ghSha}`);
-    }
-}
 
 async function build() {
     fs.rmSync("artifacts", { recursive: true, force: true });

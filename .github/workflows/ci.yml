@@ -36,7 +36,14 @@ jobs:
                   GITHUB_MAIN: ${{ github.ref == 'refs/heads/main' }}
                   NEW_VERSION: ${{ steps.tag.outputs.new_version }}
                   GITHUB_SHA: ${{ github.sha }}
-              run: node run semver
+              run: |
+                  if [ "${GITHUB_MAIN}" = "true" ]; then
+                      echo "::set-output name=SEMVER::${NEW_VERSION}"
+                      echo "SEMVER: ${NEW_VERSION}"
+                  else
+                      echo "::set-output name=SEMVER::${NEW_VERSION}-${GITHUB_SHA}"
+                      echo "SEMVER: ${NEW_VERSION}-${GITHUB_SHA}"
+                  fi
 
         outputs:
             SEMVER: ${{ steps.semver.outputs.SEMVER }}
