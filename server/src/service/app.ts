@@ -67,15 +67,22 @@ export class App {
         app.set("views", fs.existsSync("src/service/views") ? "src/service/views" : "service/views");
         app.get("/health", (req, res) => new HealthRoute().handler(req, res));
         app.get("/favicon.ico", (req, res, next) => new FaviconRoute().handler(req, res, next));
-        app.use(express.static(`${app.get("views")}/css`));
-        app.use(express.static(`${app.get("views")}/scripts`));
-        app.use(cookieParser(this.config.cookieSecret));
-        if (this.config.authClient && this.config.authEmails.length)
-            app.use((req, res, next) => new AuthMiddleware(this.domain.idTokenService, this.domain.accessTokenService).handler(req, res, next));
-        app.use((req, res, next) => new DirIndexMiddleware(this.domain.mediaAccessService).handler(req, res, next));
-        app.use((req, res, next) => new MediaPlayerFileMiddleware(this.domain.mediaAccessService).handler(req, res, next));
-        app.use((req, res, next) => new SubtitleFileMiddleware(this.domain.mediaAccessService, this.domain.subtitleService).handler(req, res, next));
-        app.use(express.static(this.config.mediaDir, { dotfiles: "allow" }));
+        app.use(
+            express.static(`${app.get("views")}/css`),
+            express.static(`${app.get("views")}/scripts`),
+        );
+        app.use(
+            this.config.authClient && this.config.authEmails.length
+                ? cookieParser(this.config.cookieSecret)
+                : (_req, _res, next) => next(),
+            (req, res, next) => this.config.authClient && this.config.authEmails.length
+                ? new AuthMiddleware(this.domain.idTokenService, this.domain.accessTokenService).handler(req, res, next)
+                : next(),
+            (req, res, next) => new DirIndexMiddleware(this.domain.mediaAccessService).handler(req, res, next),
+            (req, res, next) => new MediaPlayerFileMiddleware(this.domain.mediaAccessService).handler(req, res, next),
+            (req, res, next) => new SubtitleFileMiddleware(this.domain.mediaAccessService, this.domain.subtitleService).handler(req, res, next),
+            express.static(this.config.mediaDir, { dotfiles: "allow" }),
+        );
         return app;
     }
 }

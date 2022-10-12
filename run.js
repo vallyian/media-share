@@ -72,34 +72,36 @@ async function smoke() {
             await smokeRunTestCase(++testCaseId, "/test-dir/test.srt", 200, "WEBVTT").catch(() => failed = true);
             await smokeRunTestCase(++testCaseId, "/test-dir/test.sub", 200, "WEBVTT").catch(() => failed = true);
         })
-        .catch(() => failed = true);
-    await smokeStopServer(container);
+        .catch(() => failed = true)
+        .finally(() => smokeStopServer(container));
 
     await smokeStartServer(container, testMediaDir, "test.apps.googleusercontent.com", "test@gmail.com")
         .then(async () => {
             await smokeRunTestCase(++testCaseId, "/test-dir", 401, "").catch(() => failed = true);
         })
-        .catch(() => failed = true);
-    await smokeStopServer(container);
+        .catch(() => failed = true)
+        .finally(() => smokeStopServer(container));
 
     fs.rmSync(testMediaDir, { recursive: true, force: true });
-    fs.readdirSync(smokeTestDir).length || fs.rmSync(smokeTestDir, { recursive: true, force: true });
+    fs.readdirSync(smokeTestDir).length || fs.rmSync(smokeTestDir, { recursive: true });
 
     if (failed) term(`smoke test failed`);
     console.log("smoke success");
 }
 function smokeStartServer(container, testMediaDir, authClient = "", authEmails = "") {
+    const port = 58081;
+
     exec("docker", ["run",
         "--name", container,
         "--detach",
-        "-p", "58081:58082",
+        "-p", `127.0.0.1:${port}:58082`,
         "-v", `${testMediaDir}:/home/node/media`,
         "-e", `MEDIA_SHARE__AuthClient=${authClient}`,
         "-e", `MEDIA_SHARE__AuthEmails=${authEmails}`,
         `${dockerUser}/${dockerRepo}:${semver}`
     ]);
 
-    const interval = () => new Promise(ok => setTimeout(() => ok(httpRequest("http://localhost:58081/health").catch(err => err).then(health => {
+    const interval = () => new Promise(ok => setTimeout(() => ok(httpRequest(`http://localhost:${port}/health`).catch(err => err).then(health => {
         if (health.body !== "healthy") {
             console.error({ health });
             return interval();
@@ -112,7 +114,7 @@ function smokeStartServer(container, testMediaDir, authClient = "", authEmails =
         .then(() => true)
         .catch(err => {
             console.error({ server: { err } });
-            return false;
+            return false
         });
 }
 function smokeRunTestCase(testCaseId, url, status, body) {
@@ -129,7 +131,6 @@ function smokeRunTestCase(testCaseId, url, status, body) {
 async function smokeStopServer(container) {
     await execAsync("docker", ["container", "stop", container], { out: false, err: false }).catch(() => void 0);
     await execAsync("docker", ["container", "rm", container], { out: false, err: false }).catch(() => void 0);
-    await execAsync("docker", ["container", "inspect", container], { out: false, err: false }).catch(() => void 0);
 }
 
 /** Scan Docker image for vulnerabilities */
