@@ -7,47 +7,45 @@ import { Config } from "../config";
 import { Domain } from "../domain";
 
 /* eslint-disable no-restricted-globals */
-export class Service {
-    private readonly app: App;
+export function Service(
+    logger: Logger,
+    terminator: Terminator,
+    config: Config,
+    domain: Domain
+) {
+    const app = App(logger, domain, config);
 
-    constructor(
-        private readonly logger: Logger,
-        private readonly terminator: Terminator,
-        private readonly config: Config,
-        private readonly domain: Domain
-    ) {
-        this.app = new App(this.logger, this.domain, this.config);
-    }
+    return serve;
 
-    serve(): Promise<void> {
-        process.on("uncaughtException", err => this.terminator("UncaughtException", err));
-        process.on("unhandledRejection", (reason, promise) => this.terminator("UnhandledRejection", reason, promise));
+    function serve(): Promise<void> {
+        process.on("uncaughtException", err => terminator("UncaughtException", err));
+        process.on("unhandledRejection", (reason, promise) => terminator("UnhandledRejection", reason, promise));
 
         return cluster.isPrimary
-            ? this.clusterPrimary().catch((err: Error) => this.terminator("InitFunction", err))
-            : this.clusterWorker().catch((err: Error) => this.terminator("WorkerStartup", err));
+            ? clusterPrimary().catch((err: Error) => terminator("InitFunction", err))
+            : clusterWorker().catch((err: Error) => terminator("WorkerStartup", err));
     }
 
-    private async clusterPrimary() {
-        this.config.certCrt || this.logger.warn("no cert file found");
-        this.config.certKey || this.logger.warn("no cert key file found");
-        this.logger.info(`${this.config.certCrt && this.config.certKey ? "[secure]" : "[insecure]"} ${this.config.NODE_ENV} server (main process ${process.pid}) starting on port ${this.config.port}`);
+    async function clusterPrimary() {
+        config.certCrt || logger.warn("no cert file found");
+        config.certKey || logger.warn("no cert key file found");
+        logger.info(`${config.certCrt && config.certKey ? "[secure]" : "[insecure]"} ${config.NODE_ENV} server (main process ${process.pid}) starting on port ${config.port}`);
 
         const workers = new Array<Worker>();
-        const fork = () => workers.push(cluster.fork(this.config.clusterSharedEnv));
-        new Array(this.config.clusters).fill(null).forEach(fork);
+        const fork = () => workers.push(cluster.fork(config.clusterSharedEnv));
+        new Array(config.clusters).fill(null).forEach(fork);
         cluster.on("exit", (worker, code, signal) => {
             const workerId = workers.findIndex(w => w.id === worker.id);
             if (workerId >= 0) workers.splice(workerId, 1);
-            this.logger.error(`worker ${worker.process.pid} exited; ${JSON.stringify({ code, signal })}`);
+            logger.error(`worker ${worker.process.pid} exited; ${JSON.stringify({ code, signal })}`);
             fork();
         });
     }
 
-    private async clusterWorker() {
-        const server = this.config.certCrt && this.config.certKey
-            ? https.createServer({ cert: this.config.certCrt, key: this.config.certKey }, this.app.app)
-            : this.app.app;
-        server.listen(this.config.port, () => this.logger.info(`service (worker process ${process.pid}) is online`));
+    async function clusterWorker() {
+        const server = config.certCrt && config.certKey
+            ? https.createServer({ cert: config.certCrt, key: config.certKey }, app)
+            : app;
+        server.listen(config.port, () => logger.info(`service (worker process ${process.pid}) is online`));
     }
 }

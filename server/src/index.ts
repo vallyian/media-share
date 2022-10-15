@@ -23,8 +23,8 @@ if (require.main === module) {
 
 function runnerFactory() {
     const { logger, terminator, config, domain } = infrastructure();
-    const service = new Service(logger, terminator, config, domain);
-    return () => service.serve().catch(err => terminator("Generic", err));
+    const service = Service(logger, terminator, config, domain);
+    return () => service().catch(err => terminator("Generic", err));
 }
 
 function infrastructure() {

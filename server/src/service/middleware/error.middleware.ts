@@ -1,16 +1,16 @@
 import { Request, Response, NextFunction } from "express";
 import { Logger } from "../../@types/Logger";
 
-export class ErrorMiddleware {
-    constructor(
-        private readonly logger: Logger,
-        private readonly config: {
-            NODE_ENV: string
-        }
-    ) { }
+export function ErrorMiddleware(
+    logger: Logger,
+    config: {
+        NODE_ENV: string
+    }
+) {
+    return handler;
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- last arg required by express to correctly interpret as error middleware
-    handler(err: Error, req: Request, res: Response, _next: NextFunction) {
+    function handler(err: Error, req: Request, res: Response, _next: NextFunction) {
         const status = err.status || 500;
         const url = req.url;
         const safeErr = {
@@ -30,10 +30,10 @@ export class ErrorMiddleware {
         };
 
         if (!url.endsWith(".map"))
-            this.logger.error(safeErr);
+            logger.error(safeErr);
 
         res.status(status)
             .header("Content-Type", "text/plain")
-            .send(this.config.NODE_ENV !== "development" ? safeErr.message : [safeErr.message, "", ...safeErr.stack].join("\n"));
+            .send(config.NODE_ENV !== "development" ? safeErr.message : [safeErr.message, "", ...safeErr.stack].join("\n"));
     }
 }

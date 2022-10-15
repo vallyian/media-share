@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import express, { Application, Request, Response, NextFunction } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
@@ -18,34 +18,33 @@ import { DirIndexMiddleware } from "./middleware/dir-index.middleware";
 import { NotFoundMiddleware } from "./middleware/not-found.middleware";
 import { ErrorMiddleware } from "./middleware/error.middleware";
 
-export class App {
-    readonly app: Application;
-
-    constructor(
-        private readonly logger: Logger,
-        private readonly domain: Domain,
-        private readonly config: {
-            NODE_ENV: string,
-            authClient: string,
-            authEmails: string[],
-            rateLimitMinutes: number,
-            rateLimitCounter: number,
-            proxyLocation: string,
-            cookieSecret: string,
-            mediaDir: string
-        }
-    ) {
-        this.app = this.createApp();
+export function App(
+    logger: Logger,
+    domain: Domain,
+    config: {
+        NODE_ENV: string,
+        authClient: string,
+        authEmails: string[],
+        rateLimitMinutes: number,
+        rateLimitCounter: number,
+        proxyLocation: string,
+        cookieSecret: string,
+        mediaDir: string
     }
+) {
+    let reqId = 0;
 
-    private createApp() {
+    return createApp();
+
+    function createApp() {
         const app = express();
         app.set("x-powered-by", false);
+        app.use((req, _res, next) => (req.reqId = ++reqId, next()));
         app.use(rateLimit({
-            windowMs: this.config.rateLimitMinutes * 60 * 1000,
-            max: this.config.rateLimitCounter
+            windowMs: config.rateLimitMinutes * 60 * 1000,
+            max: config.rateLimitCounter
         }));
-        if (this.config.authClient && this.config.authEmails.length)
+        if (config.authClient && config.authEmails.length)
             app.use((csp => helmet.contentSecurityPolicy({
                 directives: {
                     defaultSrc: ["'self'"],
@@ -53,36 +52,38 @@ export class App {
                     connectSrc: ["'self'"].concat(csp.connectSrc),
                     frameSrc: ["'self'"].concat(csp.frameSrc),
                 }
-            }))(this.domain.idTokenService.csp()));
+            }))(domain.idTokenService.csp()));
         app.use(compression());
-        app.use(this.config.proxyLocation, this.createProxiedApp());
-        app.use((req, res, next) => new NotFoundMiddleware().handler(req, res, next));
-        app.use((err: Error, req: Request, res: Response, next: NextFunction) => new ErrorMiddleware(this.logger, this.config).handler(err, req, res, next));
+        app.use(config.proxyLocation, createProxiedApp());
+        app.use(track("not-found").in, NotFoundMiddleware(), track("not-found").out);
+        app.use(track("error").in, ErrorMiddleware(logger, config), track("error").out);
         return app;
     }
 
-    private createProxiedApp() {
+    function createProxiedApp() {
         const app = express();
         app.set("view engine", "ejs");
         app.set("views", fs.existsSync("src/service/views") ? "src/service/views" : "service/views");
-        app.get("/health", (req, res) => new HealthRoute().handler(req, res));
-        app.get("/favicon.ico", (req, res, next) => new FaviconRoute().handler(req, res, next));
-        app.use(
-            express.static(`${app.get("views")}/css`),
-            express.static(`${app.get("views")}/scripts`),
-        );
-        app.use(
-            this.config.authClient && this.config.authEmails.length
-                ? cookieParser(this.config.cookieSecret)
-                : (_req, _res, next) => next(),
-            (req, res, next) => this.config.authClient && this.config.authEmails.length
-                ? new AuthMiddleware(this.domain.idTokenService, this.domain.accessTokenService).handler(req, res, next)
-                : next(),
-            (req, res, next) => new DirIndexMiddleware(this.domain.mediaAccessService).handler(req, res, next),
-            (req, res, next) => new MediaPlayerFileMiddleware(this.domain.mediaAccessService).handler(req, res, next),
-            (req, res, next) => new SubtitleFileMiddleware(this.domain.mediaAccessService, this.domain.subtitleService).handler(req, res, next),
-            express.static(this.config.mediaDir, { dotfiles: "allow" }),
-        );
+        app.get("/health", HealthRoute());
+        app.get("/favicon.ico", FaviconRoute());
+        app.use(express.static(`${app.get("views")}/css`));
+        app.use(express.static(`${app.get("views")}/scripts`));
+        if (config.authClient && config.authEmails.length) {
+            app.use(track("cookie").in, cookieParser(config.cookieSecret), track("cookie").out);
+            app.use(track("auth").in, AuthMiddleware(domain.idTokenService, domain.accessTokenService), track("auth").out);
+        }
+        app.use(track("dir-index").in, DirIndexMiddleware(domain.mediaAccessService), track("dir-index").out);
+        app.use(track("media-player").in, MediaPlayerFileMiddleware(domain.mediaAccessService), track("media-player").out);
+        app.use(track("subtitle").in, SubtitleFileMiddleware(domain.mediaAccessService, domain.subtitleService), track("subtitle").out);
+        app.use(track("static-media").in, express.static(config.mediaDir, { dotfiles: "allow" }), track("static-media").out);
         return app;
+    }
+
+    function track(route: string) {
+        const log = logger.info;
+        return {
+            in: (req: Request, _res: Response, next: NextFunction) => (log(new Date(), req.reqId, req.url, "-->", route), next()),
+            out: (req: Request, _res: Response, next: NextFunction) => (log(new Date(), req.reqId, req.url, "   ", route, "-->"), next()),
+        };
     }
 }

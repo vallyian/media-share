@@ -1,23 +1,23 @@
 import { NextFunction, Request, Response } from "express";
 import { MediaAccessAPI } from "../../domain/ports/API/MediaAccess.API";
 
-export class MediaSyncRoute {
-    constructor(
-        private mediaAccessService: MediaAccessAPI
-    ) { }
+export function MediaSyncRoute(
+    mediaAccessService: MediaAccessAPI
+) {
+    return handler;
 
-    async handler(req: Request, res: Response, next: NextFunction) {
-        let filePath = "";
-        return Promise.resolve()
-            .then(() => filePath = decodeURIComponent(new URL(req.get("referer") || "").pathname))
-            .then(() => this.mediaAccessService.type(filePath))
-            .then(type => type === "file" || Promise.reject("referer not a file"))
-            .then(() => void 0) // cluster safe media-sync in memory storage
-            .then(() => res.status(200).end())
-            .catch(err => {
-                err = err instanceof Error ? err : Error(err);
-                err.status = 400;
-                next(err);
-            });
+    async function handler(req: Request, res: Response, next: NextFunction) {
+        try {
+            const filePath = decodeURIComponent(new URL(req.get("referer") || "").pathname);
+            const type = await mediaAccessService.type(filePath);
+            if (type !== "file")
+                throw Error("referer not a file");
+            // TODO: cluster safe media-sync in memory storage
+            return res.status(200).end();
+        } catch (ex) {
+            const err = ex instanceof Error ? ex : Error(<string>ex);
+            err.status = 400;
+            return next(err);
+        }
     }
 }

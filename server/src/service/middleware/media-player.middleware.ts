@@ -5,49 +5,51 @@ import { MediaAccessAPI } from "../../domain/ports/API/MediaAccess.API";
 
 type Playlist = MediaStat & { list: "prev" | "current" | "next" | undefined }
 
-export class MediaPlayerFileMiddleware {
-    constructor(
-        private readonly mediaAccessService: MediaAccessAPI
-    ) { }
+export function MediaPlayerFileMiddleware(
+    mediaAccessService: MediaAccessAPI
+) {
+    return handler;
 
-    async handler(req: Request, res: Response, next: NextFunction) {
-        if (req.query["static"] === "true")
-            return next();
+    async function handler(req: Request, res: Response, next: NextFunction) {
+        try {
+            if (req.query["static"] === "true")
+                return next();
 
-        if (
-            !this.mediaAccessService.supportedAudioExtension(req.path) &&
-            !this.mediaAccessService.supportedVideoExtension(req.path)
-        ) return next();
+            if (
+                !mediaAccessService.supportedAudioExtension(req.path) &&
+                !mediaAccessService.supportedVideoExtension(req.path)
+            ) return next();
 
-        const type = await this.mediaAccessService.type(req.path).catch(() => "error");
-        if (type !== "file")
-            return next();
+            const type = await mediaAccessService.type(req.path).catch(() => "error");
+            if (type !== "file")
+                return next();
 
-        return Promise.resolve()
-            .then(() => this.viewData(req.path, req.baseUrl))
-            .then(data => res.render("index", {
+            const data = await viewData(req.path, req.baseUrl);
+            return res.render("index", {
                 page: "media-player",
                 ...data,
                 baseUrl: req.baseUrl
-            }))
-            .catch(err => next(err));
+            });
+        } catch (ex) {
+            return next(ex);
+        }
     }
 
-    private async viewData(videoPath: string, baseUrl: string) {
-        const { parent, name, extension } = this.mediaAccessService.parsePath(videoPath);
+    async function viewData(videoPath: string, baseUrl: string) {
+        const { parent, name, extension } = mediaAccessService.parsePath(videoPath);
         if (!parent || !name || !extension) throw Error("media file path invalid");
         const title = name.replace(`.${extension}`, "");
-        const files = await this.mediaAccessService.listDir(parent, baseUrl);
-        const playlist = this.viewDataPlaylist(files, name);
-        const pathLinks = this.mediaAccessService.pathLinks(videoPath, baseUrl);
+        const files = await mediaAccessService.listDir(parent, baseUrl);
+        const playlist = viewDataPlaylist(files, name);
+        const pathLinks = mediaAccessService.pathLinks(videoPath, baseUrl);
         const cd = pathLinks.length >= 2 ? pathLinks.splice(pathLinks.length - 2, 1)[0]?.link : "";
-        const urlPath = "/" + this.mediaAccessService.getSecureUrl(videoPath, baseUrl) + "?static=true";
-        const subtitles = this.viewDataSubtitles(files, title, extension);
+        const urlPath = "/" + mediaAccessService.getSecureUrl(videoPath, baseUrl) + "?static=true";
+        const subtitles = viewDataSubtitles(files, title, extension);
         const mimeType = (Domain.supportedAudios.includes(extension) ? "audio" : "video") + "/" + extension;
         return { cd, title, urlPath, subtitles, mimeType, playlist };
     }
 
-    private viewDataPlaylist(files: MediaStat[], name: string): Playlist[] {
+    function viewDataPlaylist(files: MediaStat[], name: string): Playlist[] {
         const supportedAudioVideosRx = new RegExp("(:?" + Domain.supportedAudios.concat(Domain.supportedVideos).map((e: string) => `\\.${e}`).join("|") + ")$", "i");
         const list = <Playlist[]>files.filter(s => supportedAudioVideosRx.test(s.name));
         const index = list.findIndex(s => s.name === name);
@@ -59,7 +61,7 @@ export class MediaPlayerFileMiddleware {
         return list;
     }
 
-    private viewDataSubtitles(files: MediaStat[], title: string, extension: string) {
+    function viewDataSubtitles(files: MediaStat[], title: string, extension: string) {
         const subParams = (name: string) => {
             if (/\.vtt$/i.test(name)) return "static=true";
             if (/\.sub$/i.test(name) && Domain.supportedVideos.includes(extension)) return `video=${extension}`;
