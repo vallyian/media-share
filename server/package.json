@@ -15,7 +15,7 @@
     },
     "engines": {
         "node": ">=16 <17",
-        "npm": ">=8 <9"
+        "npm": ">=8"
     },
     "type": "commonjs",
     "scripts": {
@@ -26,7 +26,9 @@
         "lint": "tsc --noEmit --project tsconfig.app.json && eslint src/** --fix || echo 'fail' > ../artifacts/npm-lint.fail",
         "prebuild": "node -e \"fs.rmSync('bin', { recursive: true, force: true })\" && npm run ci",
         "build": "tsc --noEmitOnError --listEmittedFIles --project tsconfig.app.json",
-        "postbuild": "node -e \"fs.cpSync('src/service/views', 'bin/service/views', { recursive: true, force: true })\"",
+        "postbuild": "npm run postbuild-package && npm run postbuild-views",
+        "postbuild-package": "node -e \"fs.writeFileSync('bin/package.json', JSON.stringify({ ...require('./package.json'), scripts:undefined, devDependencies:undefined }, null, 4), 'utf-8')\"",
+        "postbuild-views": "node -e \"fs.cpSync('src/service/views', 'bin/service/views', { recursive: true, force: true })\"",
         "pretest": "node -e \"['../artifacts/unit-tests', '../artifacts/npm-test.fail'].forEach(i => fs.rmSync(i, { recursive: true, force: true }))\" && npm run ci",
         "test": "ts-node --project tsconfig.spec.json test.ts || echo 'fail' > ../artifacts/npm-test.fail",
         "prestart": "npm run prebuild",

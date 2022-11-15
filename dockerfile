@@ -1,5 +1,5 @@
 FROM node:gallium AS build
-RUN npm i -g npm@8
+RUN npm i -g npm@latest
 WORKDIR /home/node/server
 COPY server/package*.json ./
 ARG NPM_AUDIT_LEVEL
