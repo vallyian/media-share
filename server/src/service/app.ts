@@ -15,6 +15,7 @@ import { AuthMiddleware } from "./middleware/auth.middleware";
 import { MediaPlayerFileMiddleware } from "./middleware/media-player.middleware";
 import { SubtitleFileMiddleware } from "./middleware/subtitle-file.middleware";
 import { DirIndexMiddleware } from "./middleware/dir-index.middleware";
+import { WebdavMiddleware } from "./middleware/webdav.middleware";
 import { NotFoundMiddleware } from "./middleware/not-found.middleware";
 import { ErrorMiddleware } from "./middleware/error.middleware";
 
@@ -25,6 +26,7 @@ export function App(
         NODE_ENV: string,
         authClient: string,
         authEmails: string[],
+        authDav: string[],
         rateLimitMinutes: number,
         rateLimitCounter: number,
         proxyLocation: string,
@@ -34,9 +36,29 @@ export function App(
 ) {
     let reqId = 0;
 
-    return createApp();
+    return {
+        davApp: createDavApp(),
+        webApp: createWebApp(),
+    };
 
-    function createApp() {
+    function createDavApp() {
+        const app = express();
+        app.set("x-powered-by", false);
+        app.use((req, _res, next) => (req.reqId = ++reqId, next()));
+        app.use(rateLimit({
+            windowMs: config.rateLimitMinutes * 60 * 1000,
+            max: config.rateLimitCounter
+        }));
+        app.use(compression());
+        app.use(track("dav").in);
+        app.use(WebdavMiddleware(config));
+        app.use(track("dav").out);
+        app.use(track("not-found").in, NotFoundMiddleware(), track("not-found").out);
+        app.use(track("error").in, ErrorMiddleware(logger, config), track("error").out);
+        return app;
+    }
+
+    function createWebApp() {
         const app = express();
         app.set("x-powered-by", false);
         app.use((req, _res, next) => (req.reqId = ++reqId, next()));

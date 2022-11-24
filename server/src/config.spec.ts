@@ -111,28 +111,53 @@ describe("config", () => {
         });
     });
 
-    describe("port", () => {
-        const envKey = "MEDIA_SHARE__Port";
-        const defaultEnvValue = 58082;
+    describe("davport", () => {
+        const envKey = "MEDIA_SHARE__DavPort";
+        const defaultEnvValue = 58092;
 
         it("not set => default", () => {
             const config = new Config({}, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
             expect(exitSpy).not.toHaveBeenCalled();
-            expect(config.port).toEqual(defaultEnvValue);
+            expect(config.davport).toEqual(defaultEnvValue);
         });
 
         it("invalid => exit", () => {
             const testEnvValue = String(1 + 65535);
             const config = new Config({ [envKey]: testEnvValue }, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
             expect(exitSpy).toHaveBeenCalledOnceWith(envKey);
-            expect(config.port).not.toBeDefined();
+            expect(config.davport).not.toBeDefined();
         });
 
         it("value", () => {
             const testEnvValue = String(42);
             const config = new Config({ [envKey]: testEnvValue }, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
             expect(exitSpy).not.toHaveBeenCalled();
-            expect(config.port).toEqual(+testEnvValue);
+            expect(config.davport).toEqual(+testEnvValue);
+        });
+    });
+
+    describe("webport", () => {
+        const envKey = "MEDIA_SHARE__WebPort";
+        const defaultEnvValue = 58082;
+
+        it("not set => default", () => {
+            const config = new Config({}, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(exitSpy).not.toHaveBeenCalled();
+            expect(config.webport).toEqual(defaultEnvValue);
+        });
+
+        it("invalid => exit", () => {
+            const testEnvValue = String(1 + 65535);
+            const config = new Config({ [envKey]: testEnvValue }, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(exitSpy).toHaveBeenCalledOnceWith(envKey);
+            expect(config.webport).not.toBeDefined();
+        });
+
+        it("value", () => {
+            const testEnvValue = String(42);
+            const config = new Config({ [envKey]: testEnvValue }, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
+            expect(exitSpy).not.toHaveBeenCalled();
+            expect(config.webport).toEqual(+testEnvValue);
         });
     });
 

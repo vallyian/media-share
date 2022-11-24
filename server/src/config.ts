@@ -2,10 +2,12 @@ export class Config {
     readonly NODE_ENV: string;
     readonly authClient: string;
     readonly authEmails: string[];
+    readonly authDav: string[];
     readonly tokenKey: string;
     readonly cookieSecret: string;
     readonly clusters: number;
-    readonly port: number;
+    readonly davport: number;
+    readonly webport: number;
     readonly proxyLocation: string;
     readonly rateLimitMinutes: number;
     readonly rateLimitCounter: number;
@@ -23,9 +25,11 @@ export class Config {
         this.NODE_ENV = env("NODE_ENV", "production");
         this.authClient = env("MEDIA_SHARE__AuthClient");
         this.authEmails = env("MEDIA_SHARE__AuthEmails").split(",").map(s => s.trim()).filter(s => s.includes("@"));
+        this.authDav = env("MEDIA_SHARE__AuthDav").split(",").map(s => s.trim()).filter(s => !!s);
         this.tokenKey = env("MEDIA_SHARE__TokenKey", randomStringFactory(32));
         this.cookieSecret = env("MEDIA_SHARE__CookieSecret", randomStringFactory(32));
-        this.port = number("MEDIA_SHARE__Port", 58082, n => n > 0 && n <= 65535);
+        this.davport = number("MEDIA_SHARE__DavPort", 58092, n => n > 0 && n <= 65535);
+        this.webport = number("MEDIA_SHARE__WebPort", 58082, n => n > 0 && n <= 65535);
         this.rateLimitMinutes = number("MEDIA_SHARE__RateLimitMinutes", 5, n => n > 0 && n <= 24 * 60);
         this.proxyLocation = env("MEDIA_SHARE__ProxyLocation", "/");
 

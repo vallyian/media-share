@@ -44,7 +44,8 @@
         "google-auth-library": "^8.5.2",
         "helmet": "^6.0.0",
         "jschardet": "^3.0.0",
-        "tslib": "^2.4.0"
+        "tslib": "^2.4.0",
+        "webdav-server": "^2.6.2"
     },
     "devDependencies": {
         "@types/compression": "^1.7.2",
