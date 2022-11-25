@@ -32,13 +32,13 @@ export class Config {
         this.webport = number("MEDIA_SHARE__WebPort", 58082, n => n > 0 && n <= 65535);
         this.rateLimitMinutes = number("MEDIA_SHARE__RateLimitMinutes", 5, n => n > 0 && n <= 24 * 60);
         this.proxyLocation = env("MEDIA_SHARE__ProxyLocation", "/");
+        this.mediaDir = env("MEDIA_SHARE__MediaDir", "media");
 
-        this.certCrt = readFile("/run/secrets/cert.crt") || readFile("certs/cert.crt");
-        this.certKey = readFile("/run/secrets/cert.key") || readFile("certs/cert.key");
+        this.certCrt = readFile("/run/secrets/cert.crt") || readFile("certs/cert.crt") || readFile(env("MEDIA_SHARE__CertCrt"));
+        this.certKey = readFile("/run/secrets/cert.key") || readFile("certs/cert.key") || readFile(env("MEDIA_SHARE__CertKey"));
 
         this.clusters = this.NODE_ENV === "development" ? 1 : clustersFactory();
         this.rateLimitCounter = Math.ceil(this.rateLimitMinutes * 60 * 5 / this.clusters);
-        this.mediaDir = "media";
 
         function env(key: string, def = "") { return environment[key] || def; }
 

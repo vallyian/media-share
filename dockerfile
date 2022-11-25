@@ -44,6 +44,6 @@ HEALTHCHECK --interval=30s --timeout=1s --start-period=5s --retries=1 \
         else \
             if [ ! "$(wget -O /dev/null --server-response http://localhost:58082/health 2>&1 | awk '/^  HTTP/{print $2}')" = "200" ]; then exit 1; fi \
         fi
-EXPOSE "58082/tcp"
+EXPOSE "58082/tcp" "58092/tcp"
 ENTRYPOINT [ "/sbin/tini", "--" ]
 CMD [ "node", "." ]
