@@ -14,7 +14,7 @@
         "url": "https://github.com/vallyian/media-share.git"
     },
     "engines": {
-        "node": ">=16 <17",
+        "node": ">=18 <19",
         "npm": ">=8"
     },
     "type": "commonjs",
@@ -29,10 +29,12 @@
         "postbuild": "npm run postbuild-package && npm run postbuild-views",
         "postbuild-package": "node -e \"fs.writeFileSync('bin/package.json', JSON.stringify({ ...require('./package.json'), scripts:undefined, devDependencies:undefined }, null, 4), 'utf-8')\"",
         "postbuild-views": "node -e \"fs.cpSync('src/service/views', 'bin/service/views', { recursive: true, force: true })\"",
-        "pretest": "node -e \"['../artifacts/unit-tests', '../artifacts/npm-test.fail'].forEach(i => fs.rmSync(i, { recursive: true, force: true }))\" && npm run ci",
-        "test": "ts-node --project tsconfig.spec.json test.ts || echo 'fail' > ../artifacts/npm-test.fail",
+        "pretest-clean": "node -e \"['../artifacts/unit-tests', '../artifacts/npm-test.fail'].forEach(i => fs.rmSync(i, { recursive: true, force: true }))\"",
+        "pretest-ci": "npm run ci",
+        "pretest": "npm run pretest-clean && npm run pretest-ci",
+        "test": "ts-node-dev --inspect --project tsconfig.spec.json test.ts || echo 'fail' > ../artifacts/npm-test.fail",
         "prestart": "npm run prebuild",
-        "start": "node -e \"process.env.NODE_ENV='development'; child_process.execSync('ts-node-dev --files --prefer-ts --debug --inspect --watch -- src', {stdio:'inherit'})\""
+        "start": "node -e \"child_process.execSync('ts-node-dev --files --prefer-ts --debug --inspect --watch -- src', { stdio:'inherit', env: { NODE_ENV: 'development' } })\""
     },
     "dependencies": {
         "compression": "^1.7.4",

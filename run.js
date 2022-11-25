@@ -94,7 +94,7 @@ function smokeStartServer(container, testMediaDir, authClient = "", authEmails =
     exec("docker", ["run",
         "--name", container,
         "--detach",
-        "-p", `127.0.0.1:${port}:58082`,
+        "-p", `${port}:58082`,
         "-v", `${testMediaDir}:/home/node/media`,
         "-e", `MEDIA_SHARE__AuthClient=${authClient}`,
         "-e", `MEDIA_SHARE__AuthEmails=${authEmails}`,

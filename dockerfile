@@ -1,4 +1,4 @@
-FROM node:gallium AS build
+FROM node:hydrogen AS build
 RUN npm i -g npm@latest
 WORKDIR /home/node/server
 COPY server/package*.json ./
@@ -25,7 +25,7 @@ COPY --from=build /home/node/artifacts/*.fail /
 
 
 
-FROM node:gallium-alpine3.16
+FROM node:hydrogen-alpine3.16
 WORKDIR /home/node
 RUN apk add tini && \
     mkdir -p /home/node/media && \

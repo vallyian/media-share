@@ -49,7 +49,7 @@ function infrastructure() {
         WorkerStartup: 201,
     });
 
-    const config = new Config(
+    const config = Config(
         process.env,
         (key: string) => terminator("Config", `config key ${key} invalid`),
         (length: number) => crypto.randomBytes(length).toString("base64"),

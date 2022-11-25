@@ -10,7 +10,7 @@ import { Domain } from "../domain";
 export function Service(
     logger: Logger,
     terminator: Terminator,
-    config: Config,
+    config: ReturnType<typeof Config>,
     domain: Domain
 ) {
     const app = App(logger, domain, config);
