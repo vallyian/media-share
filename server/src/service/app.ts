@@ -44,7 +44,7 @@ export function App(
     function createDavApp() {
         const app = express();
         app.set("x-powered-by", false);
-        app.use((req, _res, next) => (req.reqId = ++reqId, next()));
+        app.use((req, _res, next) => { req.reqId = ++reqId; return next(); });
         app.use(rateLimit({
             windowMs: config.rateLimitMinutes * 60 * 1000,
             max: config.rateLimitCounter
@@ -61,7 +61,7 @@ export function App(
     function createWebApp() {
         const app = express();
         app.set("x-powered-by", false);
-        app.use((req, _res, next) => (req.reqId = ++reqId, next()));
+        app.use((req, _res, next) => { req.reqId = ++reqId; return next(); });
         app.use(rateLimit({
             windowMs: config.rateLimitMinutes * 60 * 1000,
             max: config.rateLimitCounter
@@ -104,8 +104,8 @@ export function App(
     function track(route: string) {
         const log = logger.info;
         return {
-            in: (req: Request, _res: Response, next: NextFunction) => (log(new Date(), req.reqId, req.url, "-->", route), next()),
-            out: (req: Request, _res: Response, next: NextFunction) => (log(new Date(), req.reqId, req.url, "   ", route, "-->"), next()),
+            in: (req: Request, _res: Response, next: NextFunction) => { log(new Date(), req.reqId, req.url, "-->", route); return next(); },
+            out: (req: Request, _res: Response, next: NextFunction) => { log(new Date(), req.reqId, req.url, "   ", route, "-->"); return next(); },
         };
     }
 }

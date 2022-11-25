@@ -30,7 +30,7 @@ export function AuthMiddleware(
             }
         } catch (ex) {
             const err = ex instanceof Error ? ex : Error(<string>ex);
-            (<Error>err).status = 403;
+            err.status = 403;
             return next(err);
         }
 
