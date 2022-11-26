@@ -54,7 +54,7 @@ function infrastructure() {
         (key: string) => terminator("Config", `config key ${key} invalid`),
         (length: number) => crypto.randomBytes(length).toString("base64"),
         () => os.cpus().length,
-        (path: string) => fs.existsSync(path) && fs.statSync(path).isFile() ? fs.readFileSync(path, "utf-8") : undefined
+        (path: string) => path && fs.existsSync(path) && fs.statSync(path).isFile() ? fs.readFileSync(path, "utf-8") : undefined
     );
 
     const domain = new Domain(

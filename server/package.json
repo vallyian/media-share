@@ -18,6 +18,7 @@
         "npm": ">=8"
     },
     "type": "commonjs",
+    "main": "media-share.js",
     "scripts": {
         "preci": "node -e \"os.platform() !== (fs.existsSync('node_modules/platform') ? fs.readFileSync('node_modules/platform', 'utf-8') : '') && fs.rmSync('node_modules', { recursive: true, force: true })\"",
         "ci": "node -e \"fs.existsSync('node_modules') || child_process.execSync('npm ci', {stdio:'inherit'}); fs.writeFileSync('node_modules/platform', os.platform(), 'utf-8')\"",
@@ -26,7 +27,8 @@
         "lint": "tsc --noEmit --project tsconfig.app.json && eslint src/** --fix || echo 'fail' > ../artifacts/npm-lint.fail",
         "prebuild": "node -e \"fs.rmSync('bin', { recursive: true, force: true })\" && npm run ci",
         "build": "tsc --noEmitOnError --listEmittedFIles --project tsconfig.app.json",
-        "postbuild": "npm run postbuild-package && npm run postbuild-views",
+        "postbuild": "npm run postbuild-main && npm run postbuild-package && npm run postbuild-views",
+        "postbuild-main": "node -e \"fs.renameSync('bin/index.js', 'bin/' + require('./package.json').main)\"",
         "postbuild-package": "node -e \"fs.writeFileSync('bin/package.json', JSON.stringify({ ...require('./package.json'), scripts:undefined, devDependencies:undefined }, null, 4), 'utf-8')\"",
         "postbuild-views": "node -e \"fs.cpSync('src/service/views', 'bin/service/views', { recursive: true, force: true })\"",
         "pretest-clean": "node -e \"['../artifacts/unit-tests', '../artifacts/npm-test.fail'].forEach(i => fs.rmSync(i, { recursive: true, force: true }))\"",

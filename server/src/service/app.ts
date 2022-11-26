@@ -1,6 +1,5 @@
 import fs from "node:fs";
 import express, { Request, Response, NextFunction } from "express";
-import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import compression from "compression";
@@ -11,6 +10,7 @@ import { Domain } from "../domain";
 import { HealthRoute } from "./routes/health.route";
 import { FaviconRoute } from "./routes/favicon.route";
 
+import { RateLimitMiddleware } from "./middleware/rate-limit.middleware";
 import { AuthMiddleware } from "./middleware/auth.middleware";
 import { MediaPlayerFileMiddleware } from "./middleware/media-player.middleware";
 import { SubtitleFileMiddleware } from "./middleware/subtitle-file.middleware";
@@ -27,8 +27,9 @@ export function App(
         authClient: string,
         authEmails: string[],
         authDav: string[],
-        rateLimitMinutes: number,
-        rateLimitCounter: number,
+        rateLimitPerSecond: number,
+        rateLimitBurstFactor: number,
+        rateLimitPeriodMinutes: number,
         proxyLocation: string,
         cookieSecret: string,
         mediaDir: string
@@ -45,10 +46,7 @@ export function App(
         const app = express();
         app.set("x-powered-by", false);
         app.use((req, _res, next) => { req.reqId = ++reqId; return next(); });
-        app.use(rateLimit({
-            windowMs: config.rateLimitMinutes * 60 * 1000,
-            max: config.rateLimitCounter
-        }));
+        app.use(...RateLimitMiddleware(config));
         app.use(compression());
         app.use(track("dav").in);
         app.use(WebdavMiddleware(config));
@@ -62,19 +60,9 @@ export function App(
         const app = express();
         app.set("x-powered-by", false);
         app.use((req, _res, next) => { req.reqId = ++reqId; return next(); });
-        app.use(rateLimit({
-            windowMs: config.rateLimitMinutes * 60 * 1000,
-            max: config.rateLimitCounter
-        }));
+        app.use(...RateLimitMiddleware(config));
         if (config.authClient && config.authEmails.length)
-            app.use((csp => helmet.contentSecurityPolicy({
-                directives: {
-                    defaultSrc: ["'self'"],
-                    scriptSrcElem: ["'self'"].concat(csp.scriptSrcElem),
-                    connectSrc: ["'self'"].concat(csp.connectSrc),
-                    frameSrc: ["'self'"].concat(csp.frameSrc),
-                }
-            }))(domain.idTokenService.csp()));
+            app.use(cspMiddleware());
         app.use(compression());
         app.use(config.proxyLocation, createProxiedApp());
         app.use(track("not-found").in, NotFoundMiddleware(), track("not-found").out);
@@ -101,11 +89,26 @@ export function App(
         return app;
     }
 
+    function cspMiddleware() {
+        const csp = domain.idTokenService.csp();
+        return helmet.contentSecurityPolicy({
+            directives: {
+                defaultSrc: ["'self'"],
+                scriptSrcElem: ["'self'"].concat(csp.scriptSrcElem),
+                connectSrc: ["'self'"].concat(csp.connectSrc),
+                frameSrc: ["'self'"].concat(csp.frameSrc),
+            }
+        });
+    }
+
     function track(route: string) {
-        const log = logger.info;
+        const handler = (...args: string[]) => (req: Request, _res: Response, next: NextFunction) => {
+            logger.info(new Date(), req.reqId, req.url, ...args);
+            return next();
+        };
         return {
-            in: (req: Request, _res: Response, next: NextFunction) => { log(new Date(), req.reqId, req.url, "-->", route); return next(); },
-            out: (req: Request, _res: Response, next: NextFunction) => { log(new Date(), req.reqId, req.url, "   ", route, "-->"); return next(); },
+            in: handler("-->", route),
+            out: handler(route, "-->"),
         };
     }
 }
