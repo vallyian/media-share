@@ -135,7 +135,7 @@ describe("config", () => {
             clustersFactorySpy.and.callFake(() => clusters);
             const config = Config({}, exitSpy, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
             expect(config.clusters).toEqual(clusters);
-            expect(config.rateLimitPerSecond).toEqual(1);
+            expect(config.rateLimitPerSecond).toEqual(5);
         });
 
         it("value", () => {

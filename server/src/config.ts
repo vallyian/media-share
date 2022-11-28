@@ -18,7 +18,7 @@ export function Config(
         webport: envNumber("MEDIA_SHARE__WebPort", 58082, 1, 65535),
         proxyLocation: env("MEDIA_SHARE__ProxyLocation", "/"),
         mediaDir: env("MEDIA_SHARE__MediaDir", "media"),
-        rateLimitPerSecond: Math.ceil(envNumber("MEDIA_SHARE__RateLimitPerSecond", clusters) / clusters),
+        rateLimitPerSecond: Math.ceil(envNumber("MEDIA_SHARE__RateLimitPerSecond", 5 * clusters) / clusters),
         rateLimitBurstFactor: envNumber("MEDIA_SHARE__RateLimitBurstFactor", 10),
         rateLimitPeriodMinutes: envNumber("MEDIA_SHARE__RateLimitPeriodMinutes", 1),
         tokenKey: env("MEDIA_SHARE__TokenKey", randomStringFactory(32)),

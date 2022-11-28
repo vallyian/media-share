@@ -15,17 +15,22 @@
     .media-w-xxl video::cue { font-size: 4rem !important; }
     .header { z-index: 999; }
     .fullscreen .header { z-index: -999; }
-    .playlist { z-index: 999; top: 50%; left: 50%; transform: translate(-50%, -50%); list-style: none; }
+    .playlist { z-index: 999; top: 50%; left: 50%; transform: translate(-50%, -50%); list-style: none;
+        max-height: 80%;
+        overflow-y: scroll;
+        scrollbar-width: none;
+    }
+    .playlist::-webkit-scrollbar { display: none; }
 </style>
 
 <div class="header opacity-75 position-fixed d-inline-flex align-items-center">
-    <a class="btn border-0 text-danger" href="<%- cd %>"><%- include(`../icons/x-lg`); %></a>
+    <a data-close-btn class="btn border-0 text-danger" href="<%- cd %>"><%- include(`../icons/x-lg`); %></a>
     <% if (playlist.find(p => p.list === "prev")) { %><span data-prev-btn class="btn border-0 text-light"><%- include(`../icons/caret-left`); %></span><% } %>
     <% if (playlist.find(p => p.list === "next")) { %><span data-next-btn class="btn border-0 text-light"><%- include(`../icons/caret-right`); %></span><% } %>
     <span class="text-nowrap overflow-hidden text-light ps-2"><%= title %></span>
 </div>
 
-<ul class="position-fixed overflow-hidden d-none playlist">
+<ul class="position-fixed d-none playlist">
     <% playlist.forEach((media, index) => { %>
         <li class="text-nowrap">
             <% if(media.list == "current") { %>

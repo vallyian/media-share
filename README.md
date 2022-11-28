@@ -83,3 +83,4 @@ vallyian/media-share:latest
 * sub - get fps - video not found - when name ends with space
 * jschardet.detectAll and return multiple subtitles if detection not 100%
 * across device sync
+* remember use CC or not

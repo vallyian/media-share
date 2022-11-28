@@ -15,7 +15,9 @@ window.addEventListener("load", () => {
     }
 
     function playNext(id) {
-        document.querySelector(`[data-${id}-media]`)?.click();
+        const next = document.querySelector(`[data-${id}-media]`);
+        if (next) next.click();
+        else if (id === "next") document.querySelector("[data-close-btn]")?.click();
     }
 
     if (video.querySelector("source")?.getAttribute("type")?.startsWith("audio"))
@@ -27,7 +29,10 @@ window.addEventListener("load", () => {
     const time = t.url === url ? t.time : 0;
     if (isFinite(time) && time > 0) video.currentTime = time;
 
-    video.addEventListener("click", () => video.paused ? video.play() : video.pause());
+    video.addEventListener("click", e => {
+        video.paused || video.ended ? void video.play() : video.pause();
+        e.preventDefault();
+    });
     video.addEventListener("seeked", () => saveTime());
     video.addEventListener("play", () => {
         clearInterval(interval);
