@@ -7,6 +7,7 @@ export function FaviconRoute() {
         try {
             return res
                 .set("Cache-Control", "public, max-age=31557600")
+                .type(".svg")
                 .render("icons/share-fill", { fill: "#0080FF" });
         } catch (ex) {
             return next(ex);
