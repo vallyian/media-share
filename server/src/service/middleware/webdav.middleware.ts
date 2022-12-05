@@ -7,41 +7,44 @@ export function WebdavMiddleware(
         mediaDir: string
     }
 ) {
-    const webdavHandlerPromise = new Promise<ReturnType<typeof webdav.extensions.express> | Error>(ok => {
-        const authDav = config.authDav.map(c => {
-            const cred = c.split(":");
-            return {
-                user: <string>cred[0],
-                pass: <string>cred[1]
-            };
-        }).filter(a => a.user && a.pass);
-
-        if (!authDav.length)
-            return ok(Error("dav users config invalid"));
-
-        const userManager = new webdav.SimpleUserManager();
-        const privilegeManager = new webdav.SimplePathPrivilegeManager();
-        authDav.forEach(a => privilegeManager.setRights(userManager.addUser(a.user, a.pass, false), "/", ["all"]));
-        const webdavServer = new webdav.WebDAVServer({
-            httpAuthentication: new webdav.HTTPDigestAuthentication(userManager, "Default realm"),
-            privilegeManager
-        });
-
-        webdavServer.setFileSystem("/", new webdav.PhysicalFileSystem(config.mediaDir), success => success
-            ? ok(webdav.extensions.express("/", webdavServer))
-            : ok(Error("webdavServer.setFileSystem error")));
-    });
+    const webdavHandler = getWebdavServer()
+        .then(webdavServer => webdav.extensions.express("/", webdavServer))
+        .catch(err => <Error>err);
 
     return handler;
 
     async function handler(req: Request, res: Response, next: NextFunction) {
-        try {
-            const webdavHandler = await webdavHandlerPromise;
-            return webdavHandler instanceof Error
-                ? next(webdavHandler)
-                : webdavHandler(req, res, next);
-        } catch (ex) {
-            return next(ex);
-        }
+        return webdavHandler
+            .then(handler => handler instanceof Error ? Promise.reject(handler) : handler)
+            .then(handler => handler(req, res, next))
+            .catch(err => next(err));
+    }
+
+    function getWebdavServer() {
+        return new Promise<webdav.WebDAVServer>((ok, reject) => {
+            const authDav = config.authDav.map(c => {
+                const cred = c.split(":");
+                return {
+                    user: <string>cred[0],
+                    pass: <string>cred[1],
+                    privileges: ["canRead"].concat(cred[2] === "rw" ? ["canWrite"] : [])
+                };
+            }).filter(a => a.user && a.pass && a.privileges);
+
+            if (!authDav.length)
+                return reject(Error("dav users config invalid"));
+
+            const userManager = new webdav.SimpleUserManager();
+            const privilegeManager = new webdav.SimplePathPrivilegeManager();
+            authDav.forEach(a => privilegeManager.setRights(userManager.addUser(a.user, a.pass, false), "/", a.privileges));
+            const webdavServer = new webdav.WebDAVServer({
+                httpAuthentication: new webdav.HTTPDigestAuthentication(userManager, "Default realm"),
+                privilegeManager
+            });
+
+            webdavServer.setFileSystem("/", new webdav.PhysicalFileSystem(config.mediaDir), success => success
+                ? ok(webdavServer)
+                : reject(Error("webdavServer.setFileSystem error")));
+        });
     }
 }

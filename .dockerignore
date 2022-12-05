@@ -16,5 +16,6 @@
 /.gitattributes
 /.gitignore
 /dockerfile
+**/*.log
 /package.json
 /run.js

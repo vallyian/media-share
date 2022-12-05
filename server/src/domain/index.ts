@@ -1,5 +1,4 @@
 // SPI
-import { LogWriterSPI } from "./ports/SPI/LogWriter.SPI";
 import { IdTokenSPI } from "./ports/SPI/IdToken.SPI";
 import { CryptoSPI } from "./ports/SPI/Crypto.SPI";
 import { MediaStorageSPI } from "./ports/SPI/MediaStorage.SPI";
@@ -29,7 +28,7 @@ export class Domain {
     static readonly supportedAudios = ["mp3"];
 
     constructor(
-        logWriterAdapter: LogWriterSPI,
+        logger: { error(message?: unknown, ...optionalParams: unknown[]): void },
         idTokenAdapters: Record<string, IdTokenSPI>,
         cryptoAdapter: CryptoSPI,
         mediaStorageAdapter: MediaStorageSPI,
@@ -44,6 +43,6 @@ export class Domain {
         this.idTokenService = new IdTokenService(idTokenAdapters);
         this.accessTokenService = new AccessTokenService(idTokenAdapters, cryptoAdapter, config);
         this.mediaAccessService = new MediaAccessService(mediaStorageAdapter, config);
-        this.subtitleService = new SubtitleService(logWriterAdapter, textEncodingAdapter, videoProcessorAdapter, this.mediaAccessService);
+        this.subtitleService = new SubtitleService(logger, textEncodingAdapter, videoProcessorAdapter, this.mediaAccessService);
     }
 }
