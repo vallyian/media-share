@@ -103,7 +103,7 @@ export function App(
 
     function track(route: string) {
         const handler = (...args: string[]) => (req: Request, _res: Response, next: NextFunction) => {
-            logger.info(new Date(), req.reqId, req.url, ...args);
+            logger.info(req.reqId, req.url, ...args);
             return next();
         };
         return {

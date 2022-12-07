@@ -36,20 +36,32 @@ function setEnv() {
 
 function runnerFactory() {
     const { logger, terminator, config, domain } = infrastructure();
-    const service = Service(logger, terminator, config, domain);
+    const service = Service(config, logger, terminator, domain);
     return () => service().catch(err => terminator("Generic", err));
 }
 
 function infrastructure() {
+    const { config, invalidConfig } = Config(
+        process.env,
+        (length: number) => crypto.randomBytes(length).toString("base64"),
+        () => os.cpus().length,
+        (path: string) => path && fs.existsSync(path) && fs.statSync(path).isFile() ? fs.readFileSync(path, "utf-8") : undefined
+    );
+
     const logStream = fs.createWriteStream((d => `${d.getFullYear()}_${d.getMonth()}_${d.getDate()}.log`)(new Date()), { encoding: "utf-8", flags: "a" });
-    const streamWriter = (consoler: (message?: unknown, ...optionalParams: unknown[]) => void) => (message?: unknown, ...optionalParams: unknown[]) => {
-        consoler(message, ...optionalParams);
-        logStream.write(JSON.stringify({ dt: new Date(), pid: process.pid, message, params: optionalParams.length ? optionalParams : undefined }) + "\n");
+    const log = (stdout: (...msg: unknown[]) => void, isError = false) => (...msg: unknown[]) => {
+        const dt = new Date().toUTCString();
+        const action = () => {
+            if (config.logToFiles)
+                logStream.write([dt, process.pid].concat(msg.map(m => typeof m !== "string" ? JSON.stringify(m) : m)).join(" ") + "\n");
+            stdout(dt, process.pid, ...msg);
+        };
+        if (isError) action(); else setImmediate(action);
     };
     const logger = Object.freeze({
-        info: streamWriter(console.info),
-        warn: streamWriter(console.warn),
-        error: streamWriter(console.error)
+        info: log(console.info),
+        warn: log(console.warn),
+        error: log(console.error, true)
     });
 
     const terminator = (codes => (code: keyof typeof codes, ...error: unknown[]): never => {
@@ -67,13 +79,8 @@ function infrastructure() {
         WorkerStartup: 201,
     });
 
-    const config = Config(
-        process.env,
-        (key: string) => terminator("Config", `config key ${key} invalid`),
-        (length: number) => crypto.randomBytes(length).toString("base64"),
-        () => os.cpus().length,
-        (path: string) => path && fs.existsSync(path) && fs.statSync(path).isFile() ? fs.readFileSync(path, "utf-8") : undefined
-    );
+    if (invalidConfig.length)
+        terminator("Config", `config key(s) ${invalidConfig.join(", ")} invalid`);
 
     const domain = new Domain(
         logger,
@@ -85,5 +92,5 @@ function infrastructure() {
         config
     );
 
-    return { logger, terminator, config, domain };
+    return { config, logger, terminator, domain };
 }
