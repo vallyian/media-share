@@ -6,7 +6,7 @@ on:
             my_input:
                 description: "..."
                 default: "my secret value"
-                required: false
+                required: true
 
 jobs:
     test:
@@ -14,18 +14,21 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
-            - name: mask
-              if: ${{ github.event.inputs.my_input }}
+            - name: test 1 - before masking - direct input usage
+              run: echo "should NOT be masked ${{ github.event.inputs.my_input }}"
+
+            - name: test 2 - before masking - indirect input usage with env var
               env:
                   my_input: ${{ github.event.inputs.my_input }}
-              run: |
-                  echo "::add-mask::${my_input}"
-                  echo "should be masked ${my_input}"
+              run: echo "should NOT be masked ${my_input}"
 
-            - name: check 1
+            - name: mask
+              run: echo "::add-mask::${{ github.event.inputs.my_input }}"
+  
+            - name: test 3 - after masking - direct input usage
+              run: echo "should be masked ${{ github.event.inputs.my_input }}"
+
+            - name: test 4 - after masking - indirect input usage with env var
               env:
                   my_input: ${{ github.event.inputs.my_input }}
               run: echo "should be masked ${my_input}"
-  
-            - name: check 2
-              run: echo "should be masked ${{ github.event.inputs.my_input }}"
