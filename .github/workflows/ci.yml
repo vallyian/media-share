@@ -17,7 +17,7 @@ jobs:
               run: echo "::add-mask::$(jq -r '.inputs.my_input' $GITHUB_EVENT_PATH)"
 
             - name: test - direct input usage
-              run: echo "should be masked ${{ github.event.inputs.my_input }}"
+              run: echo "should be masked ${INPUT_MY_INPUT}"
 
             - name: test - indirect input usage with env var
               env:
