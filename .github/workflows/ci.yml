@@ -13,6 +13,9 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
+            - name: printenv
+              run: printenv
+
             - name: mask
               run: echo "::add-mask::${INPUT_MY_INPUT}"
 
