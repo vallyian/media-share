@@ -22,9 +22,10 @@ jobs:
                   echo "::add-mask::${my_input}"
                   echo "should be masked ${my_input}"
 
-            - name: check
-              if: ${{ github.event.inputs.my_input }}
+            - name: check 1
               env:
                   my_input: ${{ github.event.inputs.my_input }}
-              run: |
-                  echo "should be masked ${my_input}"
+              run: echo "should be masked ${my_input}"
+  
+            - name: check 2
+              run: echo "should be masked ${{ github.event.inputs.my_input }}"
