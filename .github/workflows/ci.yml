@@ -1,136 +1,30 @@
 name: ci
 
 on:
-    push:
-        branches: [main]
-
-    pull_request:
-        branches: [main]
-
     workflow_dispatch:
         inputs:
-            publish_image:
-                description: "Push runtime image to Docker Hub"
-                default: "false"
+            my_input:
+                description: "..."
+                default: "my secret value"
                 required: false
 
 jobs:
-    semver:
-        name: Semantic version
+    test:
+        name: test
         runs-on: ubuntu-latest
+
         steps:
-            - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
-
-            - name: Tag version
-              id: tag
-              uses: mathieudutour/github-tag-action@d745f2e74aaf1ee82e747b181f7a0967978abee0 # v6.0
-              with:
-                  github_token: ${{ secrets.GITHUB_TOKEN }}
-                  dry_run: ${{ github.ref != 'refs/heads/main' }}
-                  create_annotated_tag: true
-                  release_branches: "^main$"
-
-            - name: Calc semver
-              id: semver
+            - name: mask
+              if: ${{ github.event.inputs.my_input }}
               env:
-                  GITHUB_MAIN: ${{ github.ref == 'refs/heads/main' }}
-                  NEW_VERSION: ${{ steps.tag.outputs.new_version }}
-                  GITHUB_SHA: ${{ github.sha }}
+                  my_input: ${{ github.event.inputs.my_input }}
               run: |
-                  if [ "${GITHUB_MAIN}" = "true" ]; then
-                      echo "::set-output name=SEMVER::${NEW_VERSION}"
-                      echo "SEMVER: ${NEW_VERSION}"
-                  else
-                      echo "::set-output name=SEMVER::${NEW_VERSION}-${GITHUB_SHA}"
-                      echo "SEMVER: ${NEW_VERSION}-${GITHUB_SHA}"
-                  fi
+                  echo "::add-mask::${my_input}"
+                  echo "should be masked ${my_input}"
 
-        outputs:
-            SEMVER: ${{ steps.semver.outputs.SEMVER }}
-
-    build-test:
-        name: Build and test
-        runs-on: ubuntu-latest
-        needs: [semver]
-
-        steps:
-            - name: Checkout
-              uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
-
-            - name: Setup Doker multiplatform
-              uses: docker/setup-qemu-action@8b122486cedac8393e77aa9734c3528886e4a1a8 # v2.0.0
-
-            - name: Setup Docker
-              uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v2.0.0
-
-            - name: Build, test and extract artifacts
+            - name: check
+              if: ${{ github.event.inputs.my_input }}
               env:
-                  SEMVER: ${{needs.semver.outputs.SEMVER}}
-              run: node run build
-
-            - name: Run smoke test
-              env:
-                  SEMVER: ${{needs.semver.outputs.SEMVER}}
-              run: node run smoke
-
-            - name: Export atifacts
-              uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # v3.1.0
-              if: always()
-              with:
-                  name: artifacts
-                  path: artifacts
-
-            - name: Publish test resuls
-              uses: EnricoMi/publish-unit-test-result-action@2a60c5d47eb29cd5cc922f51bbea18e148f56203 # v2.0.0
-              if: always()
-              with:
-                  github_token: ${{secrets.GITHUB_TOKEN}}
-                  junit_files: artifacts/unit-tests/*.xml
-                  fail_on: "test failures"
-
-            - name: Scan runtime image
-              env:
-                  SEMVER: ${{needs.semver.outputs.SEMVER}}
-                  DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}
-              run: node run scan
-
-            - name: Check results
-              run: node run results
-
-            - name: Sign in to Docker Hub
-              uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b # v2.0.0
-              if: ${{ github.ref == 'refs/heads/main' || github.event.inputs.publish_image == 'true' }}
-              with:
-                  username: ${{secrets.DOCKER_USERNAME}}
-                  password: ${{secrets.DOCKER_PASSWORD}}
-
-            - name: Build and push multiplatform runtime image to Docker Hub
-              if: ${{ github.ref == 'refs/heads/main' || github.event.inputs.publish_image == 'true' }}
-              env:
-                  GITHUB_MAIN: ${{ github.ref == 'refs/heads/main'}}
-                  SEMVER: ${{needs.semver.outputs.SEMVER}}
-                  DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}
-              run: node run push
-
-    codeql:
-        name: CodeQL analysis
-        runs-on: ubuntu-latest
-        permissions:
-            actions: read
-            contents: read
-            security-events: write
-
-        steps:
-            - name: Checkout
-              uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
-
-            - name: Initialize CodeQL
-              uses: github/codeql-action/init@2ca79b6fa8d3ec278944088b4aa5f46912db5d63 # v2.1.18
-              with:
-                  languages: "javascript"
-
-            - name: Build javascript
-              run: node run build
-
-            - name: Perform CodeQL Analysis
-              uses: github/codeql-action/analyze@2ca79b6fa8d3ec278944088b4aa5f46912db5d63 # v2.1.18
+                  my_input: ${{ github.event.inputs.my_input }}
+              run: |
+                  echo "should be masked ${my_input}"
