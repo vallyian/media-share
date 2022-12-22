@@ -130,7 +130,7 @@ describe("config", () => {
             clustersFactorySpy.and.callFake(() => clusters);
             const { config } = Config({}, randomStringFactorySpy, clustersFactorySpy, readFileSpy);
             expect(config.clusters).toEqual(clusters);
-            expect(config.rateLimitPerSecond).toEqual(10);
+            expect(config.rateLimitPerSecond).toEqual(20);
         });
 
         it("value", () => {
@@ -144,7 +144,7 @@ describe("config", () => {
     });
 
     [
-        ["rateLimitBurstFactor", "MEDIA_SHARE__RateLimitBurstFactor", 100],
+        ["rateLimitBurstFactor", "MEDIA_SHARE__RateLimitBurstFactor", 10],
         ["rateLimitPeriodMinutes", "MEDIA_SHARE__RateLimitPeriodMinutes", 1]
     ].forEach(([configKey, envKey, defaultValue]) => describe(<string>configKey, () => {
         it("not set => default", () => {

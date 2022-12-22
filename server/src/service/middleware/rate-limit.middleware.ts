@@ -12,7 +12,7 @@ export function RateLimitMiddleware(
         max: config.rateLimitPerSecond * config.rateLimitBurstFactor,
         handler: (_req, _res, next, options) => {
             const err = Error(options.message);
-            err.cause = "Max no of requests per second exceeded";
+            err.message += "; Max no of requests per second exceeded";
             err.status = options.statusCode;
             next(err);
         }
@@ -23,7 +23,7 @@ export function RateLimitMiddleware(
         max: config.rateLimitPerSecond * 60 * config.rateLimitPeriodMinutes,
         handler: (_req, _res, next, options) => {
             const err = Error(options.message);
-            err.cause = "Max no of requests per period exceeded";
+            err.message += "; Max no of requests per period exceeded";
             err.status = options.statusCode;
             next(err);
         }
