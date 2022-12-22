@@ -29,7 +29,7 @@ export function Service(
     async function clusterPrimary() {
         config.certCrt || logger.warn("no cert file found");
         config.certKey || logger.warn("no cert key file found");
-        logger.info(config.certCrt && config.certKey ? "secure" : "insecure", config.NODE_ENV, "server started on ports", { dav: config.davport, web: config.webport });
+        logger.info(config.certCrt && config.certKey ? "secure" : "insecure", config.NODE_ENV, "server started on ports", { web: config.webport, dav: config.davport });
         const workers = new Array<Worker>();
         const fork = () => workers.push(cluster.fork(config.clusterSharedEnv));
         new Array(config.clusters).fill(null).forEach(fork);
@@ -43,12 +43,12 @@ export function Service(
 
     async function clusterWorker() {
         (config.certCrt && config.certKey
-            ? https.createServer({ cert: config.certCrt, key: config.certKey }, app.davApp)
-            : app.davApp
-        ).listen(config.davport, () => logger.info("dav service worker is online"));
-        (config.certCrt && config.certKey
             ? https.createServer({ cert: config.certCrt, key: config.certKey }, app.webApp)
             : app.webApp
         ).listen(config.webport, () => logger.info("web service worker is online"));
+        (config.certCrt && config.certKey
+            ? https.createServer({ cert: config.certCrt, key: config.certKey }, app.davApp)
+            : app.davApp
+        ).listen(config.davport, () => logger.info("dav service worker is online"));
     }
 }

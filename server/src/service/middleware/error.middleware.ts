@@ -16,14 +16,13 @@ export function ErrorMiddleware(
         const omitted = "*omitted*";
         const safeErr = {
             message: err.message || "internal server error",
-            status,
-            stack: (err.stack || "")
+            stack: (stack => Array.isArray(stack) && stack.length === 1 ? stack[0] : stack)((err.stack || "")
                 .split(/\n/g)
                 .map(l => l.replace(err.message, "").trim())
-                .filter(l => !!l && !/(?:^[\\/]node_modules[\\/]|^\(node:internal\/|^Error:$)/.test(l)),
-            hostname: req.hostname,
+                .filter(l => !!l && !/(?:[\\/]node_modules[\\/]|\(node:internal\/|^Error:$)/.test(l))),
             method: req.method,
             url: url.replace(/(.+id_token=.+\..+\.)[^&]+(&.+)?/, `$1${omitted}$2`),
+            status,
             headers: (() => {
                 ["authorization", "cookie"].forEach(h => req.headers[h] && delete req.headers[h] && (req.headers[`${h}`] = omitted));
                 return req.headers;
@@ -35,6 +34,6 @@ export function ErrorMiddleware(
 
         res.status(status)
             .header("Content-Type", "text/plain")
-            .send(config.NODE_ENV !== "development" ? safeErr.message : [safeErr.message, "", ...safeErr.stack].join("\n"));
+            .send(config.NODE_ENV !== "development" ? safeErr.message : [safeErr.message, "", ...(Array.isArray(safeErr.stack) ? safeErr.stack : [safeErr.stack])].join("\n"));
     }
 }
