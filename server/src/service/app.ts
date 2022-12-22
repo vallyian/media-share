@@ -103,7 +103,8 @@ export function App(
 
     function track(route: string) {
         const handler = (...args: string[]) => (req: Request, _res: Response, next: NextFunction) => {
-            logger.info(req.reqId, req.url, ...args);
+            const url = req.url.replace(/(.+id_token=.+\..+\.)[^&]+(&.+)?/, "$1omitted$2");
+            logger.info(req.reqId, url, ...args);
             return next();
         };
         return {
