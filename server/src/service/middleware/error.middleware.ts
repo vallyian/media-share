@@ -18,9 +18,9 @@ export function ErrorMiddleware(
             message: err.message || "internal server error",
             status,
             stack: (err.stack || "")
-                .replace(err.message, "")
                 .split(/\n/g)
-                .filter(l => !!l.trim() && !/[\\/]node_modules[\\/]|\(node:internal\//.test(l)),
+                .map(l => l.replace(err.message, "").trim())
+                .filter(l => !!l && !/(?:^[\\/]node_modules[\\/]|^\(node:internal\/|^Error:$)/.test(l)),
             hostname: req.hostname,
             method: req.method,
             url: url.replace(/(.+id_token=.+\..+\.)[^&]+(&.+)?/, `$1${omitted}$2`),
