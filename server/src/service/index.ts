@@ -8,7 +8,7 @@ import { Domain } from "../domain";
 
 /* eslint-disable no-restricted-globals */
 export function Service(
-    config: ReturnType<typeof Config>["config"],
+    config: Config,
     logger: Logger,
     terminator: Terminator,
     domain: Domain

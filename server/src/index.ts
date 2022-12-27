@@ -9,6 +9,7 @@ import { Service } from "./service";
 import { Config } from "./config";
 import { TextEncodingAdapter } from "./adapters/text-encoding.adapter";
 import { VideoProcessorAdapter } from "./adapters/video-processor.adapter";
+import { isRight, isLeft } from "fp-ts/lib/Either";
 
 /* eslint-disable no-restricted-globals */
 if (require.main === module) {
@@ -41,7 +42,7 @@ function runnerFactory() {
 }
 
 function infrastructure() {
-    const { config, invalidConfig } = Config(
+    const config = Config(
         process.env,
         (length: number) => crypto.randomBytes(length).toString("base64"),
         () => os.cpus().length,
@@ -52,7 +53,7 @@ function infrastructure() {
     const log = (stdout: (...msg: unknown[]) => void, isError = false) => (...msg: unknown[]) => {
         const dt = new Date().toUTCString();
         const action = () => {
-            if (config.logToFiles)
+            if (isRight(config) && config.right.logToFiles)
                 logStream.write([dt, process.pid].concat(msg.map(m => typeof m !== "string" ? JSON.stringify(m) : m)).join(" ") + "\n");
             stdout(dt, process.pid, ...msg);
         };
@@ -79,18 +80,23 @@ function infrastructure() {
         WorkerStartup: 201,
     });
 
-    if (invalidConfig.length)
-        terminator("Config", `config key(s) ${invalidConfig.join(", ")} invalid`);
+    if (isLeft(config))
+        return terminator("Config", config.left.message);
 
     const domain = new Domain(
         logger,
-        { google: new GoogleIdTokenAdapter(config.authClient) },
-        new NodeCryptoAdapter(config.tokenKey),
+        { google: new GoogleIdTokenAdapter(config.right.authClient) },
+        new NodeCryptoAdapter(config.right.tokenKey),
         new NodeFsAdapter(),
         new TextEncodingAdapter(),
         new VideoProcessorAdapter(),
-        config
+        config.right
     );
 
-    return { config, logger, terminator, domain };
+    return {
+        config: config.right,
+        logger,
+        terminator,
+        domain
+    };
 }
