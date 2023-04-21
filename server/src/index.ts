@@ -1,14 +1,14 @@
 import os from "node:os";
 import fs from "node:fs";
 import crypto from "node:crypto";
-import { Domain } from "./domain";
-import { GoogleIdTokenAdapter } from "./adapters/google-id-token.adapter";
-import { NodeCryptoAdapter } from "./adapters/node-crypto.adapter";
-import { NodeFsAdapter } from "./adapters/node-fs.adapter";
+import { domain } from "./domain";
+import { googleIdTokenAdapter } from "./adapters/google-id-token.adapter";
+import { nodeCryptoAdapter } from "./adapters/node-crypto.adapter";
+import { nodeFsAdapter } from "./adapters/node-fs.adapter";
 import { Service } from "./service";
 import { Config } from "./config";
-import { TextEncodingAdapter } from "./adapters/text-encoding.adapter";
-import { VideoProcessorAdapter } from "./adapters/video-processor.adapter";
+import { textEncodingAdapter } from "./adapters/text-encoding.adapter";
+import { videoProcessorAdapter } from "./adapters/video-processor.adapter";
 import { isRight, isLeft } from "fp-ts/lib/Either";
 
 /* eslint-disable no-restricted-globals */
@@ -36,8 +36,8 @@ function setEnv() {
 }
 
 function runnerFactory() {
-    const { logger, terminator, config, domain } = infrastructure();
-    const service = Service(config, logger, terminator, domain);
+    const { logger, terminator, config, appDomain } = infrastructure();
+    const service = Service(config, logger, terminator, appDomain);
     return () => service().catch(err => terminator("Generic", err));
 }
 
@@ -83,13 +83,13 @@ function infrastructure() {
     if (isLeft(config))
         return terminator("Config", config.left.message);
 
-    const domain = new Domain(
+    const appDomain = domain(
         logger,
-        { google: new GoogleIdTokenAdapter(config.right.authClient) },
-        new NodeCryptoAdapter(config.right.tokenKey),
-        new NodeFsAdapter(),
-        new TextEncodingAdapter(),
-        new VideoProcessorAdapter(),
+        { google: googleIdTokenAdapter(config.right.authClient) },
+        nodeCryptoAdapter(config.right.tokenKey),
+        nodeFsAdapter,
+        textEncodingAdapter,
+        videoProcessorAdapter(),
         config.right
     );
 
@@ -97,6 +97,6 @@ function infrastructure() {
         config: config.right,
         logger,
         terminator,
-        domain
+        appDomain
     };
 }

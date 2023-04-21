@@ -9,7 +9,7 @@ export function Config(
 ) {
     const invalidConfig = new Array<string>();
 
-    const NODE_ENV = env("NODE_ENV", "production");
+    const NODE_ENV = env("NODE_ENV", env("TS_NODE_DEV", "false") === "true" ? "development" : "production");
     const clusters = NODE_ENV === "development" ? 1 : clustersFactory();
 
     const config = {

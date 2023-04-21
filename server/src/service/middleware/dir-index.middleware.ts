@@ -12,10 +12,10 @@ export function DirIndexMiddleware(
             if (type !== "dir")
                 return next();
 
-            const data = await viewData(req.path, req.baseUrl);
+            const [items, pills] = await viewData(req.path, req.baseUrl);
             return res.render("index", {
                 page: "dir-index",
-                ...data,
+                items, pills,
                 baseUrl: req.baseUrl
             });
         } catch (ex) {
@@ -23,9 +23,10 @@ export function DirIndexMiddleware(
         }
     }
 
-    async function viewData(dirPath: string, baseUrl: string) {
-        const items = await mediaAccessService.listDir(dirPath, baseUrl);
-        const pills = mediaAccessService.pathLinks(dirPath, baseUrl);
-        return { items, pills };
+    function viewData(dirPath: string, baseUrl: string) {
+        const items = () => mediaAccessService.listDir(dirPath, baseUrl);
+        const pills = () => mediaAccessService.pathLinks(dirPath, baseUrl);
+
+        return Promise.all([items(), pills()]);
     }
 }

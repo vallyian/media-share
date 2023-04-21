@@ -1,17 +1,17 @@
 FROM node:hydrogen AS build
 RUN npm i -g npm@latest
 WORKDIR /home/node/server
-COPY server/package*.json ./
+COPY server/package*.json .
 ARG NPM_AUDIT_LEVEL
 RUN npm audit --omit=dev --audit-level="${NPM_AUDIT_LEVEL}" && \
     npm ci --omit=dev && \
     mkdir -p ../artifacts && \
-    mv node_modules ../artifacts/node_modules
-RUN npm ci
-COPY server/src ./src
-COPY server/tsconfig*.json ./
+    mv node_modules ../artifacts/node_modules && \
+    npm ci
+COPY server/src src
+COPY server/tsconfig*.json .
 RUN npm run build
-COPY server/test.ts ./
+COPY server/test.ts .
 RUN npm test
 COPY server/.eslintignore server/.eslintrc.json ./
 RUN npm run lint

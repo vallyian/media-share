@@ -36,7 +36,7 @@
         "pretest": "npm run pretest-clean && npm run pretest-ci",
         "test": "ts-node-dev --inspect --project tsconfig.spec.json test.ts || echo 'fail' > ../artifacts/npm-test.fail",
         "prestart": "npm run prebuild",
-        "start": "node -e \"child_process.execSync('ts-node-dev --files --prefer-ts --debug --inspect --watch -- src', { stdio:'inherit', env: { NODE_ENV: 'development' } })\""
+        "start": "ts-node-dev --files --prefer-ts --debug --inspect --watch -- src"
     },
     "dependencies": {
         "compression": "^1.7.4",

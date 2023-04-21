@@ -4,16 +4,16 @@ import { Logger } from "../@types/Logger";
 import { Terminator } from "../@types/Terminator";
 import { App } from "./app";
 import { Config } from "../config";
-import { Domain } from "../domain";
+import { domain } from "../domain";
 
 /* eslint-disable no-restricted-globals */
 export function Service(
     config: Config,
     logger: Logger,
     terminator: Terminator,
-    domain: Domain
+    appDomain: ReturnType<typeof domain>
 ) {
-    const app = App(logger, domain, config);
+    const app = App(logger, appDomain, config);
 
     return serve;
 
