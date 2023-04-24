@@ -41,6 +41,7 @@ function runnerFactory() {
     return () => service().catch(err => terminator("Generic", err));
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 function infrastructure() {
     const config = Config(
         process.env,

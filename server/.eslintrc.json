@@ -1,26 +1,25 @@
 {
-    "env": {
-        "node": true,
-        "es2021": true
-    },
+    "root": true,
     "extends": [
         "eslint:recommended",
-        "plugin:@typescript-eslint/recommended"
+        "plugin:@typescript-eslint/recommended",
+        "plugin:@typescript-eslint/recommended-requiring-type-checking",
+        "plugin:sonarjs/recommended"
     ],
+    "plugins": ["@typescript-eslint", "deprecation", "sonarjs"],
+    "env": { "node": true, "es2022": true },
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
         "project": "**/tsconfig.json",
         "ecmaVersion": "latest",
         "sourceType": "module"
     },
-    "plugins": [
-        "@typescript-eslint"
-    ],
     "rules": {
+        "@typescript-eslint/no-floating-promises": [ "error" ],
+        "@typescript-eslint/restrict-template-expressions": "off",
         "indent": [ "error", 4, { "SwitchCase": 1 } ],
         "quotes": [ "error", "double" ],
         "semi": [ "error", "always" ],
-        "@typescript-eslint/no-floating-promises": [ "error" ],
         "no-restricted-globals": [ "error", "process", "console", "fit", "xit", "fdescribe", "xdescribe" ]
     }
 }

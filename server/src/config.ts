@@ -27,8 +27,8 @@ export function Config(
         rateLimitPeriodMinutes: envNumber("MEDIA_SHARE__RateLimitPeriodMinutes", 1),
         tokenKey: env("MEDIA_SHARE__TokenKey", randomStringFactory(32)),
         cookieSecret: env("MEDIA_SHARE__CookieSecret", randomStringFactory(32)),
-        certCrt: readFile(env("MEDIA_SHARE__CertCrt")) || readFile("/run/secrets/cert.crt") || readFile("certs/cert.crt"),
-        certKey: readFile(env("MEDIA_SHARE__CertKey")) || readFile("/run/secrets/cert.key") || readFile("certs/cert.key"),
+        certCrt: envFile("MEDIA_SHARE__CertCrt", "/run/secrets/cert.crt", "certs/cert.crt"),
+        certKey: envFile("MEDIA_SHARE__CertKey", "/run/secrets/cert.key", "certs/cert.key"),
         logToFiles: env("MEDIA_SHARE__LogToFiles") === "true",
 
         get clusterSharedEnv() {
@@ -49,5 +49,9 @@ export function Config(
         const val = +<string>environment[key] || NaN;
         const fn = (n: number) => isFinite(n) && (isNaN(min) || n >= min) && (isNaN(max) || n <= max);
         return fn(val) ? val : fn(def) ? def : (invalidConfig.push(key), NaN);
+    }
+
+    function envFile(key: string, def1: string, def2: string) {
+        return readFile(env(key)) || readFile(def1) || readFile(def2);
     }
 }

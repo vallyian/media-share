@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import rateLimit from "express-rate-limit";
 
 export function RateLimitMiddleware(

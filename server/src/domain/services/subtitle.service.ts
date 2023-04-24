@@ -120,8 +120,8 @@ function getFile(
     textEncodingAdapter: TextEncodingSPI,
 ) {
     return (mediaPath: string) => Promise.resolve(mediaPath)
-        .then(mediaAccessService.getFile)
-        .then(textEncodingAdapter.decode);
+        .then(insecurePath => mediaAccessService.getFile(insecurePath))
+        .then(buffer => textEncodingAdapter.decode(buffer));
 }
 
 function getFps(
@@ -137,12 +137,11 @@ function getFps(
         const videoPath = subtitlePath.replace(/\.sub$/i, videoExtension || ".mp4");
         const mediaPath = mediaAccessService.parsePath(videoPath).mediaPath;
         const videoPathType = await mediaAccessService.type(videoPath);
-        const fps = videoPathType === "file"
+        return videoPathType === "file"
             ? await videoProcessorAdapter.getFps(mediaPath).catch(err => {
                 logger.error(err);
                 return 25; /* default */
             })
             : defaultFps;
-        return fps;
     };
 }

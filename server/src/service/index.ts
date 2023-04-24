@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 import cluster, { Worker } from "node:cluster";
 import https from "node:https";
 import { Logger } from "../@types/Logger";
@@ -17,7 +18,7 @@ export function Service(
 
     return serve;
 
-    function serve(): Promise<void> {
+    function serve() {
         process.on("uncaughtException", err => terminator("UncaughtException", err));
         process.on("unhandledRejection", (reason, promise) => terminator("UnhandledRejection", reason, promise));
 

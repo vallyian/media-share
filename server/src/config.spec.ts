@@ -1,3 +1,4 @@
+/* eslint-disable sonarjs/no-duplicate-string */
 import assert from "node:assert";
 import { match } from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/function";
@@ -336,12 +337,7 @@ describe("config", () => {
 
         it("third file", () => {
             const expected = "third-file-content";
-            readFileSpy.and.callFake((path: string) => {
-                switch (path) {
-                    case `certs/${fileName}`: return expected;
-                    default: return undefined;
-                }
-            });
+            readFileSpy.and.callFake((path: string) => path === `certs/${fileName}` ? expected : undefined);
             pipe(
                 Config({ [<string>envKey]: envValue }, randomStringFactorySpy, clustersFactorySpy, readFileSpy),
                 match(

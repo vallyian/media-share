@@ -43,7 +43,7 @@ function parsePath(mediaStorageAdapter: MediaStorageSPI, mediaDir: string) {
 
 function type(mediaStorageAdapter: MediaStorageSPI, mediaDir: string) {
     const toSecureMediaPath = getSecureMediaPath(mediaStorageAdapter, mediaDir);
-    const toMediaType = mediaStorageAdapter.type;
+    const toMediaType = (itemPath: string) => mediaStorageAdapter.type(itemPath);
     const toMediaErrorType = () => <MediaType>"error";
 
     return (insecurePath: string) => Promise.resolve(insecurePath)
@@ -56,7 +56,7 @@ function type(mediaStorageAdapter: MediaStorageSPI, mediaDir: string) {
 function listDir(mediaStorageAdapter: MediaStorageSPI, mediaDir: string) {
     const toValidDirType = toValidType(mediaStorageAdapter, mediaDir)("dir");
     const toSecureMediaPath = getSecureMediaPath(mediaStorageAdapter, mediaDir);
-    const toMediaStats = mediaStorageAdapter.readDir;
+    const toMediaStats = (filePath: string) => mediaStorageAdapter.readDir(filePath);
     const toLinkMediaStats = (mediaStats: Awaited<ReturnType<typeof toMediaStats>>, url: string) => mediaStats
         .map(s => ({
             ...s,
@@ -76,7 +76,7 @@ function listDir(mediaStorageAdapter: MediaStorageSPI, mediaDir: string) {
 function getFile(mediaStorageAdapter: MediaStorageSPI, mediaDir: string) {
     const toValidFileType = toValidType(mediaStorageAdapter, mediaDir)("file");
     const toSecureMediaPath = getSecureMediaPath(mediaStorageAdapter, mediaDir);
-    const toFileContent = mediaStorageAdapter.readFile;
+    const toFileContent = (filePath: string) => mediaStorageAdapter.readFile(filePath);
 
     return (insecurePath: string) => Promise.resolve(insecurePath)
         .then(toValidString)
@@ -133,17 +133,15 @@ function pathLinks(insecurePath: string, baseUrl?: string) {
 }
 
 function getSecureUrl(insecurePath: string, baseUrl?: string) {
-    const secureUrl = getSecurePathSegments(insecurePath, baseUrl)
+    return getSecurePathSegments(insecurePath, baseUrl)
         .map(u => encodeURIComponent(u))
         .join("/");
-    return secureUrl;
 }
 
 function getSecurePath(mediaStorageAdapter: MediaStorageSPI) {
     return (insecurePath: string, baseUrl?: string) => {
         const securePathSegments = getSecurePathSegments(insecurePath, baseUrl);
-        const securePath = mediaStorageAdapter.join(...securePathSegments);
-        return securePath;
+        return mediaStorageAdapter.join(...securePathSegments);
     };
 }
 
@@ -151,17 +149,15 @@ function getSecureMediaPath(mediaStorageAdapter: MediaStorageSPI, mediaDir: stri
     const pathSecurer = getSecurePath(mediaStorageAdapter);
     return (insecurePath: string, baseUrl?: string) => {
         const securePath = pathSecurer(insecurePath, baseUrl);
-        const secureMediaPath = mediaStorageAdapter.join(mediaDir, securePath);
-        return secureMediaPath;
+        return mediaStorageAdapter.join(mediaDir, securePath);
     };
 }
 
 function getSecurePathSegments(insecurePath: string, insecurePathPrefix?: string) {
     const getSecureSegments = (path: string) =>
         path.split(/[\\/]/g).map(s => decodeURIComponent(s)).filter(p => !!p && p !== "." && p != "..");
-    const arr = (insecurePathPrefix ? getSecureSegments(insecurePathPrefix) : [])
+    return (insecurePathPrefix ? getSecureSegments(insecurePathPrefix) : [])
         .concat(getSecureSegments(insecurePath));
-    return arr;
 }
 
 function sort(a: MediaStat, b: MediaStat, order: "asc" | "desc" = "asc"): number {

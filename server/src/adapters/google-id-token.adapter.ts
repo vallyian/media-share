@@ -21,8 +21,7 @@ async function getIdTokenPayload(idToken: string, clientId: string) {
         idToken,
         audience: clientId,
     });
-    const payload = loginTicket.getPayload();
-    return payload;
+    return loginTicket.getPayload();
 }
 
 function getCSP(fnStr: string) {

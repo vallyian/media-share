@@ -69,9 +69,8 @@ export function MediaPlayerFileMiddleware(
         };
         const supportedSubtitlesRx = new RegExp("(:?" + domain.supportedSubtitles.map((e: string) => `\\.${e}`).join("|") + ")$", "i");
         const fileNameNoExtRx = new RegExp(`^${title.replace("(", "\\(").replace(")", "\\)")}`, "i");
-        const subtitles = files
+        return files
             .filter(s => supportedSubtitlesRx.test(s.name) && fileNameNoExtRx.test(s.name))
             .map(({ name, link }) => ({ name, link: `${link}?${subParams(name)}` }));
-        return subtitles;
     }
 }

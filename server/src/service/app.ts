@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
 import fs from "node:fs";
 import express, { Request, Response, NextFunction } from "express";
 import helmet from "helmet";

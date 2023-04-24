@@ -48,9 +48,8 @@ function createAccessToken(
         if (!idTokenPayload.email) return Promise.reject("id token email missing");
         if (!idTokenPayload.email_verified) return Promise.reject("id token email not verified");
         if (!config.authEmails.includes(idTokenPayload?.email)) return Promise.reject("email not authorized");
-        const accessToken = await cryptoAdapter.encrypt(JSON.stringify({
+        return await cryptoAdapter.encrypt(JSON.stringify({
             email: idTokenPayload.email,
         }));
-        return accessToken;
     };
 }
