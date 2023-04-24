@@ -16,6 +16,7 @@ export function WebdavMiddleware(
     async function handler(req: Request, res: Response, next: NextFunction) {
         return webdavHandler
             .then(handler => handler instanceof Error ? Promise.reject(handler) : handler)
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
             .then(handler => handler(req, res, next))
             .catch(err => next(err));
     }

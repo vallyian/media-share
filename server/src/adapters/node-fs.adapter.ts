@@ -2,45 +2,51 @@ import fs from "node:fs";
 import path from "node:path";
 import { MediaStorageSPI } from "../domain/ports/SPI/MediaStorage.SPI";
 
-export class NodeFsAdapter implements MediaStorageSPI {
-    /** @inheritdoc */
-    join = (...parts: string[]) => path.join(...parts);
+export const nodeFsAdapter: MediaStorageSPI = {
+    join: (...parts: string[]) => path.join(...parts),
+    readDir: (dirPath: string) => Promise.resolve(dirPath).then(toValidType("dir")).then(getDirItems).then(getStats),
+    readFile: (filePath: string) => Promise.resolve(filePath).then(toValidType("file")).then(getFileContent),
+    type
+};
 
-    /** @inheritdoc */
-    async readDir(dirPath: string) {
-        if (await this.type(dirPath) !== "dir")
-            throw Error(`path "${dirPath}" not a dir or not found`);
-
-        const items = await fs.promises.readdir(dirPath);
-        const stats = await Promise.all(items.map(item => fs.promises.stat(path.join(dirPath, item))));
-
-        return stats.map((stat, index) => ({
-            name: <string>items[index],
-            size: stat.size,
-            time: Math.max(stat.ctimeMs, stat.mtimeMs),
-            isDir: stat.isDirectory()
-        }));
+async function type(itemPath: string) {
+    if (typeof itemPath !== "string" || itemPath === "")
+        return "error";
+    try {
+        const stat = await fs.promises.stat(itemPath);
+        if (stat.isDirectory()) return "dir";
+        if (stat.isFile()) return "file";
+        return "unknown";
+    } catch (_ex) {
+        return "error";
     }
+}
 
-    /** @inheritdoc */
-    async readFile(filePath: string) {
-        if (await this.type(filePath) !== "file")
-            throw Error(`path "${filePath}" not a file or not found`);
-        const data = await fs.promises.readFile(filePath);
-        return data;
-    }
+function toValidType(mediaType: Awaited<ReturnType<typeof type>>) {
+    return (path: string) => type(path).then(t => t === mediaType
+        ? Promise.resolve(path)
+        : Promise.reject(`path not found or not of type "${mediaType}"`));
+}
 
-    /** @inheritdoc */
-    async type(itemPath: string) {
-        if (typeof itemPath !== "string" || itemPath === "")
-            return "error";
-        try {
-            const stat = await fs.promises.stat(itemPath);
-            if (stat.isDirectory()) return "dir";
-            if (stat.isFile()) return "file";
-            return "unknown";
-        } catch (_ex) {
-            return "error";
-        }
-    }
+function getDirItems(dirPath: string) {
+    return fs.promises.readdir(dirPath).then(items =>
+        items.map(item => path.join(dirPath, item))
+    );
+}
+
+function getStat(filePath: string) {
+    return fs.promises.stat(filePath).then(stat => ({
+        name: path.basename(filePath),
+        size: stat.size,
+        time: Math.max(stat.ctimeMs, stat.mtimeMs),
+        isDir: stat.isDirectory()
+    }));
+}
+
+function getStats(items: string[]) {
+    return Promise.all(items.map(getStat));
+}
+
+function getFileContent(filePath: string) {
+    return fs.promises.readFile(filePath);
 }

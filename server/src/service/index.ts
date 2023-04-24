@@ -1,23 +1,24 @@
+/* eslint-disable @typescript-eslint/require-await */
 import cluster, { Worker } from "node:cluster";
 import https from "node:https";
 import { Logger } from "../@types/Logger";
 import { Terminator } from "../@types/Terminator";
 import { App } from "./app";
 import { Config } from "../config";
-import { Domain } from "../domain";
+import { domain } from "../domain";
 
 /* eslint-disable no-restricted-globals */
 export function Service(
-    config: ReturnType<typeof Config>["config"],
+    config: Config,
     logger: Logger,
     terminator: Terminator,
-    domain: Domain
+    appDomain: ReturnType<typeof domain>
 ) {
-    const app = App(logger, domain, config);
+    const app = App(logger, appDomain, config);
 
     return serve;
 
-    function serve(): Promise<void> {
+    function serve() {
         process.on("uncaughtException", err => terminator("UncaughtException", err));
         process.on("unhandledRejection", (reason, promise) => terminator("UnhandledRejection", reason, promise));
 

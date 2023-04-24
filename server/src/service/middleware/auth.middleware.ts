@@ -14,14 +14,15 @@ export function AuthMiddleware(
         const idTokenProvider = "google";
 
         try {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
             const accessToken = req.signedCookies[accessTokenCookieName];
             if (accessToken) {
-                const token = await accessTokenService.getAccessToken(accessToken);
+                const token = await accessTokenService.getAccessToken(String(accessToken));
                 req.user = token.email;
                 return next();
             }
 
-            const idToken = typeof req.query["id_token"] === "string" ? <string>req.query["id_token"] : "";
+            const idToken = typeof req.query["id_token"] === "string" ? req.query["id_token"] : "";
             if (idToken) {
                 const accessToken = await accessTokenService.createAccessToken(idToken, idTokenProvider);
                 return res

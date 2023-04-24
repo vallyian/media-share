@@ -7,21 +7,23 @@
         "outDir": "./bin", /* Specify an output folder for all emitted files. */
         "target": "ESNext", /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
         "module": "CommonJS", /* Specify what module code is generated. */
-        "listEmittedFiles": true,
-        "experimentalDecorators": true,
-        "emitDecoratorMetadata": true,
-        "declarationMap": false,
+        "declaration": false, /* Generate .d.ts files from TypeScript and JavaScript files in your project. */
+        "declarationMap": false, /* Generates a source map for .d.ts files which map back to the original .ts source file */
+        "emitDecoratorMetadata": true, /* Enables experimental support for emitting type metadata for decorators which works with the module reflect-metadata */
         "lib": [
             "ESNext",
             "DOM"
-        ],
+        ], /* Specify a set of bundled library declaration files that describe the target runtime environment. */
+        "listEmittedFiles": true, /* Print the names of emitted files after a compilation */
+        "experimentalDecorators": true, /* Enable experimental support for TC39 stage 2 draft decorators */
         "useDefineForClassFields": true, /* Emit ECMAScript-standard-compliant class fields. */
         "moduleDetection": "auto", /* Control what method is used to detect module-format JS files. */
         "moduleResolution": "node",
         "allowJs": false, /* if true, add "checkJs": true */
+        "checkJs": false, /* Enable error reporting in type-checked JavaScript files */
         "emitDeclarationOnly": false, /* Only output d.ts files and not JavaScript files. */
         "removeComments": true, /* Disable emitting comments. */
-        "pretty": true,
+        "pretty": true, /* Enable color and formatting in output to make compiler errors easier to read */
         "importHelpers": true, /* Allow importing helper functions from tslib once per project, instead of including them per-file. */
         "importsNotUsedAsValues": "remove", /* Specify emit/checking behavior for imports that are only used for types. */
         "downlevelIteration": false, /* Emit more compliant, but verbose and less performant JavaScript for iteration. */
@@ -54,21 +56,20 @@
         "allowUnusedLabels": false, /* Disable error reporting for unused labels. */
         "allowUnreachableCode": false, /* Disable error reporting for unreachable code. */
         "skipDefaultLibCheck": true, /* Skip type checking .d.ts files that are included with TypeScript. */
-        "skipLibCheck": false /* Skip type checking all .d.ts files. */
-        // "baseUrl": "./",              /* Specify the base directory to resolve non-relative module names. */
-        // "paths": {},                  /* Specify a set of entries that re-map imports to additional lookup locations. */
-        // "rootDirs": [],               /* Allow multiple folders to be treated as one when resolving modules. */
-        // "types": [],                  /* Specify type package names to be included without being referenced in a source file. */
+        "skipLibCheck": false, /* Skip type checking all .d.ts files. */
+        "resolveJsonModule": true, /* Enable importing .json files. */
+        // "baseUrl": "./", /* Specify the base directory to resolve non-relative module names. */
+        // "paths": {}, /* Specify a set of entries that re-map imports to additional lookup locations. */
+        // "rootDirs": [], /* Allow multiple folders to be treated as one when resolving modules. */
+        // "types": [], /* Specify type package names to be included without being referenced in a source file. */
         // "allowUmdGlobalAccess": true, /* Allow accessing UMD globals from modules. */
-        // "moduleSuffixes": [],         /* List of file name suffixes to search when resolving a module. */
-        // "resolveJsonModule": true,    /* Enable importing .json files. */
-        // "noResolve": true,            /* Disallow 'import's, 'require's or '<reference>'s from expanding the number of files TypeScript should add to a project. */
-        // "maxNodeModuleJsDepth": 1,    /* Specify the maximum folder depth used for checking JavaScript files from 'node_modules'. Only applicable with 'allowJs'. */
-        // "declaration": true,          /* Generate .d.ts files from TypeScript and JavaScript files in your project. */
-        // "sourceRoot": "",             /* Specify the root path for debuggers to find the reference source code. */
-        // "preserveConstEnums": true,   /* Disable erasing 'const enum' declarations in generated code. */
+        // "moduleSuffixes": [], /* List of file name suffixes to search when resolving a module. */
+        // "noResolve": true, /* Disallow 'import's, 'require's or '<reference>'s from expanding the number of files TypeScript should add to a project. */
+        // "maxNodeModuleJsDepth": 1, /* Specify the maximum folder depth used for checking JavaScript files from 'node_modules'. Only applicable with 'allowJs'. */
+        // "sourceRoot": "", /* Specify the root path for debuggers to find the reference source code. */
+        // "preserveConstEnums": true, /* Disable erasing 'const enum' declarations in generated code. */
         // "preserveValueImports": true, /* Preserve unused imported values in the JavaScript output that would otherwise be removed. */
-        // "isolatedModules": true,      /* Ensure that each file can be safely transpiled without relying on other imports. */
-        // "preserveSymlinks": true,     /* Disable resolving symlinks to their realpath. This correlates to the same flag in node. */
+        // "isolatedModules": true, /* Ensure that each file can be safely transpiled without relying on other imports. */
+        // "preserveSymlinks": true, /* Disable resolving symlinks to their realpath. This correlates to the same flag in node. */
     }
 }

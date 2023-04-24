@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
 import fs from "node:fs";
 import express, { Request, Response, NextFunction } from "express";
 import helmet from "helmet";
@@ -5,7 +6,7 @@ import cookieParser from "cookie-parser";
 import compression from "compression";
 
 import { Logger } from "../@types/Logger";
-import { Domain } from "../domain";
+import { domain } from "../domain";
 
 import { HealthRoute } from "./routes/health.route";
 import { FaviconRoute } from "./routes/favicon.route";
@@ -21,7 +22,7 @@ import { ErrorMiddleware } from "./middleware/error.middleware";
 
 export function App(
     logger: Logger,
-    domain: Domain,
+    appDomain: ReturnType<typeof domain>,
     config: {
         NODE_ENV: string,
         authClient: string,
@@ -80,17 +81,17 @@ export function App(
         app.use(express.static(`${app.get("views")}/scripts`));
         if (config.authClient && config.authEmails.length) {
             app.use(track("cookie").in, cookieParser(config.cookieSecret), track("cookie").out);
-            app.use(track("auth").in, AuthMiddleware(domain.idTokenService, domain.accessTokenService), track("auth").out);
+            app.use(track("auth").in, AuthMiddleware(appDomain.idTokenService, appDomain.accessTokenService), track("auth").out);
         }
-        app.use(track("dir-index").in, DirIndexMiddleware(domain.mediaAccessService), track("dir-index").out);
-        app.use(track("media-player").in, MediaPlayerFileMiddleware(domain.mediaAccessService), track("media-player").out);
-        app.use(track("subtitle").in, SubtitleFileMiddleware(domain.mediaAccessService, domain.subtitleService), track("subtitle").out);
+        app.use(track("dir-index").in, DirIndexMiddleware(appDomain.mediaAccessService), track("dir-index").out);
+        app.use(track("media-player").in, MediaPlayerFileMiddleware(appDomain.mediaAccessService), track("media-player").out);
+        app.use(track("subtitle").in, SubtitleFileMiddleware(appDomain.mediaAccessService, appDomain.subtitleService), track("subtitle").out);
         app.use(track("static-media").in, express.static(config.mediaDir, { dotfiles: "allow" }), track("static-media").out);
         return app;
     }
 
     function cspMiddleware() {
-        const csp = domain.idTokenService.csp();
+        const csp = appDomain.idTokenService.csp();
         return helmet.contentSecurityPolicy({
             directives: {
                 defaultSrc: ["'self'"],

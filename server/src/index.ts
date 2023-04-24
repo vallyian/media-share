@@ -1,14 +1,15 @@
 import os from "node:os";
 import fs from "node:fs";
 import crypto from "node:crypto";
-import { Domain } from "./domain";
-import { GoogleIdTokenAdapter } from "./adapters/google-id-token.adapter";
-import { NodeCryptoAdapter } from "./adapters/node-crypto.adapter";
-import { NodeFsAdapter } from "./adapters/node-fs.adapter";
+import { domain } from "./domain";
+import { googleIdTokenAdapter } from "./adapters/google-id-token.adapter";
+import { nodeCryptoAdapter } from "./adapters/node-crypto.adapter";
+import { nodeFsAdapter } from "./adapters/node-fs.adapter";
 import { Service } from "./service";
 import { Config } from "./config";
-import { TextEncodingAdapter } from "./adapters/text-encoding.adapter";
-import { VideoProcessorAdapter } from "./adapters/video-processor.adapter";
+import { textEncodingAdapter } from "./adapters/text-encoding.adapter";
+import { videoProcessorAdapter } from "./adapters/video-processor.adapter";
+import { isRight, isLeft } from "fp-ts/lib/Either";
 
 /* eslint-disable no-restricted-globals */
 if (require.main === module) {
@@ -35,13 +36,14 @@ function setEnv() {
 }
 
 function runnerFactory() {
-    const { logger, terminator, config, domain } = infrastructure();
-    const service = Service(config, logger, terminator, domain);
+    const { logger, terminator, config, appDomain } = infrastructure();
+    const service = Service(config, logger, terminator, appDomain);
     return () => service().catch(err => terminator("Generic", err));
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 function infrastructure() {
-    const { config, invalidConfig } = Config(
+    const config = Config(
         process.env,
         (length: number) => crypto.randomBytes(length).toString("base64"),
         () => os.cpus().length,
@@ -52,7 +54,7 @@ function infrastructure() {
     const log = (stdout: (...msg: unknown[]) => void, isError = false) => (...msg: unknown[]) => {
         const dt = new Date().toUTCString();
         const action = () => {
-            if (config.logToFiles)
+            if (isRight(config) && config.right.logToFiles)
                 logStream.write([dt, process.pid].concat(msg.map(m => typeof m !== "string" ? JSON.stringify(m) : m)).join(" ") + "\n");
             stdout(dt, process.pid, ...msg);
         };
@@ -79,18 +81,23 @@ function infrastructure() {
         WorkerStartup: 201,
     });
 
-    if (invalidConfig.length)
-        terminator("Config", `config key(s) ${invalidConfig.join(", ")} invalid`);
+    if (isLeft(config))
+        return terminator("Config", config.left.message);
 
-    const domain = new Domain(
+    const appDomain = domain(
         logger,
-        { google: new GoogleIdTokenAdapter(config.authClient) },
-        new NodeCryptoAdapter(config.tokenKey),
-        new NodeFsAdapter(),
-        new TextEncodingAdapter(),
-        new VideoProcessorAdapter(),
-        config
+        { google: googleIdTokenAdapter(config.right.authClient) },
+        nodeCryptoAdapter(config.right.tokenKey),
+        nodeFsAdapter,
+        textEncodingAdapter,
+        videoProcessorAdapter(),
+        config.right
     );
 
-    return { config, logger, terminator, domain };
+    return {
+        config: config.right,
+        logger,
+        terminator,
+        appDomain
+    };
 }

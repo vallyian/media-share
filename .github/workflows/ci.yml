@@ -57,7 +57,7 @@ jobs:
             - name: Checkout
               uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
 
-            - name: Setup Doker multiplatform
+            - name: Setup Docker multiplatform
               uses: docker/setup-qemu-action@8b122486cedac8393e77aa9734c3528886e4a1a8 # v2.0.0
 
             - name: Setup Docker
@@ -73,14 +73,14 @@ jobs:
                   SEMVER: ${{needs.semver.outputs.SEMVER}}
               run: node run smoke
 
-            - name: Export atifacts
+            - name: Export artifacts
               uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # v3.1.0
               if: always()
               with:
                   name: artifacts
                   path: artifacts
 
-            - name: Publish test resuls
+            - name: Publish test results
               uses: EnricoMi/publish-unit-test-result-action@2a60c5d47eb29cd5cc922f51bbea18e148f56203 # v2.0.0
               if: always()
               with:

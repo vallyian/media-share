@@ -9,15 +9,17 @@ fast media share web server with a very basic UI
 
 ## Build
 
-```sh
-./run build
-```
+* locally `npm run build`
+* in Docker `node run build`
+
+## Test
+
+* unit tests (locally) `npm run test`
+* smoke test (in Docker) `node run smoke`
 
 ## Scan for vulnerabilities
 
-```sh
-./run scan
-```
+`node run scan`
 
 ## Run
 

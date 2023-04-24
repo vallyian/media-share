@@ -3,24 +3,34 @@ import { MediaStorageSPI } from "../ports/SPI/MediaStorage.SPI";
 import { PathLink } from "../objects/PathLink";
 import { MediaStat } from "../objects/MediaStat";
 import { MediaType } from "../objects/MediaType";
-import { Domain } from "..";
+import * as domain from "..";
 
-export class MediaAccessService implements MediaAccessAPI {
-    constructor(
-        private mediaStorageAdapter: MediaStorageSPI,
-        private readonly config: {
-            mediaDir: string,
-        }
-    ) { }
+export function mediaAccessService(mediaStorageAdapter: MediaStorageSPI, config: { mediaDir: string }): MediaAccessAPI {
+    return {
+        parsePath: parsePath(mediaStorageAdapter, config.mediaDir),
+        type: type(mediaStorageAdapter, config.mediaDir),
+        listDir: listDir(mediaStorageAdapter, config.mediaDir),
+        getFile: getFile(mediaStorageAdapter, config.mediaDir),
+        supportedAudioExtension: supportedAudioExtension(mediaStorageAdapter, config.mediaDir),
+        supportedVideoExtension: supportedVideoExtension(mediaStorageAdapter, config.mediaDir),
+        supportedSubtitleExtension: supportedSubtitleExtension(mediaStorageAdapter, config.mediaDir),
+        pathLinks,
+        getSecureUrl
+    };
+}
 
-    /** @inheritdoc */
-    parsePath(insecurePath: string) {
-        const securePathSegments = this.getSecurePathSegments(insecurePath);
-        const secureMediaPath = this.mediaStorageAdapter.join(this.config.mediaDir, ...securePathSegments);
-        const secureParentDir = this.mediaStorageAdapter.join(...securePathSegments.slice(0, -1));
-        const secureName = securePathSegments.length >= 1 ? <string>securePathSegments[securePathSegments.length - 1] : "";
+function parsePath(mediaStorageAdapter: MediaStorageSPI, mediaDir: string) {
+    return (insecurePath: string) => {
+        const securePathSegments = getSecurePathSegments(insecurePath);
+        const secureMediaPath = mediaStorageAdapter.join(mediaDir, ...securePathSegments);
+        const secureParentDir = mediaStorageAdapter.join(...securePathSegments.slice(0, -1));
+        const secureName = securePathSegments.length >= 1
+            ? <string>securePathSegments[securePathSegments.length - 1]
+            : "";
         const secureNameDotSegments = secureName.split(/\./g);
-        const secureExtension = secureNameDotSegments.length >= 2 ? <string>secureNameDotSegments[secureNameDotSegments.length - 1] : "";
+        const secureExtension = secureNameDotSegments.length >= 2
+            ? <string>secureNameDotSegments[secureNameDotSegments.length - 1]
+            : "";
 
         return {
             mediaPath: secureMediaPath,
@@ -28,134 +38,150 @@ export class MediaAccessService implements MediaAccessAPI {
             name: secureName,
             extension: secureExtension
         };
-    }
+    };
+}
 
-    /** @inheritdoc */
-    async type(insecurePath: string) {
-        if (typeof insecurePath !== "string" || insecurePath === "")
-            return <MediaType>"error";
+function type(mediaStorageAdapter: MediaStorageSPI, mediaDir: string) {
+    const toSecureMediaPath = getSecureMediaPath(mediaStorageAdapter, mediaDir);
+    const toMediaType = (itemPath: string) => mediaStorageAdapter.type(itemPath);
+    const toMediaErrorType = () => <MediaType>"error";
 
-        const secureMediaPath = this.getSecureMediaPath(insecurePath);
+    return (insecurePath: string) => Promise.resolve(insecurePath)
+        .then(toValidString)
+        .then(toSecureMediaPath)
+        .then(toMediaType)
+        .catch(toMediaErrorType);
+}
 
-        return this.mediaStorageAdapter.type(secureMediaPath)
-            .catch(() => <MediaType>"error");
-    }
+function listDir(mediaStorageAdapter: MediaStorageSPI, mediaDir: string) {
+    const toValidDirType = toValidType(mediaStorageAdapter, mediaDir)("dir");
+    const toSecureMediaPath = getSecureMediaPath(mediaStorageAdapter, mediaDir);
+    const toMediaStats = (filePath: string) => mediaStorageAdapter.readDir(filePath);
+    const toLinkMediaStats = (mediaStats: Awaited<ReturnType<typeof toMediaStats>>, url: string) => mediaStats
+        .map(s => ({
+            ...s,
+            link: `${url ? "/" : ""}${url}/${encodeURIComponent(s.name)}`
+        }))
+        .sort((a, b) => sort(a, b));
 
-    /** @inheritdoc */
-    async listDir(insecurePath: string, baseUrl?: string) {
-        if (typeof insecurePath !== "string" || insecurePath === "")
-            throw Error("invalid item path");
+    return async (insecurePath: string, baseUrl?: string) => Promise.resolve(insecurePath)
+        .then(toValidString)
+        .then(toValidDirType)
+        .then(toSecureMediaPath)
+        .then(toMediaStats)
+        .then(mediaStats => ({ mediaStats, secureUrl: getSecureUrl(insecurePath, baseUrl) }))
+        .then(({ mediaStats, secureUrl }) => toLinkMediaStats(mediaStats, secureUrl));
+}
 
-        const secureMediaType = await this.type(insecurePath);
-        if (secureMediaType !== "dir")
-            throw Error("not a directory");
+function getFile(mediaStorageAdapter: MediaStorageSPI, mediaDir: string) {
+    const toValidFileType = toValidType(mediaStorageAdapter, mediaDir)("file");
+    const toSecureMediaPath = getSecureMediaPath(mediaStorageAdapter, mediaDir);
+    const toFileContent = (filePath: string) => mediaStorageAdapter.readFile(filePath);
 
-        const secureUrl = this.getSecureUrl(insecurePath, baseUrl);
-        const secureMediaPath = this.getSecureMediaPath(insecurePath);
-        const mediaStats = await this.mediaStorageAdapter.readDir(secureMediaPath);
-        const linkMediaStats = mediaStats
-            .map(s => ({
-                ...s,
-                link: `${secureUrl ? "/" : ""}${secureUrl}/${encodeURIComponent(s.name)}`
-            }))
-            .sort((a, b) => this.sort(a, b));
+    return (insecurePath: string) => Promise.resolve(insecurePath)
+        .then(toValidString)
+        .then(toValidFileType)
+        .then(toSecureMediaPath)
+        .then(toFileContent);
+}
 
-        return linkMediaStats;
-    }
-
-    /** @inheritdoc */
-    async getFile(insecurePath: string) {
-        if (typeof insecurePath !== "string" || insecurePath === "")
-            throw Error("invalid item path");
-
-        const secureMediaType = await this.type(insecurePath);
-        if (secureMediaType !== "file")
-            throw Error("not a file");
-
-        const securePath = this.getSecureMediaPath(insecurePath);
-
-        const file = this.mediaStorageAdapter.readFile(securePath);
-
-        return file;
-    }
-
-    /** @inheritdoc */
-    supportedAudioExtension(insecurePath: string) {
-        const extension = this.parsePath(insecurePath).extension;
-        const isSupported = Domain.supportedAudios.includes(extension);
+function supportedAudioExtension(mediaStorageAdapter: MediaStorageSPI, mediaDir: string) {
+    const toParsedPath = parsePath(mediaStorageAdapter, mediaDir);
+    return (insecurePath: string) => {
+        const { extension } = toParsedPath(insecurePath);
+        const isSupported = domain.supportedAudios.includes(extension);
         return isSupported ? extension : undefined;
-    }
+    };
+}
 
-    /** @inheritdoc */
-    supportedVideoExtension(insecurePath: string) {
-        const extension = this.parsePath(insecurePath).extension;
-        const isSupported = Domain.supportedVideos.includes(extension);
+function supportedVideoExtension(mediaStorageAdapter: MediaStorageSPI, mediaDir: string) {
+    const pathParser = parsePath(mediaStorageAdapter, mediaDir);
+    return (insecurePath: string) => {
+        const { extension } = pathParser(insecurePath);
+        const isSupported = domain.supportedVideos.includes(extension);
         return isSupported ? extension : undefined;
-    }
+    };
+}
 
-    /** @inheritdoc */
-    supportedSubtitleExtension(insecurePath: string) {
-        const extension = this.parsePath(insecurePath).extension;
-        const isSupported = Domain.supportedSubtitles.includes(extension);
+function supportedSubtitleExtension(mediaStorageAdapter: MediaStorageSPI, mediaDir: string) {
+    const pathParser = parsePath(mediaStorageAdapter, mediaDir);
+    return (insecurePath: string) => {
+        const { extension } = pathParser(insecurePath);
+        const isSupported = domain.supportedSubtitles.includes(extension);
         return isSupported ? extension : undefined;
+    };
+}
+
+function pathLinks(insecurePath: string, baseUrl?: string) {
+    if (typeof insecurePath !== "string" || insecurePath === "")
+        throw Error("invalid item path");
+
+    const securePathSegments = getSecurePathSegments(insecurePath);
+    const secureBaseUrl = baseUrl ? getSecureUrl(baseUrl) : "";
+    const pills: PathLink[] = [{ name: "media", link: secureBaseUrl || "/" }];
+
+    let link = "";
+    for (const name of securePathSegments) {
+        link += `/${encodeURIComponent(name)}`;
+        pills.push({
+            name,
+            link: `${secureBaseUrl}${link}`
+        });
     }
 
-    /** @inheritdoc */
-    pathLinks(insecurePath: string, baseUrl?: string) {
-        if (typeof insecurePath !== "string" || insecurePath === "")
-            throw Error("invalid item path");
+    return pills;
+}
 
-        const securePathSegments = this.getSecurePathSegments(insecurePath);
-        const secureBaseUrl = baseUrl ? this.getSecureUrl(baseUrl) : "";
-        const pills: PathLink[] = [{ name: "media", link: secureBaseUrl || "/" }];
+function getSecureUrl(insecurePath: string, baseUrl?: string) {
+    return getSecurePathSegments(insecurePath, baseUrl)
+        .map(u => encodeURIComponent(u))
+        .join("/");
+}
 
-        let link = "";
-        for (const name of securePathSegments) {
-            link += `/${encodeURIComponent(name)}`;
-            pills.push({
-                name,
-                link: `${secureBaseUrl}${link}`
-            });
-        }
+function getSecurePath(mediaStorageAdapter: MediaStorageSPI) {
+    return (insecurePath: string, baseUrl?: string) => {
+        const securePathSegments = getSecurePathSegments(insecurePath, baseUrl);
+        return mediaStorageAdapter.join(...securePathSegments);
+    };
+}
 
-        return pills;
-    }
+function getSecureMediaPath(mediaStorageAdapter: MediaStorageSPI, mediaDir: string) {
+    const pathSecurer = getSecurePath(mediaStorageAdapter);
+    return (insecurePath: string, baseUrl?: string) => {
+        const securePath = pathSecurer(insecurePath, baseUrl);
+        return mediaStorageAdapter.join(mediaDir, securePath);
+    };
+}
 
-    /** @inheritdoc */
-    getSecureUrl(insecurePath: string, baseUrl?: string) {
-        const secureUrl = this.getSecurePathSegments(insecurePath, baseUrl)
-            .map(u => encodeURIComponent(u))
-            .join("/");
-        return secureUrl;
-    }
+function getSecurePathSegments(insecurePath: string, insecurePathPrefix?: string) {
+    const getSecureSegments = (path: string) =>
+        path.split(/[\\/]/g).map(s => decodeURIComponent(s)).filter(p => !!p && p !== "." && p != "..");
+    return (insecurePathPrefix ? getSecureSegments(insecurePathPrefix) : [])
+        .concat(getSecureSegments(insecurePath));
+}
 
-    private getSecurePath(insecurePath: string, baseUrl?: string) {
-        const securePathSegments = this.getSecurePathSegments(insecurePath, baseUrl);
-        const securePath = this.mediaStorageAdapter.join(...securePathSegments);
-        return securePath;
-    }
+function sort(a: MediaStat, b: MediaStat, order: "asc" | "desc" = "asc"): number {
+    const orderNum = order === "asc" ? -1 : 1;
+    if (a.isDir && !b.isDir) return orderNum;
+    if (!a.isDir && b.isDir) return -orderNum;
+    const aName = a.name.toUpperCase().replace(/_/g, "!");
+    const bName = b.name.toUpperCase().replace(/_/g, "!");
+    if (aName < bName) return orderNum;
+    if (aName > bName) return -orderNum;
+    return 0;
+}
 
-    private getSecureMediaPath(insecurePath: string, baseUrl?: string) {
-        const securePath = this.getSecurePath(insecurePath, baseUrl);
-        const secureMediaPath = this.mediaStorageAdapter.join(this.config.mediaDir, securePath);
-        return secureMediaPath;
-    }
+function toValidString(path: string) {
+    return typeof path === "string" && path !== ""
+        ? Promise.resolve(path)
+        : Promise.reject("invalid path arg");
+}
 
-    private getSecurePathSegments(insecurePath: string, insecurePathPrefix?: string) {
-        const getSecureSegments = (path: string) => path.split(/[\\/]/g).map(s => decodeURIComponent(s)).filter(p => !!p && p !== "." && p != "..");
-        const arr = (insecurePathPrefix ? getSecureSegments(insecurePathPrefix) : [])
-            .concat(getSecureSegments(insecurePath));
-        return arr;
-    }
-
-    private sort(a: MediaStat, b: MediaStat, order: "asc" | "desc" = "asc"): number {
-        const orderNum = order === "asc" ? -1 : 1;
-        if (a.isDir && !b.isDir) return orderNum;
-        if (!a.isDir && b.isDir) return -orderNum;
-        const aName = a.name.toUpperCase().replace(/_/g, "!");
-        const bName = b.name.toUpperCase().replace(/_/g, "!");
-        if (aName < bName) return orderNum;
-        if (aName > bName) return -orderNum;
-        return 0;
-    }
+function toValidType(mediaStorageAdapter: MediaStorageSPI, mediaDir: string) {
+    const toMediaType = type(mediaStorageAdapter, mediaDir);
+    return (mediaType: Awaited<ReturnType<typeof mediaStorageAdapter.type>>) =>
+        (path: string) =>
+            toMediaType(path).then(type => type === mediaType
+                ? Promise.resolve(path)
+                : Promise.reject(`path not found or not of type "${mediaType}"`));
 }

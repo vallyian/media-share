@@ -5,44 +5,35 @@ import { MediaStorageSPI } from "./ports/SPI/MediaStorage.SPI";
 import { TextEncodingSPI } from "./ports/SPI/TextEncoding.SPI";
 import { VideoProcessorSPI } from "./ports/SPI/VideoProcessor.SPI";
 
-// API
-import { IdTokenAPI } from "./ports/API/IdToken.API";
-import { AccessTokenAPI } from "./ports/API/AccessToken.API";
-import { MediaAccessAPI } from "./ports/API/MediaAccess.API";
-import { SubtitleAPI } from "./ports/API/SubtitleAPI";
-
 // API implementations
-import { AccessTokenService } from "./services/access-token.service";
-import { MediaAccessService } from "./services/media-access.service";
-import { IdTokenService } from "./services/id-token.service";
-import { SubtitleService } from "./services/subtitle.service";
+import { accessTokenService } from "./services/access-token.service";
+import { mediaAccessService } from "./services/media-access.service";
+import { idTokenService } from "./services/id-token.service";
+import { subtitleService } from "./services/subtitle.service";
 
-export class Domain {
-    readonly idTokenService: IdTokenAPI;
-    readonly accessTokenService: AccessTokenAPI;
-    readonly mediaAccessService: MediaAccessAPI;
-    readonly subtitleService: SubtitleAPI;
+export const supportedVideos = ["mp4"];
+export const supportedSubtitles = ["srt", "sub"];
+export const supportedAudios = ["mp3"];
 
-    static readonly supportedVideos = ["mp4"];
-    static readonly supportedSubtitles = ["srt", "sub"];
-    static readonly supportedAudios = ["mp3"];
-
-    constructor(
-        logger: { error(message?: unknown, ...optionalParams: unknown[]): void },
-        idTokenAdapters: Record<string, IdTokenSPI>,
-        cryptoAdapter: CryptoSPI,
-        mediaStorageAdapter: MediaStorageSPI,
-        textEncodingAdapter: TextEncodingSPI,
-        videoProcessorAdapter: VideoProcessorSPI,
-        config: {
-            mediaDir: string,
-            authClient: string,
-            authEmails: string[],
-        }
-    ) {
-        this.idTokenService = new IdTokenService(idTokenAdapters);
-        this.accessTokenService = new AccessTokenService(idTokenAdapters, cryptoAdapter, config);
-        this.mediaAccessService = new MediaAccessService(mediaStorageAdapter, config);
-        this.subtitleService = new SubtitleService(logger, textEncodingAdapter, videoProcessorAdapter, this.mediaAccessService);
+export function domain(
+    logger: { error(message?: unknown, ...optionalParams: unknown[]): void },
+    idTokenAdapters: Record<string, IdTokenSPI>,
+    cryptoAdapter: CryptoSPI,
+    mediaStorageAdapter: MediaStorageSPI,
+    textEncodingAdapter: TextEncodingSPI,
+    videoProcessorAdapter: VideoProcessorSPI,
+    config: {
+        mediaDir: string,
+        authClient: string,
+        authEmails: string[],
     }
+) {
+    const mediaAccessor = mediaAccessService(mediaStorageAdapter, config);
+
+    return {
+        idTokenService: idTokenService(idTokenAdapters),
+        accessTokenService: accessTokenService(idTokenAdapters, cryptoAdapter, config),
+        mediaAccessService: mediaAccessor,
+        subtitleService: subtitleService(logger, textEncodingAdapter, videoProcessorAdapter, mediaAccessor)
+    };
 }
