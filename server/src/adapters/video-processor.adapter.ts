@@ -18,14 +18,21 @@ async function getFps(videoPath: string) {
     if (!fs.existsSync(videoPath))
         throw Error(`video file "${videoPath}" not found`);
 
-    const videoInfo: string | undefined = await new Promise(ok => child_process.exec(
-        `"${ffmpegPath}" -i "${videoPath}"`,
-        (_err, stdout, stderr) => ok(stdout + stderr)
-    ));
+    const videoInfo: string | undefined = await new Promise((ok, rej) => {
+        let log = "";
+        const child = child_process.execFile(
+            ffmpegPath,
+            ["-i", videoPath],
+            { timeout: 60 * 1000, shell: false },
+            error => log ? ok(log): rej(error)
+        );
+        child.stdout?.on("data", data => log += <string>data);
+        child.stderr?.on("data", data => log += "\n<ERROR>\n" + <string>data + "\n</ERROR>\n");
+    });
     if (!videoInfo) throw Error(`invalid video info for video "${videoPath}"`);
 
     const videoStreamInfo = videoInfo.split("\n").filter(l => l.includes("Stream #") && l.includes(": Video: ") && l.includes(" fps,"))[0];
-    if (!videoStreamInfo) throw Error(`video strean not found in video "${videoPath}"; videoInfo: "${videoInfo}"`);
+    if (!videoStreamInfo) throw Error(`video stream not found in video "${videoPath}"; videoInfo: "${videoInfo}"`);
 
     let fpsString = videoStreamInfo.split(" fps,")[0] || "";
     fpsString = fpsString.split(", ").slice(-1)[0] || "";
