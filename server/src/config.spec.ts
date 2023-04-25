@@ -7,7 +7,7 @@ import { Config } from "./config";
 describe("config", () => {
     let randomStringFactorySpy: jasmine.Spy<(length: number) => string>;
     let clustersFactorySpy: jasmine.Spy<() => number>;
-    let readFileSpy: jasmine.Spy<(path: string) => string | undefined>;
+    let readFileSpy: jasmine.Spy<(path: string | undefined) => string | undefined>;
 
     beforeEach(() => {
         randomStringFactorySpy = jasmine.createSpy("randomStringFactory").and.callFake((length: number) => Buffer.from("x".repeat(length)).toString("base64"));
@@ -300,7 +300,7 @@ describe("config", () => {
 
         it("first file (from env)", () => {
             const expected = "first-file-content";
-            readFileSpy.and.callFake((path: string) => {
+            readFileSpy.and.callFake((path: string | undefined) => {
                 switch (path) {
                     case envValue: return expected;
                     case `/run/secrets/${fileName}`: return "second-file-content";
@@ -319,7 +319,7 @@ describe("config", () => {
 
         it("second file", () => {
             const expected = "second-file-content";
-            readFileSpy.and.callFake((path: string) => {
+            readFileSpy.and.callFake((path: string | undefined) => {
                 switch (path) {
                     case `/run/secrets/${fileName}`: return expected;
                     case `certs/${fileName}`: return "third-file-content";
@@ -337,7 +337,7 @@ describe("config", () => {
 
         it("third file", () => {
             const expected = "third-file-content";
-            readFileSpy.and.callFake((path: string) => path === `certs/${fileName}` ? expected : undefined);
+            readFileSpy.and.callFake((path: string | undefined) => path === `certs/${fileName}` ? expected : undefined);
             pipe(
                 Config({ [<string>envKey]: envValue }, randomStringFactorySpy, clustersFactorySpy, readFileSpy),
                 match(
