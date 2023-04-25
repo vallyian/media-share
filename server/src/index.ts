@@ -1,6 +1,5 @@
-import os from "node:os";
 import fs from "node:fs";
-import crypto from "node:crypto";
+import { isRight, isLeft, Left, Right } from "fp-ts/lib/Either";
 import { domain } from "./domain";
 import { googleIdTokenAdapter } from "./adapters/google-id-token.adapter";
 import { nodeCryptoAdapter } from "./adapters/node-crypto.adapter";
@@ -9,7 +8,6 @@ import { Service } from "./service";
 import { Config } from "./config";
 import { textEncodingAdapter } from "./adapters/text-encoding.adapter";
 import { videoProcessorAdapter } from "./adapters/video-processor.adapter";
-import { isRight, isLeft } from "fp-ts/lib/Either";
 
 /* eslint-disable no-restricted-globals */
 if (require.main === module) {
@@ -43,43 +41,16 @@ function runnerFactory() {
 
 // eslint-disable-next-line sonarjs/cognitive-complexity
 function infrastructure() {
-    const config = Config(
-        process.env,
-        (length: number) => crypto.randomBytes(length).toString("base64"),
-        () => os.cpus().length,
-        (path: string) => path && fs.existsSync(path) && fs.statSync(path).isFile() ? fs.readFileSync(path, "utf-8") : undefined
-    );
+    const config = Config();
 
     const logStream = fs.createWriteStream((d => `${d.getFullYear()}_${d.getMonth()}_${d.getDate()}.log`)(new Date()), { encoding: "utf-8", flags: "a" });
-    const log = (stdout: (...msg: unknown[]) => void, isError = false) => (...msg: unknown[]) => {
-        const dt = new Date().toUTCString();
-        const action = () => {
-            if (isRight(config) && config.right.logToFiles)
-                logStream.write([dt, process.pid].concat(msg.map(m => typeof m !== "string" ? JSON.stringify(m) : m)).join(" ") + "\n");
-            stdout(dt, process.pid, ...msg);
-        };
-        if (isError) action(); else setImmediate(action);
-    };
+    const log = logFn(config, logStream);
     const logger = Object.freeze({
         info: log(console.info),
         warn: log(console.warn),
         error: log(console.error, true)
     });
-
-    const terminator = (codes => (code: keyof typeof codes, ...error: unknown[]): never => {
-        if (error) logger.error("Critical", ...error);
-        // eslint-disable-next-line no-restricted-syntax
-        process.exit(codes[code]);
-    })({
-        Generic: 1,
-        UncaughtException: 2,
-        UnhandledRejection: 3,
-        Config: 4,
-        /* primary */
-        InitFunction: 101,
-        /* workers */
-        WorkerStartup: 201,
-    });
+    const terminator = terminatorFn(logger.error);
 
     if (isLeft(config))
         return terminator("Config", config.left.message);
@@ -100,4 +71,33 @@ function infrastructure() {
         terminator,
         appDomain
     };
+}
+
+function logFn(config: Left<Error> | Right<Config>, logStream: fs.WriteStream) {
+    return (stdout: (...msg: unknown[]) => void, isError = false) => (...msg: unknown[]) => {
+        const dt = new Date().toUTCString();
+        const action = () => {
+            if (isRight(config) && config.right.logToFiles)
+                logStream.write([dt, process.pid].concat(msg.map(m => typeof m !== "string" ? JSON.stringify(m) : m)).join(" ") + "\n");
+            stdout(dt, process.pid, ...msg);
+        };
+        if (isError) action(); else setImmediate(action);
+    };
+}
+
+function terminatorFn(logError: (...msg: unknown[]) => void) {
+    return (codes => (code: keyof typeof codes, ...error: unknown[]): never => {
+        if (error) logError("Critical", ...error);
+        // eslint-disable-next-line no-restricted-syntax
+        process.exit(codes[code]);
+    })({
+        Generic: 1,
+        UncaughtException: 2,
+        UnhandledRejection: 3,
+        Config: 4,
+        /* primary */
+        InitFunction: 101,
+        /* workers */
+        WorkerStartup: 201,
+    });
 }

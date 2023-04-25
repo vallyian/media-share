@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { Logger } from "../../@types/Logger";
+import { omitToken, omitted } from "../helpers/url.helper";
 
 export function ErrorMiddleware(
     logger: Logger,
@@ -12,15 +13,7 @@ export function ErrorMiddleware(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- last arg required by express to correctly interpret as error middleware
     function handler(err: Error, req: Request, res: Response, _next: NextFunction) {
         const status = err.status || 500;
-        const omitted = "*omitted*";
-        let url = req.url;
-        if (url.indexOf("id_token=") >= 0) {
-            const urlObj = new URL(url);
-            if (urlObj.searchParams.get("id_token")) {
-                urlObj.searchParams.set("id_token", omitted);
-                url = urlObj.toString();
-            }
-        }
+        const url = omitToken(req.url);
 
         const safeErr = {
             message: err.message || "internal server error",

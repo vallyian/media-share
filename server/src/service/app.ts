@@ -19,6 +19,7 @@ import { DirIndexMiddleware } from "./middleware/dir-index.middleware";
 import { WebdavMiddleware } from "./middleware/webdav.middleware";
 import { NotFoundMiddleware } from "./middleware/not-found.middleware";
 import { ErrorMiddleware } from "./middleware/error.middleware";
+import { omitToken } from "./helpers/url.helper";
 
 export function App(
     logger: Logger,
@@ -104,8 +105,7 @@ export function App(
 
     function track(route: string) {
         const handler = (...args: string[]) => (req: Request, _res: Response, next: NextFunction) => {
-            const url = req.url.replace(/(.+id_token=.+\..+\.)[^&]+(&.+)?/, "$1omitted$2");
-            logger.info(req.reqId, url, ...args);
+            logger.info(req.reqId, omitToken(req.url), ...args);
             return next();
         };
         return {
