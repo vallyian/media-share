@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { isRight, isLeft, Left, Right } from "fp-ts/lib/Either";
 import { domain } from "./domain";
 import { googleIdTokenAdapter } from "./adapters/google-id-token.adapter";
 import { nodeCryptoAdapter } from "./adapters/node-crypto.adapter";
@@ -7,7 +8,6 @@ import { Service } from "./service";
 import { Config } from "./config";
 import { textEncodingAdapter } from "./adapters/text-encoding.adapter";
 import { videoProcessorAdapter } from "./adapters/video-processor.adapter";
-import { isRight, isLeft, Left, Right } from "fp-ts/lib/Either";
 
 /* eslint-disable no-restricted-globals */
 if (require.main === module) {
@@ -39,6 +39,7 @@ function runnerFactory() {
     return () => service().catch(err => terminator("Generic", err));
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 function infrastructure() {
     const config = Config();
 
