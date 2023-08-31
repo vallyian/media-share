@@ -2,7 +2,7 @@
 import assert from "node:assert";
 import { match } from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/function";
-import { Config } from "./config";
+import { Config } from "../src/config";
 
 describe("config", () => {
     let randomStringFactorySpy: jasmine.Spy<(length: number) => string>;

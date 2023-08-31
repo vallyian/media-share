@@ -7,20 +7,6 @@ fast media share web server with a very basic UI
 * [Docker](https://docs.docker.com/get-docker/)
 * [Node.js LTS](https://nodejs.org/en/) [*only for development*]
 
-## Build
-
-* locally `npm run build`
-* in Docker `node run build`
-
-## Test
-
-* unit tests (locally) `npm run test`
-* smoke test (in Docker) `node run smoke`
-
-## Scan for vulnerabilities
-
-`node run scan`
-
 ## Run
 
 ### Security warnings
@@ -40,44 +26,52 @@ export MEDIA_SHARE__AuthClient= # optional, highly recommended, see https://cons
 export MEDIA_SHARE__AuthEmails= # optional, highly recommended, comma separated list of authorized emails
 ```
 
-### nodejs
+### Run locally
 
 ```sh
-# required: dir or symlink 'server/media' 
-npm --prefix server start `# http://localhost:58082/ `
+# required: dir or symlink "server/media" 
+npm start # http://localhost:58082/
 ```
 
-### docker
+### Run in Docker
+
+* local image `docker run --rm --publish "127.0.0.1:58081:58082" vallyian/media-share:0.0.0`
+* public image `docker run --restart=always --detach --publish "127.0.0.1:58080:58082" vallyian/media-share:latest`
 
 Possible docker run args
 
 ```sh
 # volumes
--v "absolute/path/to/media/dir:/home/node/media"        `# optional, pointless without` \
--v "absolute/path/to/cert.crt:/run/secrets/cert.crt:ro" `# optional, highly recommended` \
--v "absolute/path/to/cert.key:/run/secrets/cert.key:ro" `# optional, highly recommended` \
+--volume "/path/to/media/dir:/home/node/media"        # optional, pointless without
+--volume "/path/to/cert.crt:/run/secrets/cert.crt:ro" # optional, highly recommended
+--volume "/path/to/cert.key:/run/secrets/cert.key:ro" # optional, highly recommended
 
-# env vars (see environment section)
--e "..." \
+# env vars (see [environment](#environment) section)
+--env "..."
 ```
 
-#### local image
+## Build
 
-```sh
-docker run --rm \
-    -p "127.0.0.1:58081:58082" `# http://localhost:58081/ ` \
-    `# additional args` \
-vallyian/media-share:0.0.0
-```
+* locally `npm run build`
+* in Docker `npm run docker:build` (includes unit tests, lint)
 
-#### public image
+## Test
 
-```sh
-docker run --pull always --restart=always --detach
-    -p "127.0.0.1:58080:58082" `# http://localhost:58080/ ` \
-    `# additional args` \
-vallyian/media-share:latest
-```
+* locally (unit tests) `npm run test`
+* in Docker
+  * unit tests: run during build
+  * smoke tests `npm run docker:smoke`
+
+## Lint
+
+* locally `npm run lint`
+* in Docker: runs during build
+
+## Scan
+
+Runs only in docker
+
+`npm run scan`
 
 ## TODO
 

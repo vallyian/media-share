@@ -67,7 +67,7 @@ function envNumberFn(
 }
 
 function envStringFn(env: Record<string, string | undefined>) {
-    return (key: string, def = "") => env[key] || def;
+    return (key: string, def = "") => env[key] ?? def;
 }
 
 function readFileFn(path: string | undefined) {

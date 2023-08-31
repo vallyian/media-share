@@ -19,7 +19,7 @@ jobs:
         name: Semantic version
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
+            - uses: actions/checkout@v3
 
             - name: Tag version
               id: tag
@@ -52,53 +52,54 @@ jobs:
         name: Build and test
         runs-on: ubuntu-latest
         needs: [semver]
+        env:
+            SEMVER: ${{needs.semver.outputs.SEMVER}}
 
         steps:
             - name: Checkout
-              uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
+              uses: actions/checkout@v3
 
             - name: Setup Docker multiplatform
-              uses: docker/setup-qemu-action@8b122486cedac8393e77aa9734c3528886e4a1a8 # v2.0.0
+              uses: docker/setup-qemu-action@v2
 
             - name: Setup Docker
-              uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v2.0.0
+              uses: docker/setup-buildx-action@v2
 
             - name: Build, test and extract artifacts
-              env:
-                  SEMVER: ${{needs.semver.outputs.SEMVER}}
-              run: node run build
+              run: |
+                mkdir -p artifacts
+                chmod 777 artifacts
+                npm run docker:build
 
             - name: Run smoke test
-              env:
-                  SEMVER: ${{needs.semver.outputs.SEMVER}}
-              run: node run smoke
+              run: |
+                mkdir -p artifacts/smoke
+                chmod 777 artifacts/smoke
+                npm run docker:smoke
 
             - name: Export artifacts
-              uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # v3.1.0
-              if: always()
+              uses: actions/upload-artifact@v3
               with:
                   name: artifacts
                   path: artifacts
 
             - name: Publish test results
               uses: EnricoMi/publish-unit-test-result-action@2a60c5d47eb29cd5cc922f51bbea18e148f56203 # v2.0.0
-              if: always()
               with:
                   github_token: ${{secrets.GITHUB_TOKEN}}
-                  junit_files: artifacts/unit-tests/*.xml
+                  junit_files: artifacts/unit/*.xml
                   fail_on: "test failures"
 
             - name: Scan runtime image
               env:
-                  SEMVER: ${{needs.semver.outputs.SEMVER}}
                   DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}
-              run: node run scan
+              run: npm run scan
 
             - name: Check results
-              run: node run results
+              run: npm run results
 
             - name: Sign in to Docker Hub
-              uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b # v2.0.0
+              uses: docker/login-action@v2
               if: ${{ github.ref == 'refs/heads/main' || github.event.inputs.publish_image == 'true' }}
               with:
                   username: ${{secrets.DOCKER_USERNAME}}
@@ -108,9 +109,8 @@ jobs:
               if: ${{ github.ref == 'refs/heads/main' || github.event.inputs.publish_image == 'true' }}
               env:
                   GITHUB_MAIN: ${{ github.ref == 'refs/heads/main'}}
-                  SEMVER: ${{needs.semver.outputs.SEMVER}}
                   DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}
-              run: node run push
+              run: npm run push
 
     codeql:
         name: CodeQL analysis
@@ -122,15 +122,15 @@ jobs:
 
         steps:
             - name: Checkout
-              uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
+              uses: actions/checkout@v3
 
             - name: Initialize CodeQL
-              uses: github/codeql-action/init@2ca79b6fa8d3ec278944088b4aa5f46912db5d63 # v2.1.18
+              uses: github/codeql-action/init@v2
               with:
                   languages: "javascript"
 
             - name: Build javascript
-              run: node run build
+              run: npm run build
 
             - name: Perform CodeQL Analysis
-              uses: github/codeql-action/analyze@2ca79b6fa8d3ec278944088b4aa5f46912db5d63 # v2.1.18
+              uses: github/codeql-action/analyze@v2
