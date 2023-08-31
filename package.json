@@ -24,7 +24,6 @@
         "start": "node run start",
         "results": "node run results artifacts/unit artifacts/lint",
         "push": "node run push",
-        "docker": "node run docker",
         "docker:build": "node run docker:build artifacts",
         "docker:scan": "node run docker:scan",
         "docker:smoke": "node run docker:smoke artifacts/smoke"

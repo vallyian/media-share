@@ -17,19 +17,15 @@ const http = require("node:http");
 
     restore();
     switch (process.argv[2]) {
-        case "build": return build(path.resolve(process.env.ARTIFACTS_BIN ?? process.argv[3]));
-        case "test": return test(path.resolve(process.env.ARTIFACTS_UNIT ?? process.argv[3]));
-        case "lint": return lint(path.resolve(process.env.ARTIFACTS_LINT ?? process.argv[3]));
+        case "build": return build(path.resolve(process.argv[3]));
+        case "test": return test(path.resolve(process.argv[3]));
+        case "lint": return lint(path.resolve(process.argv[3]));
         case "start": return start();
-        case "results": return results(
-            path.resolve(process.env.ARTIFACTS_UNIT ?? process.argv[3]),
-            path.resolve(process.env.ARTIFACTS_LINT ?? process.argv[3])
-        );
+        case "results": return results(path.resolve(process.argv[3]), path.resolve(process.argv[3]));
         case "push": return push();
-        case "docker": return Promise.resolve().then(dockerBuild).then(dockerSmokeTest).then(results).then(dockerScan).then(push);
-        case "docker:build": return dockerBuild(path.resolve(process.env.ARTIFACTS ?? process.argv[3]));
+        case "docker:build": return dockerBuild(path.resolve(process.argv[3]));
         case "docker:scan": return dockerScan();
-        case "docker:smoke": return dockerSmokeTest(path.resolve(process.env.ARTIFACTS_SMOKE ?? process.argv[3]));
+        case "docker:smoke": return dockerSmokeTest(path.resolve(process.argv[3]));
         default: log(Error("USAGE:   npm run   build [docker] | test [smoke] | lint | start | results | scan | push | docker"));
     }
 })();
@@ -98,7 +94,6 @@ function lint(/** @type {string} */ outDir) {
 }
 
 function start() {
-    ensureEmptyDir(path.join(process.env.ARTIFACTS, "bin"));
     const proc = child_process.spawn(
         `npx${process.platform === "win32" ? ".cmd" : ""}`,
         "ts-node-dev --files --prefer-ts --debug --inspect --watch -- src".split(/\s+/g),
@@ -182,7 +177,7 @@ async function dockerSmokeTest(/** @type {string} */ outDir) {
         exec(`docker container stop ${container}`, { stdio: "ignore", exitOnError: false });
     }
 
-    if (failed) exit(Error("smoke test failed"));
+    if (failed) exit("smoke test failed");
     log("smoke success");
 }
 function startSmokeTestServer(container, testMediaDir, authClient = "", authEmails = "") {
@@ -250,12 +245,12 @@ function results(/** @type {string} */ unitDir, /** @type {string} */ lintDir) {
     if (fs.existsSync(path.join(unitDir, ".fail"))) errors.push("unit test failed");
     if (fs.existsSync(path.join(lintDir, ".fail"))) errors.push("lint failed");
 
-    if (errors.length) exit(Error(errors.join("\n")));
+    if (errors.length) exit(errors.join("\n"));
     else log("results success");
 }
 
 function push() {
-    if (!process.env.GITHUB_SHA || process.env.SEMVER === "0.0.0") exit(Error("push can only run in CI"));
+    if (!process.env.GITHUB_SHA || process.env.SEMVER === "0.0.0") exit("push can only run in CI");
     const tags = [process.env.SEMVER].concat(process.env.GITHUB_MAIN === "true" ? ["latest"] : [])
         .map(t => `--tag ${process.env.DOCKER_USERNAME}/${process.env.DOCKER_REPO}:${t}`);
     exec(`
@@ -281,15 +276,16 @@ function exec(/** @type {string} */ cmd, /** @type {ExecSyncOptions & { exitOnEr
             ...(options?.env ? { env: { ...process.env, ...options.env } } : {})
         });
     } catch (err) {
-        if (options?.exitOnError !== false) exit(err);
+        if (options?.exitOnError !== false) exit(err.message || err);
         if (!(options?.stdio === "ignore" || options?.stderr === "ignore")) log(err);
     }
 }
 
-function ensureEmptyDir(/** @type {string | string[]} */ ...dir) {
-    (Array.isArray(dir) ? dir : [dir]).forEach(d => {
-        if (fs.existsSync(d)) fs.readdirSync(d).forEach(x => fs.rmSync(path.join(d, x), { recursive: true, force: true }));
-        else fs.mkdirSync(d, { recursive: true });
+function ensureEmptyDir(/** @type {string[]} */ ...dirs) {
+    if (!dirs?.length || dirs.find(dir => !!(dir.trim()))) exit(`invalid ensureEmptyDir args "${JSON.stringify({ dirs })}"`);
+    dirs.forEach(dir => {
+        if (fs.existsSync(dir)) fs.readdirSync(dir).forEach(item => fs.rmSync(path.join(dir, item), { recursive: true, force: true }));
+        else fs.mkdirSync(dir, { recursive: true });
     });
 }
 

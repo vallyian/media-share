@@ -65,7 +65,7 @@ jobs:
             - name: Setup Docker
               uses: docker/setup-buildx-action@v2
 
-            - name: Build, test and extract artifacts
+            - name: Run build, unit test, lint
               run: |
                 mkdir -p artifacts
                 chmod 777 artifacts
