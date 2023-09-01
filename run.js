@@ -185,18 +185,24 @@ function startSmokeTestServer(container, testMediaDir, authClient = "", authEmai
     exec(`docker container stop ${container}`, { stdio: "ignore", exitOnError: false });
     exec(`
         docker run --rm --detach
-            --name "${container}"
-            --publish "${port}:58082"
-            --volume "${testMediaDir}:/home/node/media"
-            --env "MEDIA_SHARE__AuthClient=${authClient}"
-            --env "MEDIA_SHARE__AuthEmails=${authEmails}"
+            --name ${container}
+            --publish ${port}:58082
+            --volume ${testMediaDir}:/home/node/media
+            --env MEDIA_SHARE__AuthClient="${authClient}"
+            --env MEDIA_SHARE__AuthEmails="${authEmails}"
         ${process.env.DOCKER_USERNAME}/${process.env.DOCKER_REPO}:${process.env.SEMVER}
     `);
     return checkUrl(`http://localhost:${port}/health`, { status: 200, body: "healthy", tries: 5, interval: 2 });
 }
 function runSmokeTestCase(testCaseId, url, status, body) {
     return checkUrl(`http://localhost:58081${url}`, { status, body }).catch(err => {
-        log(Error({ testCaseId, url, expected: { status, body }, actual: { err } }));
+        const actual = JSON.parse(err);
+        log(Error(JSON.stringify({
+            testCaseId,
+            url,
+            expected: { status, body },
+            actual: { status: actual.status, body: actual.body.replace(/\s+/g, " ").replace(/"/g, "'"), err: actual.err }
+        })));
         throw err;
     });
 }
@@ -225,10 +231,11 @@ async function checkUrl(
         }
     };
 
+    let req = undefined;
     for (let attempt = 1, tries = options?.tries ?? 1; attempt <= tries; attempt++) {
         log(`waiting for \x1b[33m${uri}\x1b[0m (attempt ${attempt}/${tries})`);
 
-        let req = await httpGet();
+        req = await httpGet();
         if (!isSuccess(req) && swapUrl()) req = await httpGet();
         if (isSuccess(req)) return;
 
