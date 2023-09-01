@@ -19,7 +19,7 @@ jobs:
         name: Semantic version
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout
+            - uses: actions/checkout@v3
 
             - name: Tag version
               id: tag
@@ -57,13 +57,13 @@ jobs:
 
         steps:
             - name: Checkout
-              uses: actions/checkout
+              uses: actions/checkout@v3
 
             - name: Setup Docker multiplatform
-              uses: docker/setup-qemu-action
+              uses: docker/setup-qemu-action@v2
 
             - name: Setup Docker
-              uses: docker/setup-buildx-action
+              uses: docker/setup-buildx-action@v2
 
             - name: Run build, unit test, lint
               run: |
@@ -78,7 +78,7 @@ jobs:
                 npm run docker:smoke
 
             - name: Export artifacts
-              uses: actions/upload-artifact
+              uses: actions/upload-artifact@v3
               with:
                   name: artifacts
                   path: artifacts
@@ -99,7 +99,7 @@ jobs:
               run: npm run results
 
             - name: Sign in to Docker Hub
-              uses: docker/login-action
+              uses: docker/login-action@v2
               if: ${{ github.ref == 'refs/heads/main' || github.event.inputs.publish_image == 'true' }}
               with:
                   username: ${{vars.DOCKER_USERNAME}}
@@ -122,10 +122,10 @@ jobs:
 
         steps:
             - name: Checkout
-              uses: actions/checkout
+              uses: actions/checkout@v3
 
             - name: Initialize CodeQL
-              uses: github/codeql-action/init
+              uses: github/codeql-action/init@v2
               with:
                   languages: "javascript"
 
@@ -133,4 +133,4 @@ jobs:
               run: npm run build
 
             - name: Perform CodeQL Analysis
-              uses: github/codeql-action/analyze
+              uses: github/codeql-action/analyze@v2
