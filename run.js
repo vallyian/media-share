@@ -16,7 +16,7 @@ const http = require("node:http");
     // process.env.COMPOSE_DOCKER_CLI_BUILD = 1
 
     restore();
-    switch (process.argv[2]) {
+    switch (/* see package.json scripts for usage */ process.argv[2]) {
         case "build": return build(path.resolve(process.argv[3]));
         case "test": return test(path.resolve(process.argv[3]));
         case "lint": return lint(path.resolve(process.argv[3]));
@@ -40,8 +40,8 @@ function restore() {
     const platform = fs.existsSync(platformPath) ? fs.readFileSync(platformPath, "utf8") : "";
 
     if (!fs.existsSync(modulesDir) || process.platform !== platform) {
-        exec(`npm ci --no-audit`, { cwd: "server" });
-        exec(`npm audit --audit-level=${process.env.NPM_AUDIT_LEVEL} --omit=dev`, { cwd: "server" });
+        exec(`npx npm ci --no-audit`, { cwd: "server" });
+        exec(`npx npm audit --audit-level=${process.env.NPM_AUDIT_LEVEL} --omit=dev`, { cwd: "server" });
         fs.writeFileSync(platformPath, process.platform, "utf8");
     }
 }
@@ -265,16 +265,18 @@ function push() {
     log("push success");
 }
 
-function exec(/** @type {string} */ cmd, /** @type {ExecSyncOptions & { exitOnError: Boolean } | undefined} */ options) {
+function exec(/** @type {string} */ cmd, /** @type {child_process.SpawnSyncOptions & { exitOnError: Boolean } | undefined} */ options) {
     try {
-        cmd = cmd.replace(/\s+/g, " ");
-        log((options?.cwd ? `\x1b[90m[cwd: ${options.cwd}]\x1b[0m ` : "") + cmd);
-        child_process.execSync(cmd, {
+        const args = cmd.replace(/\s+/g, " ").split(" ").filter(x => !!x);
+        if (args[0] === "npx" && process.platform === "win32") args[0] += ".cmd";
+        log((options?.cwd ? `\x1b[90m[cwd: ${options.cwd}]\x1b[0m ` : "") + args.join(" "));
+        const proc = child_process.spawnSync(args.shift(), args, {
             stdio: options?.stdio ?? "inherit",
             shell: false,
             cwd: options?.cwd ?? process.cwd(),
             ...(options?.env ? { env: { ...process.env, ...options.env } } : {})
         });
+        if (proc.error) throw proc.error;
     } catch (err) {
         if (options?.exitOnError !== false) exit(err.message || err);
         if (!(options?.stdio === "ignore" || options?.stderr === "ignore")) log(err);
@@ -282,7 +284,7 @@ function exec(/** @type {string} */ cmd, /** @type {ExecSyncOptions & { exitOnEr
 }
 
 function ensureEmptyDir(/** @type {string[]} */ ...dirs) {
-    if (!dirs?.length || dirs.find(dir => !!(dir.trim()))) exit(`invalid ensureEmptyDir args "${JSON.stringify({ dirs })}"`);
+    if (!dirs?.length || dirs.find(dir => !dir.trim())) exit(`invalid ensureEmptyDir args "${JSON.stringify({ dirs })}"`);
     dirs.forEach(dir => {
         if (fs.existsSync(dir)) fs.readdirSync(dir).forEach(item => fs.rmSync(path.join(dir, item), { recursive: true, force: true }));
         else fs.mkdirSync(dir, { recursive: true });
@@ -295,7 +297,7 @@ function log(/** @type {Error | string} */ data) {
 }
 
 /** @returns {never} */
-function exit(/** @type {Error | undefined} */ err) {
-    log(err);
+function exit(/** @type {Error | String | undefined} */ err) {
+    log(err instanceof Error ? err : Error(err));
     process.exit(err ? 1 : 0);
 }
