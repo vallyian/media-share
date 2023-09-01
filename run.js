@@ -2,6 +2,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const child_process = require("node:child_process");
 const http = require("node:http");
+const https = require("node:https");
 
 (() => {
     process.env.DOCKER_USERNAME = process.env.DOCKER_USERNAME || "vallyian";
@@ -24,6 +25,8 @@ const http = require("node:http");
         case "results": return results(path.resolve(process.argv[3]), path.resolve(process.argv[3]));
         case "push": return push();
         case "docker:build": return dockerBuild(path.resolve(process.argv[3]));
+        case "docker:start": return dockerStart(path.resolve(replaceEnv(process.argv[3])));
+        case "docker:stop": return dockerStop();
         case "docker:scan": return dockerScan();
         case "docker:smoke": return dockerSmokeTest(path.resolve(process.argv[3]));
         default: log(Error("USAGE:   npm run   build [docker] | test [smoke] | lint | start | results | scan | push | docker"));
@@ -107,16 +110,14 @@ function dockerBuild(/** @type {string} */ outDir) {
     ensureEmptyDir(outDir);
 
     exec(`
-        docker buildx build
-            ${process.env.GITHUB_SHA !== "" ? "--pull" : ""}
+        docker buildx build --pull
             --target export
             --output type=local,dest=${outDir}
         .
     `);
 
     exec(`
-        docker buildx build
-            ${process.env.GITHUB_SHA !== "" ? "--pull" : ""}
+        docker buildx build --pull
             --tag ${process.env.DOCKER_USERNAME}/${process.env.DOCKER_REPO}:${process.env.SEMVER}
             --build-arg SEMVER
             --output type=docker
@@ -126,6 +127,32 @@ function dockerBuild(/** @type {string} */ outDir) {
     exec(`docker image inspect ${process.env.DOCKER_USERNAME}/${process.env.DOCKER_REPO}:${process.env.SEMVER}`, { stdio: "ignore" });
 
     log("build success");
+}
+
+function dockerStart(/** @type {string} */ mediaDir) {
+    dockerStop();
+    const isSecure = !!process.env.MEDIA_SHARE__CertCrt && !!process.env.MEDIA_SHARE__CertKey;
+    exec(`
+        docker run --rm --detach
+            --name ${process.env.DOCKER_USERNAME}-${process.env.DOCKER_REPO}-${process.env.SEMVER}
+            --publish 127.0.0.1:58081:58082
+            --volume ${mediaDir}:/home/node/media
+            ${isSecure ? "--volume " + process.env.MEDIA_SHARE__CertCrt + ":/run/secrets/cert.crt:ro" : ""}
+            ${isSecure ? "--volume " + process.env.MEDIA_SHARE__CertKey + ":/run/secrets/cert.key:ro" : ""}
+            --env MEDIA_SHARE__AuthClient
+            --env MEDIA_SHARE__AuthEmails
+            --env NODE_ENV=development
+        ${process.env.DOCKER_USERNAME}/${process.env.DOCKER_REPO}:${process.env.SEMVER}
+    `);
+    return checkUrl(`${isSecure ? "https" : "http"}://localhost:58081/health`, { status: 200, body: "healthy", tries: 5, interval: 2 })
+        .then(req => { log("media server started"); return req; });
+}
+
+function dockerStop() {
+    exec(
+        `docker container stop ${process.env.DOCKER_USERNAME}-${process.env.DOCKER_REPO}-${process.env.SEMVER}`,
+        { stdio: "ignore", exitOnError: false }
+    );
 }
 
 function dockerScan() {
@@ -144,19 +171,19 @@ function dockerScan() {
 async function dockerSmokeTest(/** @type {string} */ outDir) {
     const testMediaDir = path.join(outDir, "media");
     const testMediaChildDir = path.join(testMediaDir, "test-dir");
-    const container = `${process.env.DOCKER_USERNAME}-${process.env.DOCKER_REPO}-${process.env.SEMVER}-smoke-test`;
-    let failed = false;
-    let testCaseId = 0;
-
     ensureEmptyDir(outDir, testMediaDir, testMediaChildDir);
 
     fs.writeFileSync(path.join(testMediaChildDir, "test.mp3"), "", "utf-8");
     fs.writeFileSync(path.join(testMediaChildDir, "test.mp4"), "", "utf-8");
     fs.writeFileSync(path.join(testMediaChildDir, "test.srt"), "00:00:00,000 --> 00:00:01,000\ntest", "utf-8");
     fs.writeFileSync(path.join(testMediaChildDir, "test.sub"), "{0}{25}test", "utf-8");
+    let failed = false;
+    let testCaseId = 0;
 
     try {
-        await startSmokeTestServer(container, testMediaDir);
+        process.env.MEDIA_SHARE__AuthClient = "";
+        process.env.MEDIA_SHARE__AuthEmails = "";
+        await dockerStart(testMediaDir);
         await runSmokeTestCase(++testCaseId, "/test-dir", 200, "/dir-index.js").catch(() => failed = true);
         await runSmokeTestCase(++testCaseId, "/test-dir/test.mp3", 200, "/media-player.js").catch(() => failed = true);
         await runSmokeTestCase(++testCaseId, "/test-dir/test.mp4", 200, "/media-player.js").catch(() => failed = true);
@@ -164,38 +191,24 @@ async function dockerSmokeTest(/** @type {string} */ outDir) {
         await runSmokeTestCase(++testCaseId, "/test-dir/test.sub", 200, "WEBVTT").catch(() => failed = true);
     } catch (_) {
         failed = true;
-    } finally {
-        exec(`docker container stop ${container}`, { stdio: "ignore", exitOnError: false });
     }
 
     try {
-        await startSmokeTestServer(container, testMediaDir, "test.apps.googleusercontent.com", "test@gmail.com");
+        process.env.MEDIA_SHARE__AuthClient = "test.apps.googleusercontent.com";
+        process.env.MEDIA_SHARE__AuthEmails = "test@gmail.com";
+        await dockerStart(testMediaDir);
         await runSmokeTestCase(++testCaseId, "/test-dir", 401, "").catch(() => failed = true);
     } catch (_) {
         failed = true;
-    } finally {
-        exec(`docker container stop ${container}`, { stdio: "ignore", exitOnError: false });
     }
 
+    dockerStop();
     if (failed) exit("smoke test failed");
     log("smoke success");
 }
-function startSmokeTestServer(container, testMediaDir, authClient = "", authEmails = "") {
-    const port = 58081;
-    exec(`docker container stop ${container}`, { stdio: "ignore", exitOnError: false });
-    exec(`
-        docker run --rm --detach
-            --name ${container}
-            --publish ${port}:58082
-            --volume ${testMediaDir}:/home/node/media
-            --env MEDIA_SHARE__AuthClient="${authClient}"
-            --env MEDIA_SHARE__AuthEmails="${authEmails}"
-        ${process.env.DOCKER_USERNAME}/${process.env.DOCKER_REPO}:${process.env.SEMVER}
-    `);
-    return checkUrl(`http://localhost:${port}/health`, { status: 200, body: "healthy", tries: 5, interval: 2 });
-}
 function runSmokeTestCase(testCaseId, url, status, body) {
-    return checkUrl(`http://localhost:58081${url}`, { status, body }).catch(req => {
+    const isSecure = !!process.env.MEDIA_SHARE__CertCrt && !!process.env.MEDIA_SHARE__CertKey;
+    return checkUrl(`${isSecure ? "https" : "http"}://localhost:58081${url}`, { status, body }).catch(req => {
         log(Error(JSON.stringify({
             testCaseId,
             url,
@@ -215,7 +228,8 @@ async function checkUrl(
 
     const isSuccess = ({ status, body }) => status === (options?.status ?? 200) && body?.includes(options?.body ?? "");
 
-    const httpGet = () => new Promise(done => http.get(url.href, res => {
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0;
+    const httpGet = () => new Promise(done => (url.protocol === "https:" ? https : http).get(url.href, res => {
         let body = "";
         res.setEncoding("utf-8");
         res.on("data", chunk => body += chunk);
@@ -296,6 +310,10 @@ function ensureEmptyDir(/** @type {string[]} */ ...dirs) {
         if (fs.existsSync(dir)) fs.readdirSync(dir).forEach(item => fs.rmSync(path.join(dir, item), { recursive: true, force: true }));
         else fs.mkdirSync(dir, { recursive: true });
     });
+}
+
+function replaceEnv(/** @type {string} */ arg) {
+    return arg.replace(/(\${([^}]+)})/g, e => process.env[e.replace(/(\${|})/g, "")]);
 }
 
 function log(/** @type {Error | string} */ data) {

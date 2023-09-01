@@ -36,14 +36,15 @@ function getCSP(fnStr: string) {
 function getHTML(fnStr: string, fnName: string, authClient: string) {
     return `
         <script>${fnStr}</script>
-        <div class="btn g_id_signin" data-type="standard"></div>
+        <style>.btn-center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }</style>
+        <div class="btn btn-center g_id_signin" data-type="standard"></div>
         <div id="g_id_onload" data-client_id="${authClient}" data-callback="${fnName}"></div>
         <script src="https://accounts.google.com/gsi/client"></script>
     `;
 }
 
 function signIn(response?: { credential: string | null }) {
-    if (response && response.credential)
+    if (response?.credential)
         window.location.href = window.location.href +
             (window.location.href.includes("?") ? "&" : "?") +
             `id_token=${response.credential}`;

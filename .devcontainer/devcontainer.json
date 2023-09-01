@@ -22,7 +22,6 @@
 		"docker-from-docker": "latest",
 		"git": "latest",
 		"sshd": "latest",
-		"homebrew": "latest",
-		"node": "lts"
+		"node": "18"
 	}
 }

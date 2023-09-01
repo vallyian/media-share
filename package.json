@@ -25,6 +25,8 @@
         "results": "node run results artifacts/unit artifacts/lint",
         "push": "node run push",
         "docker:build": "node run docker:build artifacts",
+        "docker:start": "node run docker:start ${HOME}/media",
+        "docker:stop": "node run docker:stop",
         "docker:scan": "node run docker:scan",
         "docker:smoke": "node run docker:smoke artifacts/smoke"
     }
