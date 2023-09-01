@@ -78,6 +78,7 @@ export function App(
         app.set("views", fs.existsSync("src/service/views") ? "src/service/views" : "service/views");
         app.get("/health", HealthRoute());
         app.get("/favicon.ico", FaviconRoute());
+        app.use(express.static(`${app.get("views")}/assets`));
         app.use(express.static(`${app.get("views")}/css`));
         app.use(express.static(`${app.get("views")}/scripts`));
         if (config.authClient && config.authEmails.length) {

@@ -4,31 +4,27 @@
     },
     "compileOnSave": false,
     "compilerOptions": {
-        "outDir": "./bin", /* Specify an output folder for all emitted files. */
-        "target": "ESNext", /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
+        "baseUrl": ".", /* Specify the base directory to resolve non-relative module names. */
+        "rootDir": ".",
+        "outDir": ".tmp", /* Specify an output folder for all emitted files. */
         "module": "CommonJS", /* Specify what module code is generated. */
-        "declaration": false, /* Generate .d.ts files from TypeScript and JavaScript files in your project. */
-        "declarationMap": false, /* Generates a source map for .d.ts files which map back to the original .ts source file */
-        "emitDecoratorMetadata": true, /* Enables experimental support for emitting type metadata for decorators which works with the module reflect-metadata */
+        "target": "ESNext", /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
         "lib": [
             "ESNext",
             "DOM"
         ], /* Specify a set of bundled library declaration files that describe the target runtime environment. */
+        "types": [
+            "jasmine"
+        ], /* Specify type package names to be included without being referenced in a source file. */
+        "moduleResolution": "node",
         "listEmittedFiles": true, /* Print the names of emitted files after a compilation */
-        "experimentalDecorators": true, /* Enable experimental support for TC39 stage 2 draft decorators */
         "useDefineForClassFields": true, /* Emit ECMAScript-standard-compliant class fields. */
         "moduleDetection": "auto", /* Control what method is used to detect module-format JS files. */
-        "moduleResolution": "node",
-        "allowJs": false, /* if true, add "checkJs": true */
-        "checkJs": false, /* Enable error reporting in type-checked JavaScript files */
-        "emitDeclarationOnly": false, /* Only output d.ts files and not JavaScript files. */
         "removeComments": true, /* Disable emitting comments. */
         "pretty": true, /* Enable color and formatting in output to make compiler errors easier to read */
         "importHelpers": true, /* Allow importing helper functions from tslib once per project, instead of including them per-file. */
         "importsNotUsedAsValues": "remove", /* Specify emit/checking behavior for imports that are only used for types. */
         "downlevelIteration": false, /* Emit more compliant, but verbose and less performant JavaScript for iteration. */
-        "sourceMap": false, /* also inlineSourceMap": false, "inlineSources": true */
-        "emitBOM": false, /* Emit a UTF-8 Byte Order Mark (BOM) in the beginning of output files. */
         "newLine": "lf", /* Set the newline character for emitting files. */
         "stripInternal": true, /* Disable emitting declarations that have '@internal' in their JSDoc comments. */
         "noEmitHelpers": true, /* Disable generating custom helper functions like '__extends' in compiled output. */
@@ -57,8 +53,16 @@
         "allowUnreachableCode": false, /* Disable error reporting for unreachable code. */
         "skipDefaultLibCheck": true, /* Skip type checking .d.ts files that are included with TypeScript. */
         "skipLibCheck": false, /* Skip type checking all .d.ts files. */
-        "resolveJsonModule": true, /* Enable importing .json files. */
-        // "baseUrl": "./", /* Specify the base directory to resolve non-relative module names. */
+        // "resolveJsonModule": true, /* Enable importing .json files. */
+        // "declaration": false, /* Generate .d.ts files from TypeScript and JavaScript files in your project. */
+        // "declarationMap": false, /* Generates a source map for .d.ts files which map back to the original .ts source file */
+        // "experimentalDecorators": true, /* Enable experimental support for TC39 stage 2 draft decorators */
+        // "emitDecoratorMetadata": true, /* Enables experimental support for emitting type metadata for decorators which works with the module reflect-metadata */
+        // "allowJs": false, /* if true, add "checkJs": true */
+        // "checkJs": false, /* Enable error reporting in type-checked JavaScript files */
+        // "emitDeclarationOnly": false, /* Only output d.ts files and not JavaScript files. */
+        // "sourceMap": false, /* also inlineSourceMap": false, "inlineSources": true */
+        // "emitBOM": false, /* Emit a UTF-8 Byte Order Mark (BOM) in the beginning of output files. */
         // "paths": {}, /* Specify a set of entries that re-map imports to additional lookup locations. */
         // "rootDirs": [], /* Allow multiple folders to be treated as one when resolving modules. */
         // "types": [], /* Specify type package names to be included without being referenced in a source file. */

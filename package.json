@@ -1,11 +1,12 @@
 {
-    "name": "@media-share/~",
+    "name": "media-share",
     "version": "0.0.0",
     "private": true,
     "license": "ISC",
     "description": "media-share",
     "keywords": [
-        "media-share"
+        "media",
+        "share"
     ],
     "author": "vallyian@gmail.com",
     "repository": {
@@ -13,13 +14,20 @@
         "url": "https://github.com/vallyian/media-share.git"
     },
     "engines": {
-        "node": ">=16 <17",
-        "npm": ">=8 <9"
+        "node": ">=18 <19",
+        "npm": ">=8"
     },
     "scripts": {
-        "build": "npm --prefix server run build",
-        "lint": "npm --prefix server run lint",
-        "test": "npm --prefix server test",
-        "start": "npm --prefix server start"
+        "build": "node run build artifacts/bin",
+        "test": "node run test artifacts/unit",
+        "lint": "node run lint artifacts/lint",
+        "start": "node run start",
+        "results": "node run results artifacts/unit artifacts/lint",
+        "push": "node run push",
+        "docker:build": "node run docker:build artifacts",
+        "docker:start": "node run docker:start ${HOME}/media",
+        "docker:stop": "node run docker:stop",
+        "docker:scan": "node run docker:scan",
+        "docker:smoke": "node run docker:smoke artifacts/smoke"
     }
 }

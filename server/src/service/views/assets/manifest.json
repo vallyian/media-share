@@ -1,0 +1,16 @@
+{
+    "name": "media-share",
+    "short_name": "media-share",
+    "icons": [
+        {
+            "src": "favicon.ico",
+            "type": "image/svg+xml",
+            "sizes": "200x200",
+            "purpose": "any maskable"
+        }
+    ],
+    "display": "standalone",
+    "start_url": ".",
+    "theme_color": "#000000",
+    "background_color": "#ffffff"
+}

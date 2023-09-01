@@ -1,49 +1,42 @@
-FROM node:hydrogen AS build
-RUN npm i -g npm@latest
-WORKDIR /home/node/server
-COPY server/package*.json .
-ARG NPM_AUDIT_LEVEL
-RUN npm audit --omit=dev --audit-level="${NPM_AUDIT_LEVEL}" && \
-    npm ci --omit=dev && \
-    mkdir -p ../artifacts && \
-    mv node_modules ../artifacts/node_modules && \
-    npm ci
-COPY server/src src
-COPY server/tsconfig*.json .
+#syntax=docker/dockerfile:1.5
+
+FROM node:18-slim AS build
+USER node
+WORKDIR /home/node
+COPY --chown=node:node server/package*.json server/tsconfig*.json server/
+COPY --chown=node:node server/src server/src
+COPY --chown=node:node package.json run.js check-url.js ./
 RUN npm run build
-COPY server/test.ts .
-RUN npm test
-COPY server/.eslintignore server/.eslintrc.json ./
+COPY --chown=node:node server/test server/test
+RUN npm run test
+COPY --chown=node:node server/.eslintignore server/.eslintrc.json server/
 RUN npm run lint
 
 
 
 FROM scratch AS export
-COPY --from=build /home/node/server/bin /bin
-COPY --from=build /home/node/artifacts/unit-tests /unit-tests
-COPY --from=build /home/node/artifacts/*.fail /
+COPY --from=build /home/node/artifacts/bin /bin
+COPY --from=build /home/node/artifacts/unit /unit
+COPY --from=build /home/node/artifacts/lint /lint
 
 
 
-FROM node:hydrogen-alpine3.16
-WORKDIR /home/node
+FROM node:18-alpine3.18
 RUN apk add tini && \
     mkdir -p /home/node/media && \
     chown -R node:node /home/node/media
+USER node
+WORKDIR /home/node
 ENV NODE_ENV=production
-COPY --chown=node:node --from=build /home/node/artifacts/node_modules node_modules
-COPY --chown=node:node --from=build /home/node/server/bin             ./
-COPY --chown=node:node              README.md                         media
+COPY --chown=node:node check-url.js .
+COPY --chown=node:node README.md media
+COPY --chown=node:node --from=build /home/node/artifacts/bin ./
+RUN npm i --omit=dev --no-audit
 ARG SEMVER
 ENV SEMVER=${SEMVER}
-USER node
-# VOLUME [ "/home/node/app/media", "/run/secrets/cert.crt", "/run/secrets/cert.key"]
+# VOLUME [ "/home/node/media", "/run/secrets/cert.crt", "/run/secrets/cert.key"]
 HEALTHCHECK --interval=30s --timeout=1s --start-period=5s --retries=1 \
-    CMD if [ -f "/run/secrets/cert.crt" ] && [ -f "/run/secrets/cert.key" ]; then \
-            if [ ! "$(wget -O /dev/null --no-check-certificate --server-response https://localhost:58082/health 2>&1 | awk '/^  HTTP/{print $2}')" = "200" ]; then exit 1; fi \
-        else \
-            if [ ! "$(wget -O /dev/null --server-response http://localhost:58082/health 2>&1 | awk '/^  HTTP/{print $2}')" = "200" ]; then exit 1; fi \
-        fi
+    CMD node check-url localhost:58082/health 200 healthy
 EXPOSE "58082/tcp" "58092/tcp"
 ENTRYPOINT [ "/sbin/tini", "--" ]
 CMD [ "node", "." ]

@@ -1,14 +1,13 @@
 export const omitted = "*omitted*";
 
-export function omitToken(url: string) {
+export function omitToken(uri: string) {
+    if (uri.indexOf("id_token=") < 0)
+        return uri;
 
-    if (url.indexOf("id_token=") < 0)
-        return url;
+    const url = new URL((/^[a-z]:\/\//i.test(uri) ? "" : "protocol://") + uri);
+    if (!url.searchParams.get("id_token"))
+        return uri;
 
-    const urlObj = new URL(url);
-    if (!urlObj.searchParams.get("id_token"))
-        return url;
-
-    urlObj.searchParams.set("id_token", omitted);
-    return urlObj.toString();
+    url.searchParams.set("id_token", omitted);
+    return url.href.replace("protocol://", "");
 }
