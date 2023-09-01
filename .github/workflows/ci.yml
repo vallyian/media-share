@@ -93,7 +93,7 @@ jobs:
             - name: Scan runtime image
               env:
                   DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}
-              run: npm run scan
+              run: npm run docker:scan
 
             - name: Check results
               run: npm run results

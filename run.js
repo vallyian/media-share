@@ -195,18 +195,18 @@ function startSmokeTestServer(container, testMediaDir, authClient = "", authEmai
     return checkUrl(`http://localhost:${port}/health`, { status: 200, body: "healthy", tries: 5, interval: 2 });
 }
 function runSmokeTestCase(testCaseId, url, status, body) {
-    return checkUrl(`http://localhost:58081${url}`, { status, body }).catch(err => {
-        const actual = JSON.parse(err);
+    return checkUrl(`http://localhost:58081${url}`, { status, body }).catch(req => {
         log(Error(JSON.stringify({
             testCaseId,
             url,
             expected: { status, body },
-            actual: { status: actual.status, body: actual.body.replace(/\s+/g, " ").replace(/"/g, "'"), err: actual.err }
+            actual: { ...req, body: req.body?.replace(/\s+/g, " ").replace(/"/g, "'") }
         })));
         throw err;
     });
 }
 
+/** @throws { status?: number, body?: string, err?: Error | string } */
 async function checkUrl(
     /** @type {string} */ uri,
     /** @type {{ status?: number body?: string, tries?: number, interval?: number } | undefined} */ options
@@ -231,7 +231,7 @@ async function checkUrl(
         }
     };
 
-    let req = undefined;
+    let req;
     for (let attempt = 1, tries = options?.tries ?? 1; attempt <= tries; attempt++) {
         log(`waiting for \x1b[33m${uri}\x1b[0m (attempt ${attempt}/${tries})`);
 
@@ -242,7 +242,7 @@ async function checkUrl(
         await new Promise(ok => setTimeout(ok, (options?.interval ?? 1) * 1000));
     }
 
-    return Promise.reject(JSON.stringify(req));
+    return Promise.reject(req);
 }
 
 function results(/** @type {string} */ unitDir, /** @type {string} */ lintDir) {
