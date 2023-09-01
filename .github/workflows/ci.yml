@@ -19,11 +19,11 @@ jobs:
         name: Semantic version
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout
 
             - name: Tag version
               id: tag
-              uses: mathieudutour/github-tag-action@d745f2e74aaf1ee82e747b181f7a0967978abee0 # v6.0
+              uses: mathieudutour/github-tag-action@fcfbdceb3093f6d85a3b194740f8c6cec632f4e2 # v6.1
               with:
                   github_token: ${{ secrets.GITHUB_TOKEN }}
                   dry_run: ${{ github.ref != 'refs/heads/main' }}
@@ -57,13 +57,13 @@ jobs:
 
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout
 
             - name: Setup Docker multiplatform
-              uses: docker/setup-qemu-action@v2
+              uses: docker/setup-qemu-action
 
             - name: Setup Docker
-              uses: docker/setup-buildx-action@v2
+              uses: docker/setup-buildx-action
 
             - name: Run build, unit test, lint
               run: |
@@ -78,13 +78,13 @@ jobs:
                 npm run docker:smoke
 
             - name: Export artifacts
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact
               with:
                   name: artifacts
                   path: artifacts
 
             - name: Publish test results
-              uses: EnricoMi/publish-unit-test-result-action@2a60c5d47eb29cd5cc922f51bbea18e148f56203 # v2.0.0
+              uses: EnricoMi/publish-unit-test-result-action@283dea176069279a9076e77b548668a8e4f0c31b # v2.9.0
               with:
                   github_token: ${{secrets.GITHUB_TOKEN}}
                   junit_files: artifacts/unit/*.xml
@@ -99,7 +99,7 @@ jobs:
               run: npm run results
 
             - name: Sign in to Docker Hub
-              uses: docker/login-action@v2
+              uses: docker/login-action
               if: ${{ github.ref == 'refs/heads/main' || github.event.inputs.publish_image == 'true' }}
               with:
                   username: ${{vars.DOCKER_USERNAME}}
@@ -122,10 +122,10 @@ jobs:
 
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout
 
             - name: Initialize CodeQL
-              uses: github/codeql-action/init@v2
+              uses: github/codeql-action/init
               with:
                   languages: "javascript"
 
@@ -133,4 +133,4 @@ jobs:
               run: npm run build
 
             - name: Perform CodeQL Analysis
-              uses: github/codeql-action/analyze@v2
+              uses: github/codeql-action/analyze
