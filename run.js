@@ -1,8 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const child_process = require("node:child_process");
-const http = require("node:http");
-const https = require("node:https");
+const checkUrl = require("./check-url");
 
 (() => {
     process.env.DOCKER_USERNAME = process.env.DOCKER_USERNAME || "vallyian";
@@ -144,7 +143,7 @@ function dockerStart(/** @type {string} */ mediaDir) {
             --env NODE_ENV=development
         ${process.env.DOCKER_USERNAME}/${process.env.DOCKER_REPO}:${process.env.SEMVER}
     `);
-    return checkUrl(`${isSecure ? "https" : "http"}://localhost:58081/health`, { status: 200, body: "healthy", tries: 5, interval: 2 })
+    return checkUrl(`${isSecure ? "https" : "http"}://localhost:58081/health`, 200, "healthy", 5, 2)
         .then(req => { log("media server started"); return req; });
 }
 
@@ -206,9 +205,10 @@ async function dockerSmokeTest(/** @type {string} */ outDir) {
     if (failed) exit("smoke test failed");
     log("smoke success");
 }
+
 function runSmokeTestCase(testCaseId, url, status, body) {
     const isSecure = !!process.env.MEDIA_SHARE__CertCrt && !!process.env.MEDIA_SHARE__CertKey;
-    return checkUrl(`${isSecure ? "https" : "http"}://localhost:58081${url}`, { status, body }).catch(req => {
+    return checkUrl(`${isSecure ? "https" : "http"}://localhost:58081${url}`, status, body).catch(req => {
         log(Error(JSON.stringify({
             testCaseId,
             url,
@@ -217,46 +217,6 @@ function runSmokeTestCase(testCaseId, url, status, body) {
         })));
         throw err;
     });
-}
-
-/** @throws { status?: number, body?: string, err?: Error | string } */
-async function checkUrl(
-    /** @type {string} */ uri,
-    /** @type {{ status?: number body?: string, tries?: number, interval?: number } | undefined} */ options
-) {
-    const url = new URL(uri);
-
-    const isSuccess = ({ status, body }) => status === (options?.status ?? 200) && body?.includes(options?.body ?? "");
-
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0;
-    const httpGet = () => new Promise(done => (url.protocol === "https:" ? https : http).get(url.href, res => {
-        let body = "";
-        res.setEncoding("utf-8");
-        res.on("data", chunk => body += chunk);
-        res.on("error", err => done({ status: res.statusCode ?? -1, body, err }));
-        res.on("end", () => done({ status: res.statusCode ?? -1, body }));
-    }).on("error", err => done({ err })));
-
-    const swapUrl = () => {
-        switch (true) {
-            case /^localhost$/i.test(url.hostname): url.hostname = "127.0.0.1"; return true;
-            case url.hostname === "127.0.0.1": url.hostname = "localhost"; return true;
-            default: return false;
-        }
-    };
-
-    let req;
-    for (let attempt = 1, tries = options?.tries ?? 1; attempt <= tries; attempt++) {
-        log(`waiting for \x1b[33m${uri}\x1b[0m (attempt ${attempt}/${tries})`);
-
-        req = await httpGet();
-        if (!isSuccess(req) && swapUrl()) req = await httpGet();
-        if (isSuccess(req)) return;
-
-        await new Promise(ok => setTimeout(ok, (options?.interval ?? 1) * 1000));
-    }
-
-    return Promise.reject(req);
 }
 
 function results(/** @type {string} */ unitDir, /** @type {string} */ lintDir) {

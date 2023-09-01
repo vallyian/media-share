@@ -5,7 +5,7 @@ USER node
 WORKDIR /home/node
 COPY --chown=node:node server/package*.json server/tsconfig*.json server/
 COPY --chown=node:node server/src server/src
-COPY --chown=node:node package.json run.js ./
+COPY --chown=node:node package.json run.js check-url.js ./
 RUN npm run build
 COPY --chown=node:node server/test server/test
 RUN npm run test
@@ -28,18 +28,15 @@ RUN apk add tini && \
 USER node
 WORKDIR /home/node
 ENV NODE_ENV=production
-COPY --chown=node:node              README.md                         media
-COPY --chown=node:node --from=build /home/node/artifacts/bin          ./
+COPY --chown=node:node check-url.js .
+COPY --chown=node:node README.md media
+COPY --chown=node:node --from=build /home/node/artifacts/bin ./
 RUN npm i --omit=dev --no-audit
 ARG SEMVER
 ENV SEMVER=${SEMVER}
 # VOLUME [ "/home/node/media", "/run/secrets/cert.crt", "/run/secrets/cert.key"]
 HEALTHCHECK --interval=30s --timeout=1s --start-period=5s --retries=1 \
-    CMD if [ -f "/run/secrets/cert.crt" ] && [ -f "/run/secrets/cert.key" ]; then \
-    if [ ! "$(wget -O /dev/null --no-check-certificate --server-response https://localhost:58082/health 2>&1 | awk '/^  HTTP/{print $2}')" = "200" ]; then exit 1; fi \
-    else \
-    if [ ! "$(wget -O /dev/null --server-response http://localhost:58082/health 2>&1 | awk '/^  HTTP/{print $2}')" = "200" ]; then exit 1; fi \
-    fi
+    CMD node check-url localhost:58082/health 200 healthy
 EXPOSE "58082/tcp" "58092/tcp"
 ENTRYPOINT [ "/sbin/tini", "--" ]
 CMD [ "node", "." ]
