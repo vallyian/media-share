@@ -19,11 +19,11 @@ jobs:
         name: Semantic version
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
 
             - name: Tag version
               id: tag
-              uses: mathieudutour/github-tag-action@fcfbdceb3093f6d85a3b194740f8c6cec632f4e2 # v6.1
+              uses: mathieudutour/github-tag-action@a22cf08638b34d5badda920f9daf6e72c477b07b # v6.2
               with:
                   github_token: ${{ secrets.GITHUB_TOKEN }}
                   dry_run: ${{ github.ref != 'refs/heads/main' }}
@@ -53,17 +53,17 @@ jobs:
         runs-on: ubuntu-latest
         needs: [semver]
         env:
-            SEMVER: ${{needs.semver.outputs.SEMVER}}
+            SEMVER: ${{ needs.semver.outputs.SEMVER }}
 
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
 
             - name: Setup Docker multiplatform
-              uses: docker/setup-qemu-action@v2
+              uses: docker/setup-qemu-action@v3
 
             - name: Setup Docker
-              uses: docker/setup-buildx-action@v2
+              uses: docker/setup-buildx-action@v3
 
             - name: Run build, unit test, lint
               run: |
@@ -78,59 +78,55 @@ jobs:
                 npm run docker:smoke
 
             - name: Export artifacts
-              uses: actions/upload-artifact@v3
-              with:
-                  name: artifacts
-                  path: artifacts
+              uses: actions/upload-artifact@v4
+              with: { name: artifacts, path: artifacts }
 
-            - name: Publish test results
-              uses: EnricoMi/publish-unit-test-result-action@283dea176069279a9076e77b548668a8e4f0c31b # v2.9.0
+            - name: Check unit test results
+              if: success() || failure()
+              uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
               with:
-                  github_token: ${{secrets.GITHUB_TOKEN}}
-                  junit_files: artifacts/unit/*.xml
-                  fail_on: "test failures"
+                  check_name: Unit test results
+                  files: artifacts/unit/*.xml
+                  action_fail: true
+                  action_fail_on_inconclusive: true
 
             - name: Scan runtime image
               env:
-                  DOCKER_USERNAME: ${{vars.DOCKER_USERNAME}}
+                  DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
               run: npm run docker:scan
 
             - name: Check results
               run: npm run results
 
             - name: Sign in to Docker Hub
-              uses: docker/login-action@v2
+              uses: docker/login-action@v3
               if: ${{ github.ref == 'refs/heads/main' || github.event.inputs.publish_image == 'true' }}
               with:
-                  username: ${{vars.DOCKER_USERNAME}}
-                  password: ${{secrets.DOCKER_PASSWORD}}
+                  username: ${{ vars.DOCKER_USERNAME }},
+                  password: ${{ secrets.DOCKER_PASSWORD }}
 
             - name: Build and push multiplatform runtime image to Docker Hub
               if: ${{ github.ref == 'refs/heads/main' || github.event.inputs.publish_image == 'true' }}
               env:
-                  GITHUB_MAIN: ${{ github.ref == 'refs/heads/main'}}
-                  DOCKER_USERNAME: ${{vars.DOCKER_USERNAME}}
+                  GITHUB_MAIN: ${{ github.ref == 'refs/heads/main' }}
+                  DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
               run: npm run push
 
     codeql:
         name: CodeQL analysis
         runs-on: ubuntu-latest
-        permissions:
-            actions: read
-            contents: read
-            security-events: write
+        permissions: { actions: read, contents: read, security-events: write }
 
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
 
             - name: Initialize CodeQL
-              uses: github/codeql-action/init@v2
-              with:
-                  languages: "javascript"
+              uses: github/codeql-action/init@v3
+              with: { languages: "javascript" }
 
             - name: Build javascript
               run: npm run build
 
             - name: Perform CodeQL Analysis
-              uses: github/codeql-action/analyze@v2
+              uses: github/codeql-action/analyze@v3
