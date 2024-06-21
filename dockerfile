@@ -1,6 +1,6 @@
 #syntax=docker/dockerfile:1.5
 
-FROM node:18-slim AS build
+FROM node:20-slim AS build
 USER node
 WORKDIR /home/node
 COPY --chown=node:node server/package*.json server/tsconfig*.json server/
@@ -21,7 +21,7 @@ COPY --from=build /home/node/artifacts/lint /lint
 
 
 
-FROM node:18-alpine3.18
+FROM node:20-alpine3.20
 RUN apk add tini && \
     mkdir -p /home/node/media && \
     chown -R node:node /home/node/media

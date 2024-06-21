@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/require-await */
 import cluster, { Worker } from "node:cluster";
 import https from "node:https";
+import { existsSync } from "node:fs";
 import { Logger } from "../@types/Logger";
 import { Terminator } from "../@types/Terminator";
 import { App } from "./app";
@@ -28,8 +29,9 @@ export function Service(
     }
 
     async function clusterPrimary() {
-        config.certCrt || logger.warn("no cert file found");
-        config.certKey || logger.warn("no cert key file found");
+        if (!config.certCrt) logger.warn("no cert file found");
+        if (!config.certKey) logger.warn("no cert key file found");
+        if (!existsSync(config.mediaDir)) logger.warn("media dir not found");
         logger.info(config.certCrt && config.certKey ? "secure" : "insecure", config.NODE_ENV, "server started on ports", { web: config.webport, dav: config.davport });
         const workers = new Array<Worker>();
         const fork = () => workers.push(cluster.fork(config.clusterSharedEnv));

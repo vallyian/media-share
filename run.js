@@ -20,7 +20,7 @@ const checkUrl = require("./check-url");
         case "build": return build(path.resolve(process.argv[3]));
         case "test": return test(path.resolve(process.argv[3]));
         case "lint": return lint(path.resolve(process.argv[3]));
-        case "start": return start();
+        case "start": return exec(`npx ts-node-dev --files --prefer-ts --debug --inspect --watch -- src`, { cwd: "server" });
         case "results": return results(path.resolve(process.argv[3]), path.resolve(process.argv[3]));
         case "push": return push();
         case "docker:build": return dockerBuild(path.resolve(process.argv[3]));
@@ -37,14 +37,9 @@ function restore() {
 
     exec("npx -y check-engine");
 
-    const modulesDir = path.resolve("server", "node_modules");
-    const platformPath = path.resolve(modulesDir, "platform");
-    const platform = fs.existsSync(platformPath) ? fs.readFileSync(platformPath, "utf8") : "";
-
-    if (!fs.existsSync(modulesDir) || process.platform !== platform) {
+    if (!fs.existsSync("server/node_modules")) {
         exec(`npx npm ci --no-audit`, { cwd: "server" });
         exec(`npx npm audit --audit-level=${process.env.NPM_AUDIT_LEVEL} --omit=dev`, { cwd: "server" });
-        fs.writeFileSync(platformPath, process.platform, "utf8");
     }
 }
 
@@ -52,8 +47,8 @@ function build(/** @type {string} */ outDir) {
     ensureEmptyDir(outDir);
     exec(`npx tsc --project tsconfig.bin.json --outDir ${outDir}`, { cwd: "server" });
 
-    const { name, version, license, description, keywords, author, repository, engines } = require(path.resolve("package.json"));
-    const { dependencies } = require(path.resolve("server", "package.json"));
+    const { name, version, license, description, keywords, author, repository, engines } = require("./package.json");
+    const { dependencies } = require("./server/package.json");
     fs.writeFileSync(
         path.join(outDir, "package.json"),
         JSON.stringify({
@@ -66,7 +61,7 @@ function build(/** @type {string} */ outDir) {
         "utf8"
     );
     fs.cpSync(
-        path.resolve("server", "src", "service", "views"),
+        "server/src/service/views",
         path.join(outDir, "service", "views"),
         { recursive: true, force: true }
     );
@@ -93,16 +88,6 @@ function lint(/** @type {string} */ outDir) {
         fs.writeFileSync(path.join(outDir, ".fail"), "fail", "utf8");
         log(Error("lint failed"))
     }
-}
-
-function start() {
-    const proc = child_process.spawn(
-        `npx${process.platform === "win32" ? ".cmd" : ""}`,
-        "ts-node-dev --files --prefer-ts --debug --inspect --watch -- src".split(/\s+/g),
-        { cwd: "server", shell: false }
-    );
-    proc.stdout.pipe(process.stdout);
-    proc.stderr.pipe(process.stderr);
 }
 
 function dockerBuild(/** @type {string} */ outDir) {
@@ -249,11 +234,10 @@ function push() {
 function exec(/** @type {string} */ cmd, /** @type {child_process.SpawnSyncOptions & { exitOnError: Boolean } | undefined} */ options) {
     try {
         const args = cmd.replace(/\s+/g, " ").split(" ").filter(x => !!x);
-        if (args[0] === "npx" && process.platform === "win32") args[0] += ".cmd";
         log((options?.cwd ? `\x1b[90m[cwd: ${options.cwd}]\x1b[0m ` : "") + args.join(" "));
         const proc = child_process.spawnSync(args.shift(), args, {
             stdio: options?.stdio ?? "inherit",
-            shell: false,
+            shell: true,
             cwd: options?.cwd ?? process.cwd(),
             ...(options?.env ? { env: { ...process.env, ...options.env } } : {})
         });

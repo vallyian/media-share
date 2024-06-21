@@ -23,7 +23,7 @@ if (require.main === module) {
 function setEnv() {
     (fs.existsSync(".env") ? fs.readFileSync(".env", "utf-8") : "").split("\n").forEach(l => {
         l = l.trim().replace(/^#+/, "").trim();
-        if (!l || !l.includes("=")) return;
+        if (!l?.includes("=")) return;
 
         const [k, vtmp] = l.split("=").map(s => s.trim());
         const v = vtmp?.replace(/(^["']|["']$)/g, "").trim();
