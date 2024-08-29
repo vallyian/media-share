@@ -4,7 +4,8 @@ import { v2 as webdav } from "webdav-server";
 export function WebdavMiddleware(
     config: {
         authDav: string[],
-        mediaDir: string
+        mediaDir: string,
+        proxyLocation: string
     }
 ) {
     const webdavHandler = getWebdavServer()
@@ -30,22 +31,30 @@ export function WebdavMiddleware(
                     pass: <string>cred[1],
                     privileges: ["canRead"].concat(cred[2] === "rw" ? ["canWrite"] : [])
                 };
-            }).filter(a => a.user && a.pass && a.privileges);
+            }).filter(a => a.user && a.pass && a.privileges.length);
 
             if (!authDav.length)
                 return reject(Error("dav users config invalid"));
 
             const userManager = new webdav.SimpleUserManager();
             const privilegeManager = new webdav.SimplePathPrivilegeManager();
-            authDav.forEach(a => privilegeManager.setRights(userManager.addUser(a.user, a.pass, false), "/", a.privileges));
+            authDav.forEach(a => privilegeManager.setRights(
+                userManager.addUser(a.user, a.pass, false),
+                config.proxyLocation,
+                a.privileges
+            ));
             const webdavServer = new webdav.WebDAVServer({
                 httpAuthentication: new webdav.HTTPDigestAuthentication(userManager, "Default realm"),
                 privilegeManager
             });
 
-            webdavServer.setFileSystem("/", new webdav.PhysicalFileSystem(config.mediaDir), success => success
-                ? ok(webdavServer)
-                : reject(Error("webdavServer.setFileSystem error")));
+            webdavServer.setFileSystem(
+                config.proxyLocation /* TODO: config.proxyLocation */,
+                new webdav.PhysicalFileSystem(config.mediaDir),
+                success => success
+                    ? ok(webdavServer)
+                    : reject(Error("webdavServer.setFileSystem error"))
+            );
         });
     }
 }

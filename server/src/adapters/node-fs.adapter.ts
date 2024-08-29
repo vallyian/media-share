@@ -34,17 +34,45 @@ function getDirItems(dirPath: string) {
     );
 }
 
-function getStat(filePath: string) {
-    return fs.promises.stat(filePath).then(stat => ({
-        name: path.basename(filePath),
-        size: stat.size,
+async function getStat(itemPath: string) {
+    const stat = await fs.promises.stat(itemPath);
+    const isDir = stat.isDirectory();
+    const size = isDir ? await getDirSize(itemPath) : stat.size;
+    return {
+        name: path.basename(itemPath),
+        size,
         time: Math.max(stat.ctimeMs, stat.mtimeMs),
-        isDir: stat.isDirectory()
-    }));
+        isDir
+    };
+}
+
+async function getDirSize(dirPath: string) {
+    let size = 0;
+
+    const addSize = async (itemPath: string) => {
+        const stat = await fs.promises.stat(itemPath);
+        if (!stat.isDirectory()) {
+            size += stat.size;
+            return;
+        }
+
+        const items = await fs.promises.readdir(itemPath).then(items => items.map(i => path.join(itemPath, i)));
+        const stats = await Promise.all(items.map(i => fs.promises.stat(i).catch(() => null)));
+        size += stats.reduce((acc, s) => acc + (s?.isDirectory() ? 0 : s?.size ?? 0), 0);
+        await Promise.all(items.filter((_, ix) => stats[ix]?.isDirectory()).map(addSize));
+    };
+
+    await addSize(dirPath);
+
+    return size;
 }
 
 function getStats(items: string[]) {
-    return Promise.all(items.map(getStat));
+    return Promise.allSettled(items.map(getStat))
+        .then(stats => stats.map((stat, sx) => stat.status === "fulfilled"
+            ? stat.value
+            : { name: items[sx]!, size: 0, time: 0, isDir: false }
+        ));
 }
 
 function getFileContent(filePath: string) {
