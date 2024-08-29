@@ -36,7 +36,7 @@ ARG SEMVER
 ENV SEMVER=${SEMVER}
 # VOLUME [ "/home/node/media", "/run/secrets/cert.crt", "/run/secrets/cert.key"]
 HEALTHCHECK --interval=30s --timeout=1s --start-period=5s --retries=1 \
-    CMD node check-url localhost:58082/health 200 healthy
+    CMD node check-url localhost:58082${MEDIA_SHARE__ProxyLocation:-/}health 200 healthy
 EXPOSE "58082/tcp" "58092/tcp"
 ENTRYPOINT [ "/sbin/tini", "--" ]
 CMD [ "node", "." ]
