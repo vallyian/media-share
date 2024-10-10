@@ -1,9 +1,9 @@
 {
     "dependencies": {
         "compression": "^1.7.4",
-        "cookie-parser": "^1.4.6",
+        "cookie-parser": "^1.4.7",
         "ejs": "^3.1.10",
-        "express": "^4.19.2",
+        "express": "^4.21.1",
         "express-rate-limit": "^7.3.1",
         "ffmpeg-static": "^5.2.0",
         "fp-ts": "^2.16.6",
