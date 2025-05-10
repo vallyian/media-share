@@ -14,7 +14,7 @@
         "url": "https://github.com/vallyian/media-share.git"
     },
     "engines": {
-        "node": "20",
+        "node": "22",
         "npm": "10"
     },
     "scripts": {
@@ -29,5 +29,8 @@
         "docker:stop": "node run docker:stop",
         "docker:scan": "node run docker:scan",
         "docker:smoke": "node run docker:smoke artifacts/smoke"
+    },
+    "dependencies": {
+        "22": "^0.0.0"
     }
 }

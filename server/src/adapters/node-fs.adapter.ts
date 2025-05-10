@@ -17,7 +17,7 @@ async function type(itemPath: string) {
         if (stat.isDirectory()) return "dir";
         if (stat.isFile()) return "file";
         return "unknown";
-    } catch (_ex) {
+    } catch {
         return "error";
     }
 }
@@ -25,7 +25,7 @@ async function type(itemPath: string) {
 function toValidType(mediaType: Awaited<ReturnType<typeof type>>) {
     return (path: string) => type(path).then(t => t === mediaType
         ? Promise.resolve(path)
-        : Promise.reject(`path not found or not of type "${mediaType}"`));
+        : Promise.reject(Error(`path not found or not of type "${mediaType}"`)));
 }
 
 function getDirItems(dirPath: string) {

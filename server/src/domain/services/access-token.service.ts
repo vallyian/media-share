@@ -25,9 +25,9 @@ function getAccessToken(
         const decryptedAccessToken = await cryptoAdapter.decrypt(accessToken);
         const accessTokenPayload = <Partial<AccessToken>>JSON.parse(decryptedAccessToken);
         if (!accessTokenPayload.email)
-            return Promise.reject("invalid access token email");
+            return Promise.reject(Error("invalid access token email"));
         if (!authEmails.includes(accessTokenPayload.email))
-            return Promise.reject("email not authorized");
+            return Promise.reject(Error("email not authorized"));
         return <AccessToken>accessTokenPayload;
     };
 }
@@ -42,12 +42,12 @@ function createAccessToken(
 ) {
     return async (idToken: string, provider: string) => {
         const idTokenAdapter = idTokenAdapters[provider];
-        if (!idTokenAdapter) return Promise.reject("id token adapter invalid");
+        if (!idTokenAdapter) return Promise.reject(Error("id token adapter invalid"));
         const idTokenPayload = await idTokenAdapter.getIdTokenPayload(idToken, config.authClient);
-        if (!idTokenPayload) return Promise.reject("id token invalid");
-        if (!idTokenPayload.email) return Promise.reject("id token email missing");
-        if (!idTokenPayload.email_verified) return Promise.reject("id token email not verified");
-        if (!config.authEmails.includes(idTokenPayload?.email)) return Promise.reject("email not authorized");
+        if (!idTokenPayload) return Promise.reject(Error("id token invalid"));
+        if (!idTokenPayload.email) return Promise.reject(Error("id token email missing"));
+        if (!idTokenPayload.email_verified) return Promise.reject(Error("id token email not verified"));
+        if (!config.authEmails.includes(idTokenPayload?.email)) return Promise.reject(Error("email not authorized"));
         return await cryptoAdapter.encrypt(JSON.stringify({
             email: idTokenPayload.email,
         }));
