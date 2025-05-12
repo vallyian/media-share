@@ -29,6 +29,7 @@ export function Config(
         webport: getEnvNum("MEDIA_SHARE__WebPort", 58082, 1, 65535),
         proxyLocation: getEnvStr("MEDIA_SHARE__ProxyLocation", "/"),
         mediaDir: getEnvStr("MEDIA_SHARE__MediaDir", "media"),
+        showDirSizes: getEnvStr("MEDIA_SHARE__ShowDirSizes", "false") === "true",
         rateLimitPerSecond: Math.ceil(getEnvNum("MEDIA_SHARE__RateLimitPerSecond", 20 * clusters) / clusters),
         rateLimitBurstFactor: getEnvNum("MEDIA_SHARE__RateLimitBurstFactor", 10),
         rateLimitPeriodMinutes: getEnvNum("MEDIA_SHARE__RateLimitPeriodMinutes", 1),

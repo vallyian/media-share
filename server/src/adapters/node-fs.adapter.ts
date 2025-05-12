@@ -4,8 +4,8 @@ import { MediaStorageSPI } from "../domain/ports/SPI/MediaStorage.SPI";
 
 export const nodeFsAdapter: MediaStorageSPI = {
     join: (...parts: string[]) => path.join(...parts),
-    readDir: (dirPath: string) => Promise.resolve(dirPath).then(toValidType("dir")).then(getDirItems).then(getStats),
-    readFile: (filePath: string) => Promise.resolve(filePath).then(toValidType("file")).then(getFileContent),
+    readDir: (itemPath: string, showDirSizes?: boolean) => Promise.resolve({ itemPath, showDirSizes }).then(toValidType("dir")).then(getDirItems).then(getStats),
+    readFile: (itemPath: string) => Promise.resolve({ itemPath }).then(toValidType("file")).then(getFileContent),
     type
 };
 
@@ -23,21 +23,22 @@ async function type(itemPath: string) {
 }
 
 function toValidType(mediaType: Awaited<ReturnType<typeof type>>) {
-    return (path: string) => type(path).then(t => t === mediaType
-        ? Promise.resolve(path)
+    return (opts: { itemPath: string, showDirSizes?: boolean | undefined }) => type(opts.itemPath).then(t => t === mediaType
+        ? Promise.resolve(opts)
         : Promise.reject(Error(`path not found or not of type "${mediaType}"`)));
 }
 
-function getDirItems(dirPath: string) {
-    return fs.promises.readdir(dirPath).then(items =>
-        items.map(item => path.join(dirPath, item))
-    );
+function getDirItems(opts: { itemPath: string, showDirSizes?: boolean | undefined }) {
+    return fs.promises.readdir(opts.itemPath).then(items => ({
+        items: items.map(item => path.join(opts.itemPath, item)),
+        showDirSizes: opts.showDirSizes
+    }));
 }
 
-async function getStat(itemPath: string) {
+async function getStat(itemPath: string, showDirSizes?: boolean) {
     const stat = await fs.promises.stat(itemPath);
     const isDir = stat.isDirectory();
-    const size = isDir ? await getDirSize(itemPath) : stat.size;
+    const size = isDir && showDirSizes ? await getDirSize(itemPath) : stat.size;
     return {
         name: path.basename(itemPath),
         size,
@@ -67,14 +68,14 @@ async function getDirSize(dirPath: string) {
     return size;
 }
 
-function getStats(items: string[]) {
-    return Promise.allSettled(items.map(getStat))
+function getStats(opts: { items: string[], showDirSizes?: boolean | undefined }) {
+    return Promise.allSettled(opts.items.map(itemPath => getStat(itemPath, opts.showDirSizes)))
         .then(stats => stats.map((stat, sx) => stat.status === "fulfilled"
             ? stat.value
-            : { name: items[sx]!, size: 0, time: 0, isDir: false }
+            : { name: opts.items[sx]!, size: 0, time: 0, isDir: false }
         ));
 }
 
-function getFileContent(filePath: string) {
-    return fs.promises.readFile(filePath);
+function getFileContent(opts: { itemPath: string, showDirSizes?: boolean | undefined }) {
+    return fs.promises.readFile(opts.itemPath);
 }
