@@ -174,7 +174,7 @@ function sort(a: MediaStat, b: MediaStat, order: "asc" | "desc" = "asc"): number
 function toValidString(path: string) {
     return typeof path === "string" && path !== ""
         ? Promise.resolve(path)
-        : Promise.reject("invalid path arg");
+        : Promise.reject(Error("invalid path arg"));
 }
 
 function toValidType(mediaStorageAdapter: MediaStorageSPI, mediaDir: string) {
@@ -183,5 +183,5 @@ function toValidType(mediaStorageAdapter: MediaStorageSPI, mediaDir: string) {
         (path: string) =>
             toMediaType(path).then(type => type === mediaType
                 ? Promise.resolve(path)
-                : Promise.reject(`path not found or not of type "${mediaType}"`));
+                : Promise.reject(Error(`path not found or not of type "${mediaType}"`)));
 }

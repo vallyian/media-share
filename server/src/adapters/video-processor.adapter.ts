@@ -24,7 +24,7 @@ async function getFps(videoPath: string) {
             ffmpegPath,
             ["-i", videoPath],
             { timeout: 60 * 1000, shell: false },
-            error => log ? ok(log): rej(error)
+            error => log ? ok(log) : rej(error instanceof Error ? error : Error(error?.message))
         );
         child.stdout?.on("data", data => log += <string>data);
         child.stderr?.on("data", data => log += "\n<ERROR>\n" + <string>data + "\n</ERROR>\n");

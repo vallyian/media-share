@@ -21,7 +21,7 @@ function encrypt(cipherKey: string, cipherAlgorithm: string, encoding: BufferEnc
     return (input: string) => {
         let iv: Buffer;
         return Promise.resolve()
-            .then(() => input || Promise.reject("invalid input arg"))
+            .then(() => input || Promise.reject(Error("invalid input arg")))
             .then(() => {
                 iv = Buffer.from(crypto.randomBytes(16));
                 return Buffer.from(cipherKey, encoding);

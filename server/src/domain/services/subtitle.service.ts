@@ -26,7 +26,7 @@ function toVtt(
         switch (mediaAccessService.parsePath(subtitlePath).extension) {
             case "sub": return fromSub(subtitlePath, videoExtension);
             case "srt": return fromSrt(subtitlePath);
-            default: return Promise.reject("unknown subtitle type");
+            default: return Promise.reject(Error("unknown subtitle type"));
         }
     };
 }
@@ -62,7 +62,7 @@ function subToVtt(
 
         return content
             ? `WEBVTT\n${content}`
-            : Promise.reject(`no vtt content created from ${subtitlePath}`);
+            : Promise.reject(Error(`no vtt content created from ${subtitlePath}`));
     };
 }
 
@@ -104,7 +104,7 @@ function srtToVtt(
 
         return content
             ? `WEBVTT\n${content}`
-            : Promise.reject(`no vtt content created from ${subtitlePath}`);
+            : Promise.reject(Error(`no vtt content created from ${subtitlePath}`));
     };
 }
 

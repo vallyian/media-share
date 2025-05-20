@@ -14,13 +14,15 @@ export function WebdavMiddleware(
 
     return handler;
 
+    /* eslint-disable @typescript-eslint/no-unsafe-return */
     async function handler(req: Request, res: Response, next: NextFunction) {
         return webdavHandler
             .then(handler => handler instanceof Error ? Promise.reject(handler) : handler)
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+
             .then(handler => handler(req, res, next))
             .catch(err => next(err));
     }
+    /* eslint-enable @typescript-eslint/no-unsafe-return */
 
     function getWebdavServer() {
         return new Promise<webdav.WebDAVServer>((ok, reject) => {
